@@ -22,12 +22,13 @@ import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.ArrayAccess;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.FilenameGenerator;
+import org.apfloat.spi.MatrixStrategy;
 
 /**
  * Abstract base class for disk-based data storage, containing the common
  * functionality independent of the element type.
  *
- * @version 1.6.2
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -305,6 +306,11 @@ public abstract class DiskDataStorage
         this.fileStorage = diskDataStorage.fileStorage;
     }
 
+    public boolean isCached()
+    {
+        return false;
+    }
+
     protected void implCopyFrom(DataStorage dataStorage, long size)
         throws ApfloatRuntimeException
     {
@@ -404,6 +410,252 @@ public abstract class DiskDataStorage
             throw new BackingStorageException("Unable to access file \"" + getFilename() + '\"', ioe);
         }
     }
+
+    protected synchronized ArrayAccess implGetArray(int mode, int startColumn, int columns, int rows)
+        throws ApfloatRuntimeException
+    {
+        int width = (int) (getSize() / rows);
+
+        if (columns != (columns & -columns) || rows != (rows & -rows) || startColumn + columns > width)
+        {
+            throw new ApfloatInternalException("Invalid size");
+        }
+
+        ArrayAccess arrayAccess = createArrayAccess(mode, startColumn, columns, rows);
+
+        if ((mode & READ) != 0)
+        {
+            long readPosition = startColumn;
+            int writePosition = 0;
+            for (int i = 0; i < rows; i++)
+            {
+                readToArray(readPosition, arrayAccess, writePosition, columns);
+
+                readPosition += width;
+                writePosition += columns;
+            }
+        }
+
+        return arrayAccess;
+    }
+
+    protected synchronized ArrayAccess implGetTransposedArray(int mode, int startColumn, int columns, int rows)
+        throws ApfloatRuntimeException
+    {
+        int width = (int) (getSize() / rows);
+
+        if (columns != (columns & -columns) || rows != (rows & -rows) || startColumn + columns > width)
+        {
+            throw new ApfloatInternalException("Invalid size");
+        }
+
+        int blockSize = columns * rows,
+            b = Math.min(columns, rows);
+        ArrayAccess arrayAccess = createTransposedArrayAccess(mode, startColumn, columns, rows);
+
+        if ((mode & READ) != 0)
+        {
+            // Read the data from the input file in b x b blocks
+            ApfloatContext ctx = ApfloatContext.getContext();
+            MatrixStrategy matrixStrategy = ctx.getBuilderFactory().getMatrixBuilder().createMatrix();
+
+            if (columns < rows)
+            {
+                // Taller than wide section
+                long readPosition = startColumn;
+                for (int i = 0; i < rows; i += b)
+                {
+                    int writePosition = i;
+
+                    for (int j = 0; j < b; j++)
+                    {
+                        readToArray(readPosition, arrayAccess, writePosition, b);
+
+                        readPosition += width;
+                        writePosition += rows;
+                    }
+
+                    // Transpose the b x b block
+
+                    ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
+                    matrixStrategy.transposeSquare(subArrayAccess, b, rows);
+                }
+            }
+            else
+            {
+                // Wider than tall section
+                for (int i = 0; i < b; i++)
+                {
+                    long readPosition = startColumn + i * width;
+                    int writePosition = i * b;
+
+                    for (int j = 0; j < columns; j += b)
+                    {
+                        readToArray(readPosition, arrayAccess, writePosition, b);
+
+                        readPosition += b;
+                        writePosition += b * b;
+                    }
+                }
+
+                for (int i = 0; i < blockSize; i += b * b)
+                {
+                    // Transpose the b x b block
+
+                    ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
+                    matrixStrategy.transposeSquare(subArrayAccess, b, b);
+                }
+            }
+        }
+
+        return arrayAccess;
+    }
+
+    /**
+     * Write the data back to the same location in the file that was retrieved with
+     * {@link #implGetArray(int,int,int,int)}.
+     *
+     * @param arrayAccess The transposed array access.
+     * @param startColumn The starting column where data is stored.
+     * @param columns The number of columns of data.
+     * @param rows The number of rows of data.
+     *
+     * @since 1.7.0
+     */
+
+    protected synchronized void setArray(ArrayAccess arrayAccess, int startColumn, int columns, int rows)
+        throws ApfloatRuntimeException
+    {
+        int width = (int) (getSize() / rows);
+
+        int readPosition = 0;
+        long writePosition = startColumn;
+        for (int i = 0; i < rows; i++)
+        {
+            writeFromArray(arrayAccess, readPosition, writePosition, columns);
+
+            readPosition += columns;
+            writePosition += width;
+        }
+    }
+
+    /**
+     * Write the data back to the same location in the file that was retrieved with
+     * {@link #implGetTransposedArray(int,int,int,int)}.
+     *
+     * @param arrayAccess The transposed array access.
+     * @param startColumn The starting column where data is stored.
+     * @param columns The number of columns of data.
+     * @param rows The number of rows of data.
+     *
+     * @since 1.7.0
+     */
+
+    protected synchronized void setTransposedArray(ArrayAccess arrayAccess, int startColumn, int columns, int rows)
+        throws ApfloatRuntimeException
+    {
+        int width = (int) (getSize() / rows);
+
+        int blockSize = arrayAccess.getLength(),
+            b = Math.min(columns, rows);
+
+        ApfloatContext ctx = ApfloatContext.getContext();
+        MatrixStrategy matrixStrategy = ctx.getBuilderFactory().getMatrixBuilder().createMatrix();
+
+        if (columns < rows)
+        {
+            // Taller than wide section
+            long writePosition = startColumn;
+            for (int i = 0; i < rows; i += b)
+            {
+                int readPosition = i;
+
+                // Transpose the b x b block
+
+                ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
+                matrixStrategy.transposeSquare(subArrayAccess, b, rows);
+
+                for (int j = 0; j < b; j++)
+                {
+                    writeFromArray(arrayAccess, readPosition, writePosition, b);
+
+                    readPosition += rows;
+                    writePosition += width;
+                }
+            }
+        }
+        else
+        {
+            // Wider than tall section
+            for (int i = 0; i < blockSize; i += b * b)
+            {
+                // Transpose the b x b block
+
+                ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
+                matrixStrategy.transposeSquare(subArrayAccess, b, b);
+            }
+
+            for (int i = 0; i < b; i++)
+            {
+                long writePosition = startColumn + i * width;
+                int readPosition = i * b;
+
+                for (int j = 0; j < columns; j += b)
+                {
+                    writeFromArray(arrayAccess, readPosition, writePosition, b);
+
+                    readPosition += b * b;
+                    writePosition += b;
+                }
+            }
+        }
+    }
+
+    private void readToArray(long readPosition, ArrayAccess arrayAccess, int writePosition, int length)
+        throws ApfloatRuntimeException
+    {
+        ArrayAccess readArrayAccess = getArray(READ, readPosition, length);
+        System.arraycopy(readArrayAccess.getData(), readArrayAccess.getOffset(), arrayAccess.getData(), arrayAccess.getOffset() + writePosition, length);
+        readArrayAccess.close();
+    }
+
+    private void writeFromArray(ArrayAccess arrayAccess, int readPosition, long writePosition, int length)
+        throws ApfloatRuntimeException
+    {
+        ArrayAccess writeArrayAccess = getArray(WRITE, writePosition, length);
+        System.arraycopy(arrayAccess.getData(), arrayAccess.getOffset() + readPosition, writeArrayAccess.getData(), writeArrayAccess.getOffset(), length);
+        writeArrayAccess.close();
+    }
+
+    /**
+     * Create an empty ArrayAccess.
+     *
+     * @param mode Whether the array is prepared for reading, writing or both. The value should be {@link #READ}, {@link #WRITE} or a combination of these.
+     * @param startColumn The starting column where data is stored.
+     * @param columns The number of columns of data.
+     * @param rows The number of rows of data.
+     *
+     * @return Access to an empty array of the specified size and position.
+     *
+     * @since 1.7.0
+     */
+
+    protected abstract ArrayAccess createArrayAccess(int mode, int startColumn, int columns, int rows);
+
+    /**
+     * Create an empty transposed ArrayAccess.
+     *
+     * @param mode Whether the array is prepared for reading, writing or both. The value should be {@link #READ}, {@link #WRITE} or a combination of these.
+     * @param startColumn The starting column where data is stored.
+     * @param columns The number of columns of data.
+     * @param rows The number of rows of data.
+     *
+     * @return Access to an empty array of the specified size and position.
+     *
+     * @since 1.7.0
+     */
+
+    protected abstract ArrayAccess createTransposedArrayAccess(int mode, int startColumn, int columns, int rows);
 
     /**
      * Transfer from a readable channel, possibly in multiple chunks.

@@ -1,12 +1,14 @@
 package org.apfloat;
 
+import java.math.RoundingMode;
+
 import java.util.Arrays;
 import java.util.Comparator;
 
 /**
  * Various mathematical functions for arbitrary precision rational numbers.
  *
- * @version 1.4
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -162,12 +164,33 @@ public class AprationalMath
         else if (scale == 0x8000000000000000L)
         {
             Apint scaler = ApintMath.pow(new Apint(x.radix(), x.radix()), 0x4000000000000000L);
-            return new Aprational(x.numerator(), x.denominator().multiply(scaler).multiply(scaler));
+            return new Aprational(x.numerator(), x.denominator().multiply(scaler)).divide(scaler);
         }
         else
         {
             return new Aprational(x.numerator(), ApintMath.scale(x.denominator(), -scale));
         }
+    }
+
+    /**
+     * Rounds the given number to the specified precision with the specified rounding mode.
+     *
+     * @param x The number to round.
+     * @param precision The precision to round to.
+     * @param roundingMode The rounding mode to use.
+     *
+     * @return The rounded number.
+     *
+     * @exception java.lang.IllegalArgumentException If <code>precision</code> is less than zero or zero.
+     * @exception java.lang.ArithmeticException If rounding is necessary (result is not exact) and rounding mode is {@link RoundingMode#UNNECESSARY}.
+     *
+     * @since 1.7.0
+     */
+
+    public static Apfloat round(Aprational x, long precision, RoundingMode roundingMode)
+        throws IllegalArgumentException, ArithmeticException, ApfloatRuntimeException
+    {
+        return RoundingHelper.round(x, precision, roundingMode);
     }
 
     /**

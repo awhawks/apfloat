@@ -13,7 +13,7 @@ import org.apfloat.ApfloatRuntimeException;
  * A class implementing <code>ApfloatImpl</code> is not required to accept any other <code>ApfloatImpl</code>
  * class as the argument than the same implementing class.
  *
- * @version 1.2
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -85,6 +85,17 @@ public interface ApfloatImpl
      */
 
     public ApfloatImpl absCeil()
+        throws ApfloatRuntimeException;
+
+    /**
+     * Returns the fractional part of this <code>ApfloatImpl</code>.
+     *
+     * @return The fractional part of this <code>ApfloatImpl</code>.
+     *
+     * @since 1.7.0
+     */
+
+    public ApfloatImpl frac()
         throws ApfloatRuntimeException;
 
     /**

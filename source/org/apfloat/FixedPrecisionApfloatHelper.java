@@ -1,18 +1,20 @@
 package org.apfloat;
 
+import java.math.RoundingMode;
+
 import org.apfloat.spi.Util;
 
 /**
  * Fixed-precision mathematical functions for floating-point numbers.<p>
  *
- * All results of the mathematical operations are rounded to the specified precision.
- * Also all input arguments are rounded to the specified precision before the operation.
+ * All results of the mathematical operations are set to have the specified precision.
+ * Also all input arguments are set to the specified precision before the operation.
  * If the specified precision is not infinite, this helper class also avoids 
  * <code>InfiniteExpansionException</code> e.g. in case where it would happen with
  * <code>ApfloatMath.acos(Apfloat.ZERO)</code>.
  *
  * @since 1.5
- * @version 1.6
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -35,11 +37,11 @@ public class FixedPrecisionApfloatHelper
     }
 
     /**
-     * Rounds the value to the specified precision.
+     * Returns the value with the specified precision.
      *
-     * @param x The value to round.
+     * @param x The value.
      *
-     * @return The value rounded to the specified precision.
+     * @return The value with to the specified precision.
      */
 
     public Apfloat valueOf(Apfloat x)
@@ -563,6 +565,39 @@ public class FixedPrecisionApfloatHelper
         throws ApfloatRuntimeException
     {
         return valueOf(ApfloatMath.truncate(setPrecision(x)));
+    }
+
+    /**
+     * Extract fractional part.
+     *
+     * @param x The operand.
+     *
+     * @return The fractional part of <code>x</code>.
+     *
+     * @since 1.7.0
+     */
+
+    public Apfloat frac(Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return valueOf(ApfloatMath.frac(x));
+    }
+
+    /**
+     * Round with specified rounding mode.
+     *
+     * @param x The operand.
+     * @param roundingMode The rounding mode.
+     *
+     * @return <code>x</code> rounded with the specified rounding mode.
+     *
+     * @since 1.7.0
+     */
+
+    public Apfloat round(Apfloat x, RoundingMode roundingMode)
+        throws ApfloatRuntimeException
+    {
+        return ApfloatMath.round(x, precision(), roundingMode);
     }
 
     /**

@@ -13,7 +13,7 @@ import java.util.Locale;
 /**
  * Helper class for formatting.
  *
- * @version 1.6.1
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -220,6 +220,7 @@ class FormattingHelper
     {
     }
 
+    @SuppressWarnings("resource")
     public static Writer wrapAppendableWriter(Appendable out)
     {
         return (out instanceof Writer ? (Writer) out : new AppendableWriter(out));

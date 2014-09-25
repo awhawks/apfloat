@@ -19,13 +19,13 @@ element type:
   <li>{@link org.apfloat.internal.LongBuilderFactory}, based on element type
       <code>long</code>: This implementation uses the 64-bit <code>long</code>
       integer as the elementary type for all data storage and manipulation. It
-      should perform well on 64-bit architectures if you have a JVM that actually
-      uses the 64-bit features of the processor. In some places it uses
-      also <code>double</code> arithmetic, so the processor should be able
-      to perform double-precision floating point operations as well as convert
-      between <code>double</code> and <code>long</code>, for decent performance.
-      For example, on SPARC Solaris the 64-bit <code>long</code> version is
-      often faster than the 32-bit <code>int</code> version. You can use the
+      usually is faster than the <code>int</code> version on 64-bit architectures
+      if you have a JVM that actually uses the 64-bit features of the processor.
+      In some places it uses also <code>double</code> arithmetic, so the processor
+      should be able to perform double-precision floating point operations as well
+      as convert between <code>double</code> and <code>long</code>, for decent
+      performance. For example, on x86-64 and SPARC the 64-bit <code>long</code>
+      version is faster than the 32-bit <code>int</code> version. You can use the
       <code>long</code> implementation on 32-bit platforms too, however the
       performance per element is less than half of the <code>int</code> version,
       even if roughly twice as much data is processed per element. The upside
@@ -85,8 +85,8 @@ of the <code>BigInteger</code> class. For numbers with millions of digits,
 multiplication using <code>BigInteger</code>s would be simply unfeasible, whereas for
 apfloat it would not be a problem at all.<p>
 
-All of the above apfloat implementations have the following features (the links point
-to the <code>int</code> version, but all four versions have similar classes):
+All of the above apfloat implementations have the following features (some of the links
+point to the <code>int</code> version, but all four versions have similar classes):
 
 <ul>
   <li>Depending on the size, numbers can be stored in memory
@@ -100,13 +100,13 @@ to the <code>int</code> version, but all four versions have similar classes):
       with some more overhead ({@link org.apfloat.internal.IntKaratsubaConvolutionStrategy}),
       or using a Number Theoretic Transform (NTT) done using three different moduli,
       and the final result calculated using the Chinese Remainder Theorem
-      ({@link org.apfloat.internal.Int3NTTConvolutionStrategy}), for big numbers.</li>
+      ({@link org.apfloat.internal.ThreeNTTConvolutionStrategy}), for big numbers.</li>
   <li>Different NTT algorithms for different transform lengths: basic fast NTT
       ({@link org.apfloat.internal.IntTableFNTStrategy}) when the entire transform
       fits in the processor cache, "six-step" NTT when the transform fits in the
-      main memory ({@link org.apfloat.internal.IntSixStepFNTStrategy}),
+      main memory ({@link org.apfloat.internal.SixStepFNTStrategy}),
       and a disk-based "two-pass" NTT strategy when the whole transform doesn't
-      fit in the available memory ({@link org.apfloat.internal.IntTwoPassFNTStrategy}).</li>
+      fit in the available memory ({@link org.apfloat.internal.TwoPassFNTStrategy}).</li>
 </ul>
 
 The apfloat implementation-specific exceptions being thrown by the apfloat library

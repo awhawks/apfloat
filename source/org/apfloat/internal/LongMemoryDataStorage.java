@@ -1,7 +1,5 @@
 package org.apfloat.internal;
 
-import java.util.RandomAccess;
-
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.DataStorage;
@@ -11,13 +9,12 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>long</code>
  * element type.
  *
- * @version 1.6.3
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
 public class LongMemoryDataStorage
     extends DataStorage
-    implements RandomAccess
 {
     /**
      * Default constructor.
@@ -42,6 +39,11 @@ public class LongMemoryDataStorage
         this.data = longMemoryDataStorage.data;
     }
 
+    public boolean isCached()
+    {
+        return true;
+    }
+
     protected DataStorage implSubsequence(long offset, long length)
         throws ApfloatRuntimeException
     {
@@ -58,6 +60,12 @@ public class LongMemoryDataStorage
         if (size > Integer.MAX_VALUE)
         {
             throw new ApfloatInternalException("Size too big for memory array: " + size);
+        }
+
+        if (dataStorage == this)
+        {
+            setSize(size);
+            return;
         }
 
         this.data = new long[(int) size];
@@ -115,6 +123,12 @@ public class LongMemoryDataStorage
         return new LongMemoryArrayAccess(this.data, (int) (offset + getOffset()), length);
     }
 
+    protected ArrayAccess implGetArray(int mode, int startColumn, int columns, int rows)
+        throws ApfloatRuntimeException
+    {
+        throw new ApfloatInternalException("Method not implemented - would be sub-optimal; change the apfloat configuration settings");
+    }
+
     protected ArrayAccess implGetTransposedArray(int mode, int startColumn, int columns, int rows)
         throws ApfloatRuntimeException
     {
@@ -166,6 +180,32 @@ public class LongMemoryDataStorage
         {
             checkLength();
             this.data[this.position] = value;
+        }
+
+        public <T> T get(Class<T> type)
+            throws UnsupportedOperationException, IllegalStateException
+        {
+            if (!(type.equals(Long.TYPE)))
+            {
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Long");
+            }
+            @SuppressWarnings("unchecked")
+            T value = (T) (Long) getLong();
+            return value;
+        }
+
+        public <T> void set(Class<T> type, T value)
+            throws UnsupportedOperationException, IllegalArgumentException, IllegalStateException
+        {
+            if (!(type.equals(Long.TYPE)))
+            {
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Long");
+            }
+            if (!(value instanceof Long))
+            {
+                throw new IllegalArgumentException("Unsupported value type " + value.getClass().getCanonicalName() + ", the only supported type is Long");
+            }
+            setLong((Long) value);
         }
 
         protected void checkLength()

@@ -7,9 +7,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * ConcurrentHashMap with softly referenced values.
- * The maximum map size is assumed to be limited so no
- * effort is made to expunge entries for stale values.
+ * Map with an underlying ConcurrentHashMap with softly referenced values.
+ * The maximum map size is assumed to be limited so no effort is made to
+ * expunge entries for stale values.
  *
  * @since 1.6
  * @version 1.6

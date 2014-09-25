@@ -15,6 +15,8 @@ import org.apfloat.spi.ApfloatImpl;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.ArrayAccess;
+import org.apfloat.spi.AdditionBuilder;
+import org.apfloat.spi.AdditionStrategy;
 import org.apfloat.spi.ConvolutionBuilder;
 import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.Util;
@@ -33,7 +35,7 @@ import static org.apfloat.internal.LongRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.6.3
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -41,6 +43,11 @@ public class LongApfloatImpl
     extends LongBaseMath
     implements ApfloatImpl
 {
+    // Implementation notes:
+    // - The dataStorage must never contain leading zeros or trailing zeros
+    // - If precision is reduced then the dataStorage can contain trailing zeros (physically in the middle)
+    // - The dataStorage should not be unnecessarily subsequenced if precision is reduced e.g. to allow autoconvolution
+    // - Precision is in digits but exponent is in base units
     private LongApfloatImpl(int sign, long precision, long exponent, DataStorage dataStorage, int radix)
     {
         super(radix);
@@ -226,6 +233,22 @@ public class LongApfloatImpl
 
         // Exponent rounded towards positive infinity to base unit
         long baseExp = (this.exponent + (this.exponent > 0 ? BASE_DIGITS[radix] - 1 : 0)) / BASE_DIGITS[radix];
+
+        // Check for overflow in exponent as represented in base units
+        if (baseExp > MAX_EXPONENT[this.radix])
+        {
+            throw new OverflowException("Overflow");
+        }
+        else if (baseExp < -MAX_EXPONENT[this.radix])
+        {
+            // Underflow
+            this.sign = 0;
+            this.precision = Apfloat.INFINITE;
+            this.exponent = 0;
+            this.dataStorage = null;
+
+            return;
+        }
 
         // Leading zeros in first base unit
         int digitsInBase = (int) (baseExp * BASE_DIGITS[radix] - this.exponent);
@@ -729,6 +752,22 @@ public class LongApfloatImpl
         // Exponent rounded towards negative infinity to base unit
         long baseExp = (this.exponent - (this.exponent < 0 ? BASE_DIGITS[radix] - 1 : 0)) / BASE_DIGITS[radix];
 
+        // Check for overflow in exponent as represented in base units
+        if (baseExp > MAX_EXPONENT[this.radix])
+        {
+            throw new OverflowException("Overflow");
+        }
+        else if (baseExp < -MAX_EXPONENT[this.radix])
+        {
+            // Underflow
+            this.sign = 0;
+            this.precision = Apfloat.INFINITE;
+            this.exponent = 0;
+            this.dataStorage = null;
+
+            return;
+        }
+
         // How much the data needs to be shifted
         int bias = (int) (this.exponent - baseExp * BASE_DIGITS[radix]);
 
@@ -790,13 +829,13 @@ public class LongApfloatImpl
         return count;
     }
 
-    // Returns number of leading zeros
-    private static long getLeadingZeros(DataStorage dataStorage)
+    // Returns number of leading zeros starting from specified index
+    private static long getLeadingZeros(DataStorage dataStorage, long index)
         throws ApfloatRuntimeException
     {
         long count = 0;
 
-        DataStorage.Iterator iterator = dataStorage.iterator(DataStorage.READ, 0, dataStorage.getSize());
+        DataStorage.Iterator iterator = dataStorage.iterator(DataStorage.READ, index, dataStorage.getSize());
 
         while (iterator.hasNext())
         {
@@ -834,6 +873,10 @@ public class LongApfloatImpl
         int realThatSign = (subtract ? -that.sign : that.sign);
         boolean reallySubtract = (this.sign != realThatSign);
 
+        ApfloatContext ctx = ApfloatContext.getContext();
+        AdditionBuilder<Long> additionBuilder = ctx.getBuilderFactory().getAdditionBuilder(Long.TYPE);
+        AdditionStrategy<Long> additionStrategy = additionBuilder.createAddition(this.radix);
+
         int sign;
         long exponent,
              precision;
@@ -863,7 +906,7 @@ public class LongApfloatImpl
                                      src2 = this.dataStorage.iterator(DataStorage.READ, size - 1, 0),   // Sub-optimal: could be the same
                                      dst = dataStorage.iterator(DataStorage.WRITE, size, 0);
 
-                long carry = baseAdd(src1, src2, 0, dst, size - 1);
+                long carry = additionStrategy.add(src1, src2, (long) 0, dst, size - 1);
 
                 dst.setLong(carry);
                 dst.close();
@@ -979,11 +1022,11 @@ public class LongApfloatImpl
                 long blockSize = Math.min(size - bigSize, smallSize);
                 if (reallySubtract)
                 {
-                    carry = baseSubtract(null, src2, carry, dst, blockSize);
+                    carry = additionStrategy.subtract(null, src2, carry, dst, blockSize);
                 }
                 else
                 {
-                    carry = baseAdd(null, src2, carry, dst, blockSize);
+                    carry = additionStrategy.add(null, src2, carry, dst, blockSize);
                 }
             }
             // big:        XXXXXXXXXXXX
@@ -994,11 +1037,11 @@ public class LongApfloatImpl
                 long blockSize = size - exponentDifference - smallSize;
                 if (reallySubtract)
                 {
-                    carry = baseSubtract(src1, null, carry, dst, blockSize);
+                    carry = additionStrategy.subtract(src1, null, carry, dst, blockSize);
                 }
                 else
                 {
-                    carry = baseAdd(src1, null, carry, dst, blockSize);
+                    carry = additionStrategy.add(src1, null, carry, dst, blockSize);
                 }
             }
             // big:        XXXX
@@ -1009,11 +1052,11 @@ public class LongApfloatImpl
                 long blockSize = exponentDifference - bigSize;
                 if (reallySubtract)
                 {
-                    carry = baseSubtract(null, null, carry, dst, blockSize);
+                    carry = additionStrategy.subtract(null, null, carry, dst, blockSize);
                 }
                 else
                 {
-                    carry = baseAdd(null, null, carry, dst, blockSize);
+                    carry = additionStrategy.add(null, null, carry, dst, blockSize);
                 }
             }
             // big:        XXXXXXXX               XXXXXXXXXXXX
@@ -1024,11 +1067,11 @@ public class LongApfloatImpl
                 long blockSize = Math.min(bigSize - exponentDifference, smallSize);
                 if (reallySubtract)
                 {
-                    carry = baseSubtract(src1, src2, carry, dst, blockSize);
+                    carry = additionStrategy.subtract(src1, src2, carry, dst, blockSize);
                 }
                 else
                 {
-                    carry = baseAdd(src1, src2, carry, dst, blockSize);
+                    carry = additionStrategy.add(src1, src2, carry, dst, blockSize);
                 }
             }
             // big:        XXXXXXXX               XXXXXXXXXXXX           XXXX
@@ -1039,11 +1082,11 @@ public class LongApfloatImpl
                 long blockSize = Math.min(bigSize, exponentDifference);
                 if (reallySubtract)
                 {
-                    carry = baseSubtract(src1, null, carry, dst, blockSize);
+                    carry = additionStrategy.subtract(src1, null, carry, dst, blockSize);
                 }
                 else
                 {
-                    carry = baseAdd(src1, null, carry, dst, blockSize);
+                    carry = additionStrategy.add(src1, null, carry, dst, blockSize);
                 }
             }
 
@@ -1056,7 +1099,7 @@ public class LongApfloatImpl
             if (reallySubtract)
             {
                 // Get denormalization
-                leadingZeros = getLeadingZeros(dataStorage);
+                leadingZeros = getLeadingZeros(dataStorage, 0);
 
                 assert (leadingZeros <= size);
             }
@@ -1233,6 +1276,10 @@ public class LongApfloatImpl
         }
         else
         {
+            ApfloatContext ctx = ApfloatContext.getContext();
+            AdditionBuilder<Long> additionBuilder = ctx.getBuilderFactory().getAdditionBuilder(Long.TYPE);
+            AdditionStrategy<Long> additionStrategy = additionBuilder.createAddition(this.radix);
+
             long size;
             long carry;
 
@@ -1278,7 +1325,7 @@ public class LongApfloatImpl
                 long sequenceSize;
                 for (sequenceSize = 0; carry != 0; sequenceSize++)
                 {
-                    carry = baseDivide(null, divisor, carry, dummy, 1);
+                    carry = additionStrategy.divide(null, divisor, carry, dummy, 1);
                 }
 
                 size = Math.min(basePrecision, thisDataSize + sequenceSize);
@@ -1294,10 +1341,10 @@ public class LongApfloatImpl
                                  dst = dataStorage.iterator(DataStorage.WRITE, 0, size);
 
             // Perform actual division
-            carry = baseDivide(src, divisor, 0, dst, thisDataSize);
+            carry = additionStrategy.divide(src, divisor, (long) 0, dst, thisDataSize);
 
             // Produce the trailing sequence of digits due to inexact division
-            carry = baseDivide(null, divisor, carry, dst, size - thisDataSize);
+            carry = additionStrategy.divide(null, divisor, carry, dst, size - thisDataSize);
 
             size -= getTrailingZeros(dataStorage, size);
 
@@ -1327,13 +1374,12 @@ public class LongApfloatImpl
         {
             return precision(Apfloat.INFINITE);
         }
-        else if (this.exponent <= 0)
+        else if (this.exponent <= 0)                            // Is less than one in absolute value
         {
             return zero();
         }
 
-        long size = this.exponent;                              // Size of integer part, now that getSize() >= this.exponent
-
+        long size = this.exponent;                              // Size of integer part, now that this.dataStorage.getSize() > this.exponent
         size -= getTrailingZeros(this.dataStorage, size);
 
         DataStorage dataStorage = this.dataStorage.subsequence(0, size);
@@ -1371,7 +1417,7 @@ public class LongApfloatImpl
                  findMismatch(iterator = getZeroPaddedIterator(this.exponent, getSize()), ZERO_ITERATOR, getSize() - this.exponent) < 0)
         {
             // Fractional part is zero; the result is the number itself (to infinite precision)
-            long size = Math.min(getSize(), this.exponent);
+            long size = Math.min(this.dataStorage.getSize(), this.exponent);
             size -= getTrailingZeros(this.dataStorage, size);
             dataStorage = this.dataStorage.subsequence(0, size);        // Ensure truncation
 
@@ -1381,12 +1427,16 @@ public class LongApfloatImpl
         {
             // Fractional part is nonzero; round up
 
+            ApfloatContext ctx = ApfloatContext.getContext();
+            AdditionBuilder<Long> additionBuilder = ctx.getBuilderFactory().getAdditionBuilder(Long.TYPE);
+            AdditionStrategy<Long> additionStrategy = additionBuilder.createAddition(this.radix);
+
             long size = this.exponent;                  // Size of integer part
             dataStorage = createDataStorage(size + 1);     // Reserve room for carry overflow
             dataStorage.setSize(size + 1);
             DataStorage.Iterator src = this.dataStorage.iterator(DataStorage.READ, size, 0),
                                  dst = dataStorage.iterator(DataStorage.WRITE, size + 1, 0);
-            long carry = baseAdd(src, null, (long) 1, dst, size);     // Add carry
+            long carry = additionStrategy.add(src, null, (long) 1, dst, size);     // Add carry
             dst.setLong(carry);                      // Set leading long as overflow carry
             src.close();
             dst.close();
@@ -1405,6 +1455,52 @@ public class LongApfloatImpl
         dataStorage.setReadOnly();
 
         ApfloatImpl apfloatImpl = new LongApfloatImpl(this.sign, Apfloat.INFINITE, exponent, dataStorage, this.radix);
+
+        return apfloatImpl;
+    }
+
+    public ApfloatImpl frac()
+        throws ApfloatRuntimeException
+    {
+        if (this.sign == 0 ||
+            this.exponent <= 0)                                 // Is less than one in absolute value already
+        {
+            return this;
+        }
+        if (this.exponent >= getSize())                         // Is an integer, fractional part is zero
+        {
+            return zero();
+        }
+
+        long size = this.dataStorage.getSize() - this.exponent; // Size of fractional part, now that getSize() > this.exponent
+        long leadingZeros = getLeadingZeros(this.dataStorage, this.exponent);
+        if (this.exponent + leadingZeros >= getSize())
+        {
+            // All significant digits were lost, only trailing garbage digits
+            return zero();
+        }
+
+        DataStorage dataStorage = this.dataStorage.subsequence(this.exponent + leadingZeros, size - leadingZeros);
+
+        long precision;
+        if (this.precision != Apfloat.INFINITE)
+        {
+            // Precision is reduced as the integer part is omitted, plus any leading zeros
+            precision = this.precision - getInitialDigits() - (this.exponent + leadingZeros) * BASE_DIGITS[this.radix] + getInitialDigits(dataStorage);
+            if (precision <= 0)
+            {
+                // All significant digits were lost anyway, only trailing garbage digits
+                return zero();
+            }
+        }
+        else
+        {
+            precision = Apfloat.INFINITE;
+        }
+
+        long exponent = -leadingZeros;
+
+        ApfloatImpl apfloatImpl = new LongApfloatImpl(this.sign, precision, exponent, dataStorage, this.radix);
 
         return apfloatImpl;
     }

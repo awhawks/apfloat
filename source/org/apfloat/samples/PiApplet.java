@@ -3,6 +3,7 @@ package org.apfloat.samples;
 import java.applet.Applet;
 import java.awt.Container;
 import java.awt.Label;
+import java.io.File;
 import java.security.AccessControlException;
 
 import org.apfloat.ApfloatContext;
@@ -11,7 +12,7 @@ import org.apfloat.spi.FilenameGenerator;
 /**
  * Applet for calculating pi using four different algorithms.
  *
- * @version 1.6.2
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -41,7 +42,12 @@ public class PiApplet
             try
             {
                 // The applet may not be able to write files to the current directory, but probably can write to the temp directory
-                FilenameGenerator filenameGenerator = new FilenameGenerator(System.getProperty("java.io.tmpdir"), null, null);
+                String path = System.getProperty("java.io.tmpdir");
+                if (path != null && !path.endsWith(File.separator))
+                {
+                    path = path + File.separator;
+                }
+                FilenameGenerator filenameGenerator = new FilenameGenerator(path, null, null);
                 ctx.setFilenameGenerator(filenameGenerator);
             }
             catch (AccessControlException ace)

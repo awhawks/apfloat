@@ -10,7 +10,7 @@ import java.util.Map;
  * Calculator implementation with function support.
  * Provides a mapping mechanism for functions.
  *
- * @version 1.6.3
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -149,9 +149,11 @@ public abstract class FunctionCalculatorImpl
         public Number exp(Number x);
         public Number factorial(Number x);
         public Number floor(Number x);
+        public Number frac(Number x);
         public Number log(Number x);
         public Number log(Number x, Number y);
         public Number pi(Number x);
+        public Number round(Number x, Number y);
         public Number sin(Number x);
         public Number sinh(Number x);
         public Number sqrt(Number x);
@@ -204,8 +206,10 @@ public abstract class FunctionCalculatorImpl
         setFunction("exp", new FixedFunction("exp", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.exp(arguments.get(0)); } });
         setFunction("factorial", new FixedFunction("factorial", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.factorial(arguments.get(0)); } });
         setFunction("floor", new FixedFunction("floor", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.floor(arguments.get(0)); } });
+        setFunction("frac", new FixedFunction("frac", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.frac(arguments.get(0)); } });
         setFunction("log", new FixedFunction("log", 1, 2) { protected Number call(Functions functions, List<Number> arguments) { return (arguments.size() == 1 ? functions.log(arguments.get(0)) : functions.log(arguments.get(0), arguments.get(1))); } });
         setFunction("pi", new FixedFunction("pi", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.pi(arguments.get(0)); } });
+        setFunction("round", new FixedFunction("round", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.round(arguments.get(0), arguments.get(1)); } });
         setFunction("sin", new FixedFunction("sin", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.sin(arguments.get(0)); } });
         setFunction("sinh", new FixedFunction("sinh", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.sinh(arguments.get(0)); } });
         setFunction("sqrt", new FixedFunction("sqrt", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.sqrt(arguments.get(0)); } });

@@ -29,7 +29,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see ApfloatMath
  *
- * @version 1.6
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -854,6 +854,23 @@ public class Apfloat
     }
 
     /**
+     * Returns the fractional part. The fractional part is always <code>0 <= abs(frac()) < 1</code>.
+     * The fractional part has the same sign as the number. For the fractional and integer parts, this always holds:<p>
+     *
+     * <code>x = x.truncate() + x.frac()</code>
+     *
+     * @return The fractional part of this apfloat.
+     *
+     * @since 1.7.0
+     */
+
+    public Apfloat frac()
+        throws ApfloatRuntimeException
+    {
+        return new Apfloat(this.impl.frac());
+    }
+
+    /**
      * Returns the value of the this number as a <code>double</code>.
      * If the number is too big to fit in a <code>double</code>,
      * <code>Double.POSITIVE_INFINITY</code> or
@@ -1018,7 +1035,7 @@ public class Apfloat
 
     public int compareTo(Apfloat x)
     {
-        if (x instanceof Aprational)
+        if (x.preferCompare(this))
         {
             // Special handling of aprationals
             return -x.compareTo(this);
@@ -1028,6 +1045,23 @@ public class Apfloat
             // Compare with maximum available precision; would not be efficient with aprationals
             return getImpl().compareTo(x.getImpl());
         }
+    }
+
+    /**
+     * Tests if the comparison with <code>compareTo</code> should be done in the opposite order.<p>
+     *
+     * Implementations should avoid infinite recursion.
+     *
+     * @param x The number to compare to.
+     *
+     * @return <code>true</code> if the caller should invoke <code>-this.compareTo(x)</code>; <code>false</code> if <code>x.compareTo(this)</code>.
+     *
+     * @since 1.7.0
+     */
+
+    public boolean preferCompare(Apfloat x)
+    {
+        return false;
     }
 
     /**
@@ -1176,6 +1210,28 @@ public class Apfloat
         {
             return this.impl.precision(precision);
         }
+    }
+
+    // Round away from zero i.e. opposite direction of rounding than in truncate()
+    Apint roundAway()
+        throws ApfloatRuntimeException
+    {
+        return new Apint(new Apfloat(this.impl.absCeil()));
+    }
+
+    Apfloat scale(long scale)
+    {
+        return ApfloatMath.scale(this, scale);
+    }
+
+    Apfloat abs()
+    {
+        return ApfloatMath.abs(this);
+    }
+
+    int compareToHalf()
+    {
+        return RoundingHelper.compareToHalf(this);
     }
 
     private ApfloatImpl getImpl()

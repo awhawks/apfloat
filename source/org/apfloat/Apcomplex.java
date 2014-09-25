@@ -20,7 +20,7 @@ import static java.util.FormattableFlags.*;
  * @see Apfloat
  * @see ApcomplexMath
  *
- * @version 1.6
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -806,6 +806,18 @@ public class Apcomplex
                 }
             }
         }
+    }
+
+    static final Apint[] ONES;
+
+    static
+    {
+        ONES = new Apint[37];
+        for (int i =  2; i <= 36; i++)
+        {
+            ONES[i] = new Apint(1, i);
+        }
+        ONES[ONE.radix()] = ONE;
     }
 
     private static final long serialVersionUID = 3642932980384250551L;

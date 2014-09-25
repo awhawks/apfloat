@@ -9,7 +9,7 @@ import static org.apfloat.spi.RadixConstants.*;
 /**
  * Helper class for radix conversion.
  *
- * @version 1.6
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -135,7 +135,7 @@ class RadixConversionHelper
             if (scale > 0)
             {
                 // Both integer and fractional parts exist
-                x = x.subtract(x.truncate());
+                x = x.frac();
                 size -= scale;
                 scale = 0;
             }
@@ -172,8 +172,9 @@ class RadixConversionHelper
         }
         else
         {
-            Apfloat top = ApfloatMath.scale(x, -split).truncate(),
-                    bottom = x.subtract(ApfloatMath.scale(top, split));
+            x = ApfloatMath.scale(x, -split);
+            Apfloat top = x.truncate(),
+                    bottom = ApfloatMath.scale(x.frac(), split);
             return split(top, toRadix, size - split, split >> 1, radixPowerList).multiply(radixPowerList.pow(split))
               .add(split(bottom, toRadix, split, split >> 1, radixPowerList));
         }

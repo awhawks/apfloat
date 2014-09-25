@@ -19,6 +19,10 @@ public class FloatShortConvolutionStrategy
     extends FloatBaseMath
     implements ConvolutionStrategy
 {
+    // Implementation notes:
+    // - Assumes that the operands have been already truncated to match resultSize (the resultSize argument is ignored)
+    // - This class shouldn't be converted to a single class using generics because the performance impact is noticeable
+
     /**
      * Creates a convolution strategy using the specified radix.
      *

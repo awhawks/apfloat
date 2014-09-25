@@ -13,14 +13,14 @@ import org.apfloat.ApfloatRuntimeException;
  * storage to be immutable. After this the data storage can be
  * safely shared between different users.<p>
  *
- * Access to <code>DataStorage</code> objects is generally not internally
- * synchronized. Accessing multiple non-overlapping parts of
- * the storage concurrently with the {@link #getArray(int,long,int)}
+ * Access to <code>DataStorage</code> objects is generally not internally synchronized.
+ * Accessing multiple non-overlapping parts of the storage concurrently with the
+ * {@link #getArray(int,long,int)}, {@link #getArray(int,int,int,int)}
  * or {@link #getTransposedArray(int,int,int,int)} method and with
  * iterators over non-overlapping parts is permitted. Invoking
  * other methods must generally be externally synchronized.
  *
- * @version 1.6.3
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -102,7 +102,7 @@ public abstract class DataStorage
         /**
          * Gets the current element as an <code>int</code>.<p>
          *
-         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         * The default implementation calls {@link #get(Class)} with argument {@link Integer#TYPE}.
          *
          * @return The current element as an <code>int</code>.
          *
@@ -113,13 +113,13 @@ public abstract class DataStorage
         public int getInt()
             throws UnsupportedOperationException, IllegalStateException, ApfloatRuntimeException
         {
-            throw new UnsupportedOperationException("Not implemented");
+            return get(Integer.TYPE);
         }
 
         /**
          * Gets the current element as a <code>long</code>.<p>
          *
-         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         * The default implementation calls {@link #get(Class)} with argument {@link Long#TYPE}.
          *
          * @return The current element as a <code>long</code>.
          *
@@ -130,13 +130,13 @@ public abstract class DataStorage
         public long getLong()
             throws UnsupportedOperationException, IllegalStateException, ApfloatRuntimeException
         {
-            throw new UnsupportedOperationException("Not implemented");
+            return get(Long.TYPE);
         }
 
         /**
          * Gets the current element as a <code>float</code>.<p>
          *
-         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         * The default implementation calls {@link #get(Class)} with argument {@link Float#TYPE}.
          *
          * @return The current element as a <code>float</code>.
          *
@@ -147,13 +147,13 @@ public abstract class DataStorage
         public float getFloat()
             throws UnsupportedOperationException, IllegalStateException, ApfloatRuntimeException
         {
-            throw new UnsupportedOperationException("Not implemented");
+            return get(Float.TYPE);
         }
 
         /**
          * Gets the current element as a <code>double</code>.<p>
          *
-         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         * The default implementation calls {@link #get(Class)} with argument {@link Double#TYPE}.
          *
          * @return The current element as a <code>double</code>.
          *
@@ -164,13 +164,13 @@ public abstract class DataStorage
         public double getDouble()
             throws UnsupportedOperationException, IllegalStateException, ApfloatRuntimeException
         {
-            throw new UnsupportedOperationException("Not implemented");
+            return get(Double.TYPE);
         }
 
         /**
          * Sets the current element as an <code>int</code>.<p>
          *
-         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         * The default implementation calls {@link #set(Class,Object)} with first argument {@link Integer#TYPE}.
          *
          * @param value The value to be set to the current element as an <code>int</code>.
          *
@@ -181,13 +181,13 @@ public abstract class DataStorage
         public void setInt(int value)
             throws UnsupportedOperationException, IllegalStateException, ApfloatRuntimeException
         {
-            throw new UnsupportedOperationException("Not implemented");
+            set(Integer.TYPE, value);
         }
 
         /**
          * Sets the current element as a <code>long</code>.<p>
          *
-         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         * The default implementation calls {@link #set(Class,Object)} with first argument {@link Long#TYPE}.
          *
          * @param value The value to be set to the current element as a <code>long</code>.
          *
@@ -198,13 +198,13 @@ public abstract class DataStorage
         public void setLong(long value)
             throws UnsupportedOperationException, IllegalStateException, ApfloatRuntimeException
         {
-            throw new UnsupportedOperationException("Not implemented");
+            set(Long.TYPE, value);
         }
 
         /**
          * Sets the current element as a <code>float</code>.<p>
          *
-         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         * The default implementation calls {@link #set(Class,Object)} with first argument {@link Float#TYPE}.
          *
          * @param value The value to be set to the current element as a <code>float</code>.
          *
@@ -215,13 +215,13 @@ public abstract class DataStorage
         public void setFloat(float value)
             throws UnsupportedOperationException, IllegalStateException, ApfloatRuntimeException
         {
-            throw new UnsupportedOperationException("Not implemented");
+            set(Float.TYPE, value);
         }
 
         /**
          * Sets the current element as a <code>double</code>.<p>
          *
-         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         * The default implementation calls {@link #set(Class,Object)} with first argument {@link Double#TYPE}.
          *
          * @param value The value to be set to the current element as a <code>double</code>.
          *
@@ -231,6 +231,48 @@ public abstract class DataStorage
 
         public void setDouble(double value)
             throws UnsupportedOperationException, IllegalStateException, ApfloatRuntimeException
+        {
+            set(Double.TYPE, value);
+        }
+
+        /**
+         * Gets the current element as a the specified element type.<p>
+         *
+         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         *
+         * @param type The type of the element.
+         *
+         * @return The current element as the specified type.
+         *
+         * @exception UnsupportedOperationException If the element type of the data storage can't be converted to the specified type.
+         * @exception IllegalStateException If the iterator is at the end.
+         *
+         * @since 1.7.0
+         */
+
+        public <T> T get(Class<T> type)
+            throws UnsupportedOperationException, IllegalStateException, ApfloatRuntimeException
+        {
+            throw new UnsupportedOperationException("Not implemented");
+        }
+
+        /**
+         * Sets the current element as the specified element type.<p>
+         *
+         * The default implementation always throws <code>UnsupportedOperationException</code>.
+         *
+         * @param type The type of the element.
+         * @param value The value to be set to the current element as the specified type.
+         *
+         * @exception UnsupportedOperationException If the element type of the data storage can't be converted to the specified type.
+         * @exception IllegalArgumentException If the value is not of the specified type.
+         * @exception IllegalStateException If the iterator is at the end.
+         *
+         * @since 1.7.0
+         */
+
+        public <T> void set(Class<T> type, T value)
+            throws UnsupportedOperationException, IllegalArgumentException, IllegalStateException, ApfloatRuntimeException
         {
             throw new UnsupportedOperationException("Not implemented");
         }
@@ -739,7 +781,8 @@ public abstract class DataStorage
     }
 
     /**
-     * Gets an array access to the data of this data storage.
+     * Gets an array access to the data of this data storage when
+     * the data is treated as a linear block.
      *
      * @param mode Access mode for the array access: {@link #READ}, {@link #WRITE} or both.
      * @param offset Starting position of the array access in the data storage.
@@ -769,9 +812,8 @@ public abstract class DataStorage
     }
 
     /**
-     * Gets an array access to the data of this data storage.
-     * The validity of the arguments of this method do not need to be
-     * checked.
+     * Gets an array access to the data of this data storage when it is treated as a linear block.
+     * The validity of the arguments of this method do not need to be checked.
      *
      * @param mode Access mode for the array access: {@link #READ}, {@link #WRITE} or both.
      * @param offset Starting position of the array access in the data storage.
@@ -784,19 +826,107 @@ public abstract class DataStorage
         throws ApfloatRuntimeException;
 
     /**
-     * Maps a transposed block of data to a memory array. The data storage
-     * is treated as a n<sub>1</sub> x n<sub>2</sub> matrix. The argument
-     * <code>columns</code> is the value <code>b</code> in the picture:<p>
+     * Maps a block of data to a memory array when the data is treated as a matrix.
+     * The matrix size is n<sub>1</sub> x n<sub>2</sub>.
+     * The following picture illustrates the block being accessed (in gray):<p>
      *
      * <div align="center">
-     *   <table width="400" height="300" border="1">
+     *   <table style="width:400px; height:300px; border-collapse:collapse; border:1px solid black" border="1">
      *     <tr>
-     *       <td width="100" height="25">
+     *       <td style="width:200px">
+     *         <div align="center">
+     *           <code>&larr; startColumn &rarr;</code>
+     *         </div>
+     *       </td>
+     *       <td style="width:150px; background:lightgray">
+     *         <div align="center">
+     *           <code>&larr; columns &rarr;</code>
+     *         </div>
+     *       </td>
+     *       <td style="width:50px">
+     *         <div align="center">
+     *           <code>&uarr;<br>
+     *           n<sub>1</sub><br>
+     *           &darr;<br></code>
+     *         </div>
+     *       </td>
+     *     </tr>
+     *   </table>
+     *   <code>&larr; n<sub>2</sub> &rarr; </code>
+     * </div>
+     *
+     * @param mode Whether the array is prepared for reading, writing or both. The value should be {@link #READ}, {@link #WRITE} or a combination of these.
+     * @param startColumn The starting column where data is read.
+     * @param columns The number of columns of data to read.
+     * @param rows The number of rows of data to read. This should be equivalent to n<sub>1</sub>, number of rows in the matrix.
+     *
+     * @return Access to an array of size <code>columns</code> x <code>rows</code> containing the data.
+     *
+     * @exception IllegalArgumentException If the requested area is out of bounds of the data storage.
+     * @exception IllegalStateException If write access is requested for a read-only data storage.
+     *
+     * @since 1.7.0
+     */
+
+    public final ArrayAccess getArray(int mode, int startColumn, int columns, int rows)
+        throws IllegalArgumentException, IllegalStateException, ApfloatRuntimeException
+    {
+        if (isReadOnly() && (mode & WRITE) != 0)
+        {
+            throw new IllegalStateException("Write access requested for read-only data storage");
+        }
+
+        long size = (long) (startColumn + columns) * (long) rows;
+        if (startColumn < 0 || columns < 0 || rows < 0 || startColumn + columns < 0 ||
+            size > getSize())
+        {
+            throw new IllegalArgumentException("Requested block out of range: startColumn=" + startColumn + ", columns=" + columns + ", rows=" + rows + ", available=" + getSize());
+        }
+        else if (size > Integer.MAX_VALUE)
+        {
+            throw new ApfloatRuntimeException("Block too large to fit in an array: " + size);
+        }
+
+        return implGetArray(mode, startColumn, columns, rows);
+    }
+
+    /**
+     * Maps a block of data to a memory array when the data is treated as a matrix.
+     * The validity of the arguments of this method do not need to be
+     * checked.
+     *
+     * @param mode Whether the array is prepared for reading, writing or both. The value should be {@link #READ}, {@link #WRITE} or a combination of these.
+     * @param startColumn The starting column where data is read.
+     * @param columns The number of columns of data to read.
+     * @param rows The number of rows of data to read. This should be equivalent to n<sub>1</sub>, number of rows in the matrix.
+     *
+     * @return Access to an array of size <code>columns</code> x <code>rows</code> containing the data.
+     *
+     * @since 1.7.0
+     */
+
+    protected abstract ArrayAccess implGetArray(int mode, int startColumn, int columns, int rows)
+        throws ApfloatRuntimeException;
+
+    /**
+     * Maps a transposed block of data to a memory array when the data is treated as a matrix.
+     * The matrix size is n<sub>1</sub> x n<sub>2</sub>. The accessed block is illustrated in gray
+     * in the following picture. The argument <code>columns</code> is the value <code>b</code>:<p>
+     *
+     * <div align="center">
+     *   <table style="width:400px; height:300px; border-collapse:collapse; border:1px solid black" border="1">
+     *     <tr>
+     *       <td style="width:200px" rowspan="5">
+     *         <div align="center">
+     *           <code>&larr; startColumn &rarr;</code>
+     *         </div>
+     *       </td>
+     *       <td style="width:150px; height:25px; background:lightgray">
      *         <div align="center">
      *           <code>A</code>
      *         </div>
      *       </td>
-     *       <td width="300" rowspan="5">
+     *       <td style="width:50px" rowspan="5">
      *         <div align="center">
      *           <code>&uarr;<br>
      *           n<sub>1</sub><br>
@@ -805,28 +935,28 @@ public abstract class DataStorage
      *       </td>
      *     </tr>
      *     <tr>
-     *       <td width="100" height="25">
+     *       <td style="width:100px; height:25px; background:lightgray">
      *         <div align="center">
      *           <code>B</code>
      *         </div>
      *       </td>
      *     </tr>
      *     <tr>
-     *       <td width="100" height="25">
+     *       <td style="width:100px; height:25px; background:lightgray">
      *         <div align="center">
      *           <code>C</code>
      *         </div>
      *       </td>
      *     </tr>
      *     <tr>
-     *       <td width="100" height="25">
+     *       <td style="width:100px; height:25px; background:lightgray">
      *         <div align="center">
      *           <code>D</code>
      *         </div>
      *       </td>
      *     </tr>
      *     <tr>
-     *       <td width="100" height="200">
+     *       <td style="width:100px; height:200px; background:lightgray">
      *         <div align="center">
      *           <code>&larr; b &rarr;</code>
      *         </div>
@@ -840,14 +970,14 @@ public abstract class DataStorage
      * of b elements, to a b x n<sub>1</sub> memory array as follows:<p>
      *
      * <div align="center">
-     *   <table width="300" height="100" border="1">
+     *   <table style="width:300px; height:100px; border-collapse:collapse; border:1px solid black; background:lightgray" border="1">
      *     <tr>
-     *       <td width="100" height="25">
+     *       <td style="width:100px; height:25px">
      *         <div align="center">
      *           <code>A</code>
      *         </div>
      *       </td>
-     *       <td width="200" rowspan="4">
+     *       <td style="width:200px" rowspan="4">
      *         <div align="center">
      *           <code>&uarr;<br>
      *           b<br>
@@ -856,21 +986,21 @@ public abstract class DataStorage
      *       </td>
      *     </tr>
      *     <tr>
-     *       <td width="100" height="25">
+     *       <td style="width:100px; height:25px">
      *         <div align="center">
      *           <code>B</code>
      *         </div>
      *       </td>
      *     </tr>
      *     <tr>
-     *       <td width="100" height="25">
+     *       <td style="width:100px; height:25px">
      *         <div align="center">
      *           <code>C</code>
      *         </div>
      *       </td>
      *     </tr>
      *     <tr>
-     *       <td width="100" height="25">
+     *       <td style="width:100px; height:25px">
      *         <div align="center">
      *           <code>D</code>
      *         </div>
@@ -884,29 +1014,29 @@ public abstract class DataStorage
      * in memory, where the columns are located linearly:<p>
      *
      * <div align="center">
-     *   <table width="300" height="100" border="1">
+     *   <table style="width:300px; height:100px; border-collapse:collapse; border:1px solid black; background:lightgray" border="1">
      *     <tr>
-     *       <td width="25" height="100">
+     *       <td style="width:25px; height:100px">
      *         <div align="center">
      *           <code>A</code>
      *         </div>
      *       </td>
-     *       <td width="25" height="100">
+     *       <td style="width:25px; height:100px">
      *         <div align="center">
      *           <code>B</code>
      *         </div>
      *       </td>
-     *       <td width="25" height="100">
+     *       <td style="width:25px; height:100px">
      *         <div align="center">
      *           <code>C</code>
      *         </div>
      *       </td>
-     *       <td width="25" height="100">
+     *       <td style="width:25px; height:100px">
      *         <div align="center">
      *           <code>D</code>
      *         </div>
      *       </td>
-     *       <td width="200" rowspan="4">
+     *       <td style="width:200px" rowspan="4">
      *         <div align="center">
      *           <code>&uarr;<br>
      *           b<br>
@@ -952,7 +1082,7 @@ public abstract class DataStorage
     }
 
     /**
-     * Maps a transposed block of data to a memory array.
+     * Maps a transposed block of data to a memory array when the data is treated as a matrix.
      * The validity of the arguments of this method do not need to be
      * checked.
      *
@@ -1002,6 +1132,16 @@ public abstract class DataStorage
             return true;
         }
     }
+
+    /**
+     * Is this object cached in memory.
+     *
+     * @return <code>true</code> if this object is cached in memory, <code>false</code> if not.
+     *
+     * @since 1.7.0
+     */
+
+    public abstract boolean isCached();
 
     /**
      * Return the sub-sequence offset.

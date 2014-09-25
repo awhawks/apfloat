@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
-import org.apfloat.spi.Util;
 
 /**
  * Class for running Runnable objects in parallel using
@@ -44,7 +43,7 @@ import org.apfloat.spi.Util;
  * methods.
  *
  * @since 1.1
- * @version 1.5.1
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -96,8 +95,9 @@ public class ParallelRunner
             int maxPosition = parallelRunnable.getLength();
             while (this.position.get() < maxPosition)
             {
-                int startValue = this.position.getAndAdd(this.batchSize);
-                int length = Math.min(this.batchSize, maxPosition - startValue);
+                int batchSize = Math.max(MINIMUM_BATCH_SIZE, parallelRunnable.getPreferredBatchSize());
+                int startValue = this.position.getAndAdd(batchSize);
+                int length = Math.min(batchSize, maxPosition - startValue);
                 if (length > 0)
                 {
                     Runnable runnable = parallelRunnable.getRunnable(startValue, length);
@@ -114,9 +114,6 @@ public class ParallelRunner
 
             // Reset position of parallel runnables
             this.position.set(0);
-
-            // Set the batch size to be some balanced value with respect to the batch size and the number of batches
-            this.batchSize = Math.max(MINIMUM_BATCH_SIZE, Util.sqrt4down(parallelRunnable.getLength()));
 
             // Start parallel threads, if any
             submit(this.numberOfProcessors - 1);
@@ -180,7 +177,6 @@ public class ParallelRunner
         private int numberOfProcessors;
         private AtomicReference<ParallelRunnable> parallelRunnable;
         private AtomicInteger position;
-        private volatile int batchSize;
         private List<Future<?>> futures;
     }
 

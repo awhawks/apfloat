@@ -5,14 +5,14 @@ import org.apfloat.spi.Util;
 /**
  * Fixed-precision mathematical functions for complex numbers.<p>
  *
- * All results of the mathematical operations are rounded to the specified precision.
- * Also all input arguments are rounded to the specified precision before the operation.
+ * All results of the mathematical operations are set to have the specified precision.
+ * Also all input arguments are set to the specified precision before the operation.
  * If the specified precision is not infinite, this helper class also avoids 
  * <code>InfiniteExpansionException</code> e.g. in case where it would happen with
  * <code>ApcomplexMath.acos(Apcomplex.ZERO)</code>.
  *
  * @since 1.5
- * @version 1.6
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -35,11 +35,11 @@ public class FixedPrecisionApcomplexHelper
     }
 
     /**
-     * Rounds the value to the specified precision.
+     * Returns the value with the specified precision.
      *
-     * @param z The value to round.
+     * @param z The value.
      *
-     * @return The value rounded to the specified precision.
+     * @return The value with to the specified precision.
      */
 
     public Apcomplex valueOf(Apcomplex z)
@@ -662,7 +662,7 @@ public class FixedPrecisionApcomplexHelper
     }
 
     /**
-     * Returns the precision where the results are rounded to.
+     * Returns the precision, which is used for the results.
      *
      * @return The precision of the results.
      */
@@ -713,7 +713,7 @@ public class FixedPrecisionApcomplexHelper
         }
         else
         {
-            x = x.precision(precision);
+            x = x.precision(precision());
         }
         return x;
     }

@@ -41,7 +41,9 @@ numerical algorithms. Round-off errors can accumulate faster than expected,
 and loss of precision (as returned by {@link org.apfloat.Apfloat#precision()})
 can happen quickly. This bad behaviour is further accelerated by using a radix
 bigger than two, e.g. base 10, which is the default. Note that precision is
-defined as the number of digits in the number's radix.<p>
+defined as the number of digits in the number's radix. If numbers need to
+be rounded in a specific way then the {@link org.apfloat.ApfloatMath#round(Apfloat,long,RoundingMode)}
+method can be invoked explicitly.<p>
 
 Generally, the result of various mathematical operations is accurate to
 the second last digit in the resulting number. This means roughly that the
@@ -94,3 +96,5 @@ diagram format below:<p>
 */
 
 package org.apfloat;
+
+import java.math.RoundingMode;

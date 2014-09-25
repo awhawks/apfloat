@@ -57,7 +57,9 @@ public class RemoteOperationExecutor
             out.flush();
 
             ObjectInputStream in = new ObjectInputStream(Channels.newInputStream(channel));
-            result = (T) in.readObject();
+            @SuppressWarnings("unchecked")
+            T obj = (T) in.readObject();
+            result = obj;
         }
         catch (IOException ioe)
         {

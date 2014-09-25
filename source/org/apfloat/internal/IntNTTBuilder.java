@@ -1,27 +1,25 @@
 package org.apfloat.internal;
 
-import org.apfloat.ApfloatContext;
-import org.apfloat.spi.NTTBuilder;
 import org.apfloat.spi.NTTStrategy;
-import org.apfloat.spi.Util;
+import org.apfloat.spi.NTTStepStrategy;
+import org.apfloat.spi.Factor3NTTStepStrategy;
+import org.apfloat.spi.NTTConvolutionStepStrategy;
 
 /**
- * Creates Number Theoretic Transforms suitable for the
- * specified length and based on available memory, for the
+ * Creates Number Theoretic Transforms for the
  * <code>int</code> type.
  *
  * @see IntTableFNTStrategy
- * @see IntSixStepFNTStrategy
- * @see IntTwoPassFNTStrategy
- * @see IntFactor3NTTStrategy
- * @see IntFactor3SixStepNTTStrategy
+ * @see SixStepFNTStrategy
+ * @see TwoPassFNTStrategy
+ * @see Factor3NTTStrategy
  *
- * @version 1.5.1
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
 public class IntNTTBuilder
-    implements NTTBuilder
+    extends AbstractNTTBuilder
 {
     /**
      * Default constructor.
@@ -31,55 +29,38 @@ public class IntNTTBuilder
     {
     }
 
-    public NTTStrategy createNTT(long size)
+    public NTTStepStrategy createNTTSteps()
     {
-        ApfloatContext ctx = ApfloatContext.getContext();
-        int cacheSize = ctx.getCacheL1Size() / 4;
-        long maxMemoryBlockSize = ctx.getMaxMemoryBlockSize() / 4;
+        return new IntNTTStepStrategy();
+    }
 
-        NTTStrategy transform;
-        boolean useFactor3 = false;
+    public NTTConvolutionStepStrategy createNTTConvolutionSteps()
+    {
+        return new IntNTTConvolutionStepStrategy();
+    }
 
-        size = Util.round23up(size);        // Round up to the nearest power of two or three times a power of two
-        long power2size = (size & -size);   // Power-of-two factor of the above
-        if (size != power2size)
-        {
-            // A factor of three will be used, so the power-of-two part is one third of the whole transform length
-            useFactor3 = true;
-        }
+    public Factor3NTTStepStrategy createFactor3NTTSteps()
+    {
+        return new IntFactor3NTTStepStrategy();
+    }
 
-        // Select transform for the power-of-two part
-        if (power2size <= cacheSize / 2)
-        {
-            // The whole transform plus w-table fits into the cache, so use the simplest approach
-            transform = new IntTableFNTStrategy();
-        }
-        else if (power2size <= maxMemoryBlockSize && power2size <= Integer.MAX_VALUE)
-        {
-            // The whole transform fits into the available main memory, so use a six-step in-memory approach
-            transform = new IntSixStepFNTStrategy();
-        }
-        else
-        {
-            // The whole transform won't fit into available memory, so use a two-pass disk based approach
-            transform = new IntTwoPassFNTStrategy();
-        }
+    protected NTTStrategy createSimpleFNTStrategy()
+    {
+        return new IntTableFNTStrategy();
+    }
 
-        if (useFactor3)
-        {
-            // Allow using a factor of three in any of the above selected transforms
-            if (size <= maxMemoryBlockSize && size <= Integer.MAX_VALUE && transform instanceof IntSixStepFNTStrategy)
-            {
-                // The whole transform (including the factor of 3) fits into the available main memory, so use a special in-memory approach
-                transform = new IntFactor3SixStepNTTStrategy((IntSixStepFNTStrategy) transform);
-            }
-            else
-            {
-                // Either basic table FNT or two-pass transform or six-step but with whole transform not fitting in memory
-                transform = new IntFactor3NTTStrategy(transform);
-            }
-        }
+    protected NTTStrategy createSixStepFNTStrategy()
+    {
+        return new SixStepFNTStrategy();
+    }
 
-        return transform;
+    protected NTTStrategy createTwoPassFNTStrategy()
+    {
+        return new TwoPassFNTStrategy();
+    }
+
+    protected NTTStrategy createFactor3NTTStrategy(NTTStrategy nttStrategy)
+    {
+        return new Factor3NTTStrategy(nttStrategy);
     }
 }

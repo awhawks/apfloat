@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.io.PushbackReader;
 import java.io.Writer;
 import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.util.Formatter;
 import static java.util.FormattableFlags.*;
 
@@ -17,7 +18,7 @@ import static org.apfloat.spi.RadixConstants.*;
  * @see Apint
  * @see AprationalMath
  *
- * @version 1.6
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -42,7 +43,7 @@ public class Aprational
     public Aprational(Apint value)
         throws ApfloatRuntimeException
     {
-        this(value, ONE);
+        this(value, ONES[value.radix()]);
     }
 
     /**
@@ -107,7 +108,7 @@ public class Aprational
         if (index < 0)
         {
             this.numerator = new Apint(value, radix);
-            this.denominator = ONE;
+            this.denominator = ONES[radix];
             return;
         }
 
@@ -165,7 +166,7 @@ public class Aprational
 
         if (!ApfloatHelper.readMatch(in, '/'))
         {
-            this.denominator = ONE;
+            this.denominator = ONES[radix];
             return;
         }
 
@@ -202,7 +203,7 @@ public class Aprational
         throws ApfloatRuntimeException
     {
         this.numerator = new Apint(value, radix);
-        this.denominator = ONE;
+        this.denominator = ONES[radix];
     }
 
     /**
@@ -542,22 +543,21 @@ public class Aprational
         return numerator().divide(denominator());
     }
 
-    // Round away from zero i.e. opposite direction of rounding than in truncate()
-    private Apint roundAway()
+    /**
+     * Returns the fractional part. The fractional part is always <code>0 <= abs(x.frac()) < 1</code>.
+     * The fractional part has the same sign as the number. For the fractional and integer parts, this always holds:<p>
+     *
+     * <code>x = x.truncate() + x.frac()</code>
+     *
+     * @return The fractional part of this aprational.
+     *
+     * @since 1.7.0
+     */
+
+    public Aprational frac()
         throws ApfloatRuntimeException
     {
-        Apint[] div = ApintMath.div(numerator(), denominator());
-
-        if (div[1].signum() == 0)
-        {
-            // No remainder from division; result is exact
-            return div[0];
-        }
-        else
-        {
-            // Remainder from division; round away from zero
-            return div[0].add(new Apint(signum(), div[0].radix()));
-        }
+        return new Aprational(numerator().mod(denominator()), denominator());
     }
 
     /**
@@ -614,6 +614,11 @@ public class Aprational
 
             return a.compareTo(b);
         }
+    }
+
+    public boolean preferCompare(Apfloat x)
+    {
+        return !(x instanceof Aprational);
     }
 
     /**
@@ -788,6 +793,39 @@ public class Aprational
         return ensureApprox(precision).getImpl(precision);
     }
 
+    // Round away from zero i.e. opposite direction of rounding than in truncate()
+    Apint roundAway()
+        throws ApfloatRuntimeException
+    {
+        Apint[] div = ApintMath.div(numerator(), denominator());
+
+        if (div[1].signum() == 0)
+        {
+            // No remainder from division; result is exact
+            return div[0];
+        }
+        else
+        {
+            // Remainder from division; round away from zero
+            return div[0].add(new Apint(signum(), div[0].radix()));
+        }
+    }
+
+    Aprational scale(long scale)
+    {
+        return AprationalMath.scale(this, scale);
+    }
+
+    Aprational abs()
+    {
+        return AprationalMath.abs(this);
+    }
+
+    int compareToHalf()
+    {
+        return RoundingHelper.compareToHalf(this);
+    }
+
     private void checkDenominator()
         throws IllegalArgumentException
     {
@@ -805,7 +843,7 @@ public class Aprational
     {
         if (this.numerator.signum() == 0)
         {
-            this.denominator = ONE;
+            this.denominator = ONES[this.denominator.radix()];
         }
         else
         {
@@ -837,11 +875,12 @@ public class Aprational
     private synchronized Apfloat ensureApprox(long precision)
         throws ApfloatRuntimeException
     {
-        if (!hasApprox(precision))
+        Apfloat approx = getApprox(precision);
+        if (approx == null || approx.precision() < precision)
         {
             if (denominator().equals(ONE))
             {
-                this.approx = numerator();
+                approx = numerator();
             }
             else
             {
@@ -849,23 +888,41 @@ public class Aprational
 
                 if (denominator().isShort())
                 {
-                    this.approx = numerator().precision(precision).divide(denominator());
+                    approx = numerator().precision(precision).divide(denominator());
+                    setApprox(approx);
                 }
                 else
                 {
-                    this.inverseDen = ApfloatMath.inverseRoot(denominator(), 1, precision, this.inverseDen);
-                    this.approx = numerator().multiply(this.inverseDen);
+                    Apfloat inverseDen = getInverseDen();
+                    inverseDen = ApfloatMath.inverseRoot(denominator(), 1, precision, inverseDen);
+                    approx = numerator().multiply(inverseDen);
+                    setApprox(approx);
+                    setInverseDen(inverseDen);
                 }
             }
         }
 
-        return this.approx;
+        return approx;
     }
 
-    private boolean hasApprox(long precision)
-        throws ApfloatRuntimeException
+    private Apfloat getApprox(long precision)
     {
-        return (this.approx != null && this.approx.precision() >= precision);
+        return (this.approx == null ? null : this.approx.get());
+    }
+
+    private void setApprox(Apfloat approx)
+    {
+        this.approx = new SoftReference<Apfloat>(approx);
+    }
+
+    private Apfloat getInverseDen()
+    {
+        return (this.inverseDen == null ? null : this.inverseDen.get());
+    }
+
+    private void setInverseDen(Apfloat inverseDen)
+    {
+        this.inverseDen = new SoftReference<Apfloat>(inverseDen);
     }
 
     private static final long serialVersionUID = -224128535732558313L;
@@ -875,6 +932,6 @@ public class Aprational
     private Apint numerator;
     private Apint denominator;
     private long scale = UNDEFINED;
-    private transient Apfloat inverseDen = null;
-    private transient Apfloat approx = null;
+    private transient SoftReference<Apfloat> inverseDen = null;
+    private transient SoftReference<Apfloat> approx = null;
 }

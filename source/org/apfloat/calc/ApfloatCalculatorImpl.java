@@ -1,5 +1,7 @@
 package org.apfloat.calc;
 
+import java.math.RoundingMode;
+
 import org.apfloat.Apcomplex;
 import org.apfloat.ApcomplexMath;
 import org.apfloat.Apfloat;
@@ -12,7 +14,7 @@ import org.apfloat.AprationalMath;
 /**
  * Arbitrary precision calculator implementation.
  *
- * @version 1.6
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -164,6 +166,11 @@ public class ApfloatCalculatorImpl
             throw new IllegalArgumentException("Floor can only be used with scalar values");
         }
 
+        public Number frac(Number x)
+        {
+            throw new IllegalArgumentException("Frac can only be used with scalar values");
+        }
+
         public Number log(Number x)
         {
             return ApcomplexMath.log((Apcomplex) x);
@@ -182,6 +189,11 @@ public class ApfloatCalculatorImpl
             }
             long n = x.longValue();
             return ApfloatMath.pi(n);
+        }
+
+        public Number round(Number x, Number y)
+        {
+            throw new IllegalArgumentException("Round can only be used with scalar values");
         }
 
         public Number sin(Number x)
@@ -357,6 +369,11 @@ public class ApfloatCalculatorImpl
             return ((Apfloat) x).floor();
         }
 
+        public Number frac(Number x)
+        {
+            return ((Apfloat) x).frac();
+        }
+
         public Number truncate(Number x)
         {
             return ((Apfloat) x).truncate();
@@ -380,6 +397,20 @@ public class ApfloatCalculatorImpl
         public Number hypot(Number x, Number y)
         {
             return ApcomplexMath.abs(new Apcomplex((Apfloat) x, (Apfloat) y));
+        }
+
+        public Number round(Number x, Number y)
+        {
+            if (!isLong(y))
+            {
+                throw new IllegalArgumentException("Round can only be used with a valid integer argument");
+            }
+            return round(x, y.longValue());
+        }
+
+        protected Number round(Number x, long precision)
+        {
+            return ApfloatMath.round((Apfloat) x, precision, RoundingMode.HALF_UP);
         }
     }
 
@@ -434,6 +465,11 @@ public class ApfloatCalculatorImpl
                 throw new IllegalArgumentException("Cannot calculate inexact root to infinite precision");
             }
             return root[0];
+        }
+
+        protected Number round(Number x, long precision)
+        {
+            return AprationalMath.round((Aprational) x, precision, RoundingMode.HALF_EVEN);
         }
 
         protected Number scale(Number x, long y)

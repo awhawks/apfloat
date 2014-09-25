@@ -1,27 +1,25 @@
 package org.apfloat.internal;
 
-import org.apfloat.ApfloatContext;
-import org.apfloat.spi.NTTBuilder;
 import org.apfloat.spi.NTTStrategy;
-import org.apfloat.spi.Util;
+import org.apfloat.spi.NTTStepStrategy;
+import org.apfloat.spi.Factor3NTTStepStrategy;
+import org.apfloat.spi.NTTConvolutionStepStrategy;
 
 /**
- * Creates Number Theoretic Transforms suitable for the
- * specified length and based on available memory, for the
+ * Creates Number Theoretic Transforms for the
  * <code>float</code> type.
  *
  * @see FloatTableFNTStrategy
- * @see FloatSixStepFNTStrategy
- * @see FloatTwoPassFNTStrategy
- * @see FloatFactor3NTTStrategy
- * @see FloatFactor3SixStepNTTStrategy
+ * @see SixStepFNTStrategy
+ * @see TwoPassFNTStrategy
+ * @see Factor3NTTStrategy
  *
- * @version 1.5.1
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
 public class FloatNTTBuilder
-    implements NTTBuilder
+    extends AbstractNTTBuilder
 {
     /**
      * Default constructor.
@@ -31,55 +29,38 @@ public class FloatNTTBuilder
     {
     }
 
-    public NTTStrategy createNTT(long size)
+    public NTTStepStrategy createNTTSteps()
     {
-        ApfloatContext ctx = ApfloatContext.getContext();
-        int cacheSize = ctx.getCacheL1Size() / 4;
-        long maxMemoryBlockSize = ctx.getMaxMemoryBlockSize() / 4;
+        return new FloatNTTStepStrategy();
+    }
 
-        NTTStrategy transform;
-        boolean useFactor3 = false;
+    public NTTConvolutionStepStrategy createNTTConvolutionSteps()
+    {
+        return new FloatNTTConvolutionStepStrategy();
+    }
 
-        size = Util.round23up(size);        // Round up to the nearest power of two or three times a power of two
-        long power2size = (size & -size);   // Power-of-two factor of the above
-        if (size != power2size)
-        {
-            // A factor of three will be used, so the power-of-two part is one third of the whole transform length
-            useFactor3 = true;
-        }
+    public Factor3NTTStepStrategy createFactor3NTTSteps()
+    {
+        return new FloatFactor3NTTStepStrategy();
+    }
 
-        // Select transform for the power-of-two part
-        if (power2size <= cacheSize / 2)
-        {
-            // The whole transform plus w-table fits into the cache, so use the simplest approach
-            transform = new FloatTableFNTStrategy();
-        }
-        else if (power2size <= maxMemoryBlockSize && power2size <= Integer.MAX_VALUE)
-        {
-            // The whole transform fits into the available main memory, so use a six-step in-memory approach
-            transform = new FloatSixStepFNTStrategy();
-        }
-        else
-        {
-            // The whole transform won't fit into available memory, so use a two-pass disk based approach
-            transform = new FloatTwoPassFNTStrategy();
-        }
+    protected NTTStrategy createSimpleFNTStrategy()
+    {
+        return new FloatTableFNTStrategy();
+    }
 
-        if (useFactor3)
-        {
-            // Allow using a factor of three in any of the above selected transforms
-            if (size <= maxMemoryBlockSize && size <= Integer.MAX_VALUE && transform instanceof FloatSixStepFNTStrategy)
-            {
-                // The whole transform (including the factor of 3) fits into the available main memory, so use a special in-memory approach
-                transform = new FloatFactor3SixStepNTTStrategy((FloatSixStepFNTStrategy) transform);
-            }
-            else
-            {
-                // Either basic table FNT or two-pass transform or six-step but with whole transform not fitting in memory
-                transform = new FloatFactor3NTTStrategy(transform);
-            }
-        }
+    protected NTTStrategy createSixStepFNTStrategy()
+    {
+        return new SixStepFNTStrategy();
+    }
 
-        return transform;
+    protected NTTStrategy createTwoPassFNTStrategy()
+    {
+        return new TwoPassFNTStrategy();
+    }
+
+    protected NTTStrategy createFactor3NTTStrategy(NTTStrategy nttStrategy)
+    {
+        return new Factor3NTTStrategy(nttStrategy);
     }
 }

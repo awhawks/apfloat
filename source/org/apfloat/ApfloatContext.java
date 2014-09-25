@@ -154,7 +154,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.6.3
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -830,6 +830,23 @@ public class ApfloatContext
     public String getProperty(String propertyName)
     {
         return this.properties.getProperty(propertyName);
+    }
+
+    /**
+     * Get the value of a property as string, with the provided default
+     * value if the property is not set.
+     *
+     * @param propertyName The name of the property.
+     * @param defaultValue The default value to be returned, if the property is not set.
+     *
+     * @return The value of the property as a <code>String</code>.
+     *
+     * @since 1.7.0
+     */
+
+    public String getProperty(String propertyName, String defaultValue)
+    {
+        return this.properties.getProperty(propertyName, defaultValue);
     }
 
     /**

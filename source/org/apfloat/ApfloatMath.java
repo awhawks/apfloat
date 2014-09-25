@@ -1,5 +1,6 @@
 package org.apfloat;
 
+import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
@@ -19,7 +20,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApintMath
  *
- * @version 1.6.2
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -407,6 +408,43 @@ public class ApfloatMath
     }
 
     /**
+     * Extracts fractional part.
+     *
+     * @param x The argument.
+     *
+     * @return The fractional part of <code>x</code>.
+     *
+     * @since 1.7.0
+     */
+
+    public static Apfloat frac(Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return x.frac();
+    }
+
+    /**
+     * Rounds the given number to the specified precision with the specified rounding mode.
+     *
+     * @param x The number to round.
+     * @param precision The precision to round to.
+     * @param roundingMode The rounding mode to use.
+     *
+     * @return The rounded number.
+     *
+     * @exception java.lang.IllegalArgumentException If <code>precision</code> is less than zero or zero.
+     * @exception java.lang.ArithmeticException If rounding is necessary (result is not exact) and rounding mode is {@link RoundingMode#UNNECESSARY}.
+     *
+     * @since 1.7.0
+     */
+
+    public static Apfloat round(Apfloat x, long precision, RoundingMode roundingMode)
+        throws IllegalArgumentException, ArithmeticException, ApfloatRuntimeException
+    {
+        return RoundingHelper.round(x, precision, roundingMode);
+    }
+
+    /**
      * Returns an apfloat whose value is <code>-x</code>.
      *
      * @deprecated Use {@link Apfloat#negate()}.
@@ -531,8 +569,8 @@ public class ApfloatMath
     {
         Apfloat[] result = new Apfloat[2];
 
-        result[0] = floor(x);
-        result[1] = x.subtract(result[0]);
+        result[0] = x.floor();
+        result[1] = (x.signum() >= 0 ? x.frac() : x.subtract(result[0]));
 
         return result;
     }

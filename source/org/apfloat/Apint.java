@@ -21,7 +21,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see ApintMath
  *
- * @version 1.6
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
@@ -183,7 +183,7 @@ public class Apint
 
     public Apint denominator()
     {
-        return ONE;
+        return ONES[radix()];
     }
 
     /**
@@ -430,6 +430,20 @@ public class Apint
     }
 
     /**
+     * Returns the fractional part.
+     *
+     * @return Always zero.
+     *
+     * @since 1.7.0
+     */
+
+    public Apint frac()
+        throws ApfloatRuntimeException
+    {
+        return ZERO;
+    }
+
+    /**
      * Converts this apint to Java's <code>BigInteger</code>.
      * This method can be greatly faster than converting to String
      * and then to BigInteger.
@@ -620,6 +634,16 @@ public class Apint
         throws ApfloatRuntimeException
     {
         return this.value.getImpl(precision);
+    }
+
+    Apint roundAway()
+    {
+        return this;
+    }
+
+    Apint abs()
+    {
+        return ApintMath.abs(this);
     }
 
     private static final long serialVersionUID = 5409721945040465491L;

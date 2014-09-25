@@ -1,7 +1,5 @@
 package org.apfloat.internal;
 
-import java.util.RandomAccess;
-
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.DataStorage;
@@ -11,13 +9,12 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>double</code>
  * element type.
  *
- * @version 1.6.3
+ * @version 1.7.0
  * @author Mikko Tommila
  */
 
 public class DoubleMemoryDataStorage
     extends DataStorage
-    implements RandomAccess
 {
     /**
      * Default constructor.
@@ -42,6 +39,11 @@ public class DoubleMemoryDataStorage
         this.data = doubleMemoryDataStorage.data;
     }
 
+    public boolean isCached()
+    {
+        return true;
+    }
+
     protected DataStorage implSubsequence(long offset, long length)
         throws ApfloatRuntimeException
     {
@@ -58,6 +60,12 @@ public class DoubleMemoryDataStorage
         if (size > Integer.MAX_VALUE)
         {
             throw new ApfloatInternalException("Size too big for memory array: " + size);
+        }
+
+        if (dataStorage == this)
+        {
+            setSize(size);
+            return;
         }
 
         this.data = new double[(int) size];
@@ -115,6 +123,12 @@ public class DoubleMemoryDataStorage
         return new DoubleMemoryArrayAccess(this.data, (int) (offset + getOffset()), length);
     }
 
+    protected ArrayAccess implGetArray(int mode, int startColumn, int columns, int rows)
+        throws ApfloatRuntimeException
+    {
+        throw new ApfloatInternalException("Method not implemented - would be sub-optimal; change the apfloat configuration settings");
+    }
+
     protected ArrayAccess implGetTransposedArray(int mode, int startColumn, int columns, int rows)
         throws ApfloatRuntimeException
     {
@@ -166,6 +180,32 @@ public class DoubleMemoryDataStorage
         {
             checkLength();
             this.data[this.position] = value;
+        }
+
+        public <T> T get(Class<T> type)
+            throws UnsupportedOperationException, IllegalStateException
+        {
+            if (!(type.equals(Double.TYPE)))
+            {
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Double");
+            }
+            @SuppressWarnings("unchecked")
+            T value = (T) (Double) getDouble();
+            return value;
+        }
+
+        public <T> void set(Class<T> type, T value)
+            throws UnsupportedOperationException, IllegalArgumentException, IllegalStateException
+        {
+            if (!(type.equals(Double.TYPE)))
+            {
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Double");
+            }
+            if (!(value instanceof Double))
+            {
+                throw new IllegalArgumentException("Unsupported value type " + value.getClass().getCanonicalName() + ", the only supported type is Double");
+            }
+            setDouble((Double) value);
         }
 
         protected void checkLength()
