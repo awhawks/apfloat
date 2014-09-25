@@ -150,7 +150,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.3
+ * @version 1.4.1
  * @author Mikko Tommila
  */
 
@@ -699,7 +699,7 @@ public class ApfloatContext
     /**
      * Set the number of processors available to calculations using
      * this context. The minimum value for this setting is 1.
-     * The default is to use all processors available.
+     * The default is to use all processors (CPU cores) available.
      *
      * @param numberOfProcessors Number of processors available to calculations using this context.
      */
@@ -1136,7 +1136,10 @@ public class ApfloatContext
         long maxMemoryBlockSize = Util.round23down(totalMemory / 5 * 4);
         int numberOfProcessors = Runtime.getRuntime().availableProcessors();
 
-        ApfloatContext.defaultProperties.setProperty(BUILDER_FACTORY, "org.apfloat.internal.IntBuilderFactory");
+        // Guess if we are using a 32-bit or 64-bit platform
+        String elementType = (totalMemory >= 4L << 30 ? "Long" : "Int");
+
+        ApfloatContext.defaultProperties.setProperty(BUILDER_FACTORY, "org.apfloat.internal." + elementType + "BuilderFactory");
         ApfloatContext.defaultProperties.setProperty(DEFAULT_RADIX, "10");
         ApfloatContext.defaultProperties.setProperty(MAX_MEMORY_BLOCK_SIZE, String.valueOf(maxMemoryBlockSize));
         ApfloatContext.defaultProperties.setProperty(CACHE_L1_SIZE, "8192");

@@ -10,7 +10,7 @@ import org.apfloat.spi.Util;
 /**
  * Default initial settings for the global {@link ApfloatContext}.
  *
- * @version 1.1
+ * @version 1.4.1
  * @author Mikko Tommila
  */
 
@@ -33,9 +33,12 @@ public class apfloat
         long maxMemoryBlockSize = Util.round23down(totalMemory / 5 * 4);
         int numberOfProcessors = Runtime.getRuntime().availableProcessors();
 
+        // Guess if we are using a 32-bit or 64-bit platform
+        String elementType = (totalMemory >= 4L << 30 ? "Long" : "Int");
+
         Object[][] contents =
         {
-            { ApfloatContext.BUILDER_FACTORY, "org.apfloat.internal.IntBuilderFactory" },
+            { ApfloatContext.BUILDER_FACTORY, "org.apfloat.internal." + elementType + "BuilderFactory" },
             { ApfloatContext.DEFAULT_RADIX, "10" },
             { ApfloatContext.MAX_MEMORY_BLOCK_SIZE, String.valueOf(maxMemoryBlockSize) },
             { ApfloatContext.CACHE_L1_SIZE, "8192" },

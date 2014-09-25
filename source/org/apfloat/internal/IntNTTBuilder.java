@@ -15,7 +15,7 @@ import org.apfloat.spi.Util;
  * @see IntTwoPassFNTStrategy
  * @see IntFactor3NTTStrategy
  *
- * @version 1.0
+ * @version 1.4.1
  * @author Mikko Tommila
  */
 
@@ -54,7 +54,7 @@ public class IntNTTBuilder
             // The whole transform plus w-table fits into the cache, so use the simplest approach
             transform = new IntTableFNTStrategy();
         }
-        else if (size <= maxMemoryBlockSize)
+        else if (size <= maxMemoryBlockSize && size <= Integer.MAX_VALUE)
         {
             // The whole transform fits into the available main memory, so use a six-step in-memory approach
             transform = new IntSixStepFNTStrategy();

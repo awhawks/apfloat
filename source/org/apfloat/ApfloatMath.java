@@ -5,6 +5,8 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apfloat.spi.Util;
 
@@ -14,7 +16,7 @@ import org.apfloat.spi.Util;
  * Due to different types of round-off errors that can occur in the implementation,
  * no guarantees about e.g. monotonicity are given for any of the methods.
  *
- * @version 1.4
+ * @version 1.4.1
  * @author Mikko Tommila
  */
 
@@ -812,13 +814,11 @@ public class ApfloatMath
     }
 
     // Get shared radix key for synchronizing getting and calculating the pi related constants
-    // This method is also synchronized to ensure that the lock is unique for each radix at all times
-    private static synchronized Integer getRadixPiKey(Integer radix)
+    private static Integer getRadixPiKey(Integer radix)
     {
-        Integer radixKey = ApfloatMath.radixPiKeys.get(radix);
+        Integer radixKey = ApfloatMath.radixPiKeys.putIfAbsent(radix, radix);
         if (radixKey == null)
         {
-            ApfloatMath.radixPiKeys.put(radix, radix);
             radixKey = radix;
         }
 
@@ -1178,13 +1178,11 @@ public class ApfloatMath
     }
 
     // Get shared radix key for synchronizing getting and calculating the logarithm related constants
-    // This method is also synchronized to ensure that the lock is unique for each radix at all times
-    private static synchronized Integer getRadixLogKey(Integer radix)
+    private static Integer getRadixLogKey(Integer radix)
     {
-        Integer radixKey = ApfloatMath.radixLogKeys.get(radix);
+        Integer radixKey = ApfloatMath.radixLogKeys.putIfAbsent(radix, radix);
         if (radixKey == null)
         {
-            ApfloatMath.radixLogKeys.put(radix, radix);
             radixKey = radix;
         }
 
@@ -1866,7 +1864,7 @@ public class ApfloatMath
     }
 
     // Synchronization keys for pi calculation
-    private static Map<Integer, Integer> radixPiKeys = new HashMap<Integer, Integer>();
+    private static ConcurrentMap<Integer, Integer> radixPiKeys = new ConcurrentHashMap<Integer, Integer>();
 
     // Shared precalculated values related to pi for different radixes
     private static Map<Integer, Apfloat> radixPi = new Hashtable<Integer, Apfloat>();
@@ -1878,7 +1876,7 @@ public class ApfloatMath
     private static Map<Integer, Long> radixPiTerms = new Hashtable<Integer, Long>();
 
     // Synchronization keys for logarithm calculation
-    private static Map<Integer, Integer> radixLogKeys = new HashMap<Integer, Integer>();
+    private static ConcurrentMap<Integer, Integer> radixLogKeys = new ConcurrentHashMap<Integer, Integer>();
 
     // Shared precalculated values related to logarithm for different radixes
     private static Map<Integer, Apfloat> radixLog = new Hashtable<Integer, Apfloat>();
