@@ -4,7 +4,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
 import java.util.Enumeration;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
@@ -155,7 +154,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
@@ -675,7 +674,7 @@ public class ApfloatContext
      * The optimal value depends on the application and the way parallelism
      * is used. As a rule of thumb, this should be set to a value that is
      * the maximum memory block size divided by the number of parallel threads.
-     * The default is a somewhat more conservative one fourth of this number.
+     * The default is somewhat more conservatively this number divided by 32.
      *
      * @param sharedMemoryTreshold The number of bytes that apfloats will at most have, without synchronizing against the shared memory lock, within this context.
      */
@@ -1198,7 +1197,7 @@ public class ApfloatContext
         ApfloatContext.defaultProperties.setProperty(CACHE_L2_SIZE, "262144");
         ApfloatContext.defaultProperties.setProperty(CACHE_BURST, "32");
         ApfloatContext.defaultProperties.setProperty(MEMORY_TRESHOLD, "65536");
-        ApfloatContext.defaultProperties.setProperty(SHARED_MEMORY_TRESHOLD, String.valueOf(maxMemoryBlockSize / numberOfProcessors / 4));
+        ApfloatContext.defaultProperties.setProperty(SHARED_MEMORY_TRESHOLD, String.valueOf(maxMemoryBlockSize / numberOfProcessors / 32));
         ApfloatContext.defaultProperties.setProperty(BLOCK_SIZE, "65536");
         ApfloatContext.defaultProperties.setProperty(NUMBER_OF_PROCESSORS, String.valueOf(numberOfProcessors));
         ApfloatContext.defaultProperties.setProperty(FILE_PATH, "");

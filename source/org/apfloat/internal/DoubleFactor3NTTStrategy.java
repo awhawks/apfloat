@@ -11,13 +11,13 @@ import static org.apfloat.internal.DoubleModConstants.*;
  * top of another Number Theoretic Transform that does
  * transforms of length 2<sup>n</sup>.
  *
- * @version 1.1
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
 public class DoubleFactor3NTTStrategy
     extends DoubleModMath
-    implements NTTStrategy
+    implements ParallelNTTStrategy
 {
     /**
      * Creates a new factor-3 transform strategy on top of an existing transform.
@@ -30,6 +30,15 @@ public class DoubleFactor3NTTStrategy
     public DoubleFactor3NTTStrategy(NTTStrategy factor2Strategy)
     {
         this.factor2Strategy = factor2Strategy;
+    }
+
+    public void setParallelRunner(ParallelRunner parallelRunner)
+    {
+        // This may be sub-optimal; ideally this class should only implement ParallelNTTStrategy if the underlying transform does
+        if (this.factor2Strategy instanceof ParallelNTTStrategy)
+        {
+            ((ParallelNTTStrategy) this.factor2Strategy).setParallelRunner(parallelRunner);
+        }
     }
 
     public void transform(DataStorage dataStorage, int modulus)

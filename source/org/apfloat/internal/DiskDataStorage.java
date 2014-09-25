@@ -9,6 +9,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.lang.ref.SoftReference;
 
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
@@ -20,7 +21,7 @@ import org.apfloat.spi.FilenameGenerator;
  * Abstract base class for disk-based data storage, containing the common
  * functionality independent of the element type.
  *
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
@@ -110,12 +111,39 @@ public abstract class DiskDataStorage
         {
             try
             {
-                while (size > 0)
+                if (in instanceof FileChannel)
                 {
-                    long count = getFileChannel().transferFrom(in, position, size);
-                    position += count;
-                    size -= count;
-                    assert (size >= 0);
+                    // Optimized transferFrom() between two FileChannels
+                    while (size > 0)
+                    {
+                        long count = getFileChannel().transferFrom(in, position, size);
+                        position += count;
+                        size -= count;
+                        assert (size >= 0);
+                    }
+                }
+                else
+                {
+                    // The FileChannel transferFrom() uses an 8kB buffer, which is too small and inefficient
+                    // So we use a similar mechanism but with a custom buffer size
+                    ByteBuffer buffer = getDirectByteBuffer();
+                    while (size > 0)
+                    {
+                        buffer.clear();
+                        int readCount = (int) Math.min(size, buffer.capacity());
+                        buffer.limit(readCount);
+                        readCount = in.read(buffer);
+                        buffer.flip();
+                        while (readCount > 0)
+                        {
+                            int writeCount = getFileChannel().write(buffer, position);
+                            position += writeCount;
+                            size -= writeCount;
+                            readCount -= writeCount;
+                        }
+                        assert (readCount == 0);
+                        assert (size >= 0);
+                    }
                 }
             }
             catch (IOException ioe)
@@ -129,12 +157,39 @@ public abstract class DiskDataStorage
         {
             try
             {
-                while (size > 0)
+                if (out instanceof FileChannel)
                 {
-                    long count = getFileChannel().transferTo(position, size, out);
-                    position += count;
-                    size -= count;
-                    assert (size >= 0);
+                    // Optimized transferTo() between two FileChannels
+                    while (size > 0)
+                    {
+                        long count = getFileChannel().transferTo(position, size, out);
+                        position += count;
+                        size -= count;
+                        assert (size >= 0);
+                    }
+                }
+                else
+                {
+                    // The DiskChannel transferTo() uses an 8kB buffer, which is too small and inefficient
+                    // So we use a similar mechanism but with a custom buffer size
+                    ByteBuffer buffer = getDirectByteBuffer();
+                    while (size > 0)
+                    {
+                        buffer.clear();
+                        int readCount = (int) Math.min(size, buffer.capacity());
+                        buffer.limit(readCount);
+                        readCount = getFileChannel().read(buffer, position);
+                        buffer.flip();
+                        while (readCount > 0)
+                        {
+                            int writeCount = out.write(buffer);
+                            position += writeCount;
+                            size -= writeCount;
+                            readCount -= writeCount;
+                        }
+                        assert (readCount == 0);
+                        assert (size >= 0);
+                    }
                 }
             }
             catch (IOException ioe)
@@ -408,7 +463,36 @@ public abstract class DiskDataStorage
         public boolean isOpen() { return true; }
     };
 
+    private static ByteBuffer getDirectByteBuffer()
+    {
+        // Since direct buffers are allocated outside of the heap they can behave strangely in relation to GC
+        // So we try to make them as long-lived as possible and cache them in a ThreadLocal
+        ByteBuffer buffer = null;
+        int blockSize = getBlockSize();
+        SoftReference<ByteBuffer> reference = DiskDataStorage.threadLocal.get();
+        if (reference != null)
+        {
+            buffer = reference.get();
+            if (buffer != null && buffer.capacity() != blockSize)
+            {
+                // Clear references to the direct buffer so it may be GC'd
+                reference.clear();
+                buffer = null;
+            }
+        }
+        if (buffer == null)
+        {
+            buffer = ByteBuffer.allocateDirect(blockSize);
+            reference = new SoftReference<ByteBuffer>(buffer);
+            DiskDataStorage.threadLocal.set(reference);
+        }
+
+        return buffer;
+    }
+
     private static final long serialVersionUID = 741984828408146034L;
+
+    private static ThreadLocal<SoftReference<ByteBuffer>> threadLocal = new ThreadLocal<SoftReference<ByteBuffer>>();
 
     private FileStorage fileStorage;
 }

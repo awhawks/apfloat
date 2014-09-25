@@ -20,7 +20,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
@@ -28,25 +28,23 @@ public class PiParallel
     extends Pi
 {
     /**
-     * Parallel version of the Chudnovskys'
-     * binary splitting algorithm.
+     * Parallel version of the binary splitting algorithm.
      * Uses multiple threads to calculate pi in parallel.
      */
 
-    protected static class ParallelChudnovskyPiCalculator
-        extends ChudnovskyPiCalculator
+    protected static class ParallelBinarySplittingPiCalculator
+        extends BinarySplittingPiCalculator
     {
         /**
          * Construct a parallel pi calculator with the specified precision and radix.
          *
-         * @param precision The target precision.
-         * @param radix The radix to be used.
+         * @param series The binary splitting series to be used.
          */
 
-        public ParallelChudnovskyPiCalculator(long precision, int radix)
+        public ParallelBinarySplittingPiCalculator(BinarySplittingSeries series)
             throws ApfloatRuntimeException
         {
-            super(precision, radix);
+            super(series);
         }
 
         /**
@@ -62,7 +60,7 @@ public class PiParallel
          * @param progressIndicator Class to print out the progress of the calculation.
          */
 
-        protected void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, final BinarySplittingProgressIndicator progressIndicator)
+        public void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, final BinarySplittingProgressIndicator progressIndicator)
             throws ApfloatRuntimeException
         {
             checkAlive();
@@ -141,7 +139,7 @@ public class PiParallel
                 {
                     public Apfloat execute()
                     {
-                        return ApfloatMath.inverseRoot(new Apfloat(640320, ParallelChudnovskyPiCalculator.this.precision, ParallelChudnovskyPiCalculator.this.radix), 2);
+                        return ApfloatMath.inverseRoot(F.getApfloat(), 2);
                     }
                 }, T1operation = new Operation<Apfloat>()
                 {
@@ -310,7 +308,7 @@ public class PiParallel
          * @return The set of available operation executors.
          */
 
-        protected OperationExecutor[] getNodes()
+        public OperationExecutor[] getNodes()
         {
             ApfloatContext ctx = ApfloatContext.getGlobalContext();
             int numberOfProcessors = ctx.getNumberOfProcessors();
@@ -339,7 +337,7 @@ public class PiParallel
          * @return The set of recombined operation executors.
          */
 
-        protected OperationExecutor[] recombineNodes(OperationExecutor[] nodes, int numberNeeded)
+        public OperationExecutor[] recombineNodes(OperationExecutor[] nodes, int numberNeeded)
         {
             if (numberNeeded >= nodes.length)
             {
@@ -367,6 +365,43 @@ public class PiParallel
                 return newNodes;
             }
         }
+    }
+
+    /**
+     * Class for calculating pi using the parallel Chudnovskys' binary splitting algorithm.
+     */
+
+    public static class ParallelChudnovskyPiCalculator
+        implements Operation<Apfloat>
+    {
+        /**
+         * Construct a pi calculator with the specified precision and radix.
+         *
+         * @param precision The target precision.
+         * @param radix The radix to be used.
+         */
+
+        public ParallelChudnovskyPiCalculator(long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            this(new ParallelBinarySplittingPiCalculator(new ChudnovskyBinarySplittingSeries(precision, radix)), precision, radix);
+        }
+
+        /**
+         * Construct a pi calculator with the specified parallel binary splitting algorithm.
+         *
+         * @param calculator The binary splitting algorithm to be used.
+         * @param precision The target precision.
+         * @param radix The radix to be used.
+         */
+
+        protected ParallelChudnovskyPiCalculator(ParallelBinarySplittingPiCalculator calculator, long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            this.calculator = calculator;
+            this.precision = precision;
+            this.radix = radix;
+        }
 
         /**
          * Calculate pi using the Chudnovskys' binary splitting algorithm.
@@ -376,30 +411,31 @@ public class PiParallel
         {
             Pi.err.println("Using the Chudnovsky brothers' binary splitting algorithm");
 
-            OperationExecutor[] nodes = getNodes();
+            OperationExecutor[] nodes = this.calculator.getNodes();
 
             if (nodes.length > 1)
             {
                 Pi.err.println("Using up to " + nodes.length + " parallel operations for calculation");
             }
 
+            final Apfloat f = new Apfloat(640320, this.precision, this.radix);
             final ApfloatHolder T = new ApfloatHolder(),
                                 Q = new ApfloatHolder(),
-                                F = new ApfloatHolder();
+                                F = new ApfloatHolder(f);
 
             // Perform the calculation of T, Q and P to requested precision only, to improve performance
 
             long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 32.65445004177);
 
             long time = System.currentTimeMillis();
-            r(0, terms + 1, T, Q, null, F, nodes, new BinarySplittingProgressIndicator(terms));
+            this.calculator.r(0, terms + 1, T, Q, null, F, nodes, new BinarySplittingProgressIndicator(terms));
             time = System.currentTimeMillis() - time;
 
             Pi.err.println("Series terms calculation complete, elapsed time " + time / 1000.0 + " seconds");
             Pi.err.print("Final value ");
             Pi.err.flush();
 
-            nodes = recombineNodes(nodes, 1);
+            nodes = this.calculator.recombineNodes(nodes, 1);
 
             time = System.currentTimeMillis();
             Apfloat pi = nodes[nodes.length - 1].execute(new Operation<Apfloat>()
@@ -410,9 +446,9 @@ public class PiParallel
                             q = Q.getApfloat(),
                             factor = F.getApfloat();
 
-                    if (factor == null)
+                    if (factor == f)
                     {
-                        factor = ApfloatMath.inverseRoot(new Apfloat(640320, ParallelChudnovskyPiCalculator.this.precision, ParallelChudnovskyPiCalculator.this.radix), 2);
+                        factor = ApfloatMath.inverseRoot(f, 2);
                     }
 
                     return ApfloatMath.inverseRoot(factor.multiply(t), 1).multiply(new Apfloat(53360, Apfloat.INFINITE, ParallelChudnovskyPiCalculator.this.radix)).multiply(q);
@@ -424,6 +460,109 @@ public class PiParallel
 
             return pi;
         }
+
+        private ParallelBinarySplittingPiCalculator calculator;
+        private long precision;
+        private int radix;
+    }
+
+    /**
+     * Class for calculating pi using the parallel Ramanujan's binary splitting algorithm.
+     */
+
+    public static class ParallelRamanujanPiCalculator
+        implements Operation<Apfloat>
+    {
+        /**
+         * Construct a pi calculator with the specified precision and radix.
+         *
+         * @param precision The target precision.
+         * @param radix The radix to be used.
+         */
+
+        public ParallelRamanujanPiCalculator(long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            this(new ParallelBinarySplittingPiCalculator(new RamanujanBinarySplittingSeries(precision, radix)), precision, radix);
+        }
+
+        /**
+         * Construct a pi calculator with the specified parallel binary splitting algorithm.
+         *
+         * @param calculator The binary splitting algorithm to be used.
+         * @param precision The target precision.
+         * @param radix The radix to be used.
+         */
+
+        protected ParallelRamanujanPiCalculator(ParallelBinarySplittingPiCalculator calculator, long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            this.calculator = calculator;
+            this.precision = precision;
+            this.radix = radix;
+        }
+
+        /**
+         * Calculate pi using the Ramanujan's binary splitting algorithm.
+         */
+
+        public Apfloat execute()
+        {
+            Pi.err.println("Using the Ramanujan binary splitting algorithm");
+
+            OperationExecutor[] nodes = this.calculator.getNodes();
+
+            if (nodes.length > 1)
+            {
+                Pi.err.println("Using up to " + nodes.length + " parallel operations for calculation");
+            }
+
+            final Apfloat f = new Apfloat(8, this.precision, this.radix);
+            final ApfloatHolder T = new ApfloatHolder(),
+                                Q = new ApfloatHolder(),
+                                F = new ApfloatHolder(f);
+
+            // Perform the calculation of T, Q and P to requested precision only, to improve performance
+
+            long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 18.38047940053836);
+
+            long time = System.currentTimeMillis();
+            this.calculator.r(0, terms + 1, T, Q, null, F, nodes, new BinarySplittingProgressIndicator(terms));
+            time = System.currentTimeMillis() - time;
+
+            Pi.err.println("Series terms calculation complete, elapsed time " + time / 1000.0 + " seconds");
+            Pi.err.print("Final value ");
+            Pi.err.flush();
+
+            nodes = this.calculator.recombineNodes(nodes, 1);
+
+            time = System.currentTimeMillis();
+            Apfloat pi = nodes[nodes.length - 1].execute(new Operation<Apfloat>()
+            {
+                public Apfloat execute()
+                {
+                    Apfloat t = T.getApfloat(),
+                            q = Q.getApfloat(),
+                            factor = F.getApfloat();
+
+                    if (factor == f)
+                    {
+                        factor = ApfloatMath.inverseRoot(f, 2);
+                    }
+
+                    return ApfloatMath.inverseRoot(t, 1).multiply(factor).multiply(new Apfloat(9801, Apfloat.INFINITE, ParallelRamanujanPiCalculator.this.radix)).multiply(q);
+                }
+            });
+            time = System.currentTimeMillis() - time;
+
+            Pi.err.println("took " + time / 1000.0 + " seconds");
+
+            return pi;
+        }
+
+        private ParallelBinarySplittingPiCalculator calculator;
+        private long precision;
+        private int radix;
     }
 
     /**
@@ -503,7 +642,9 @@ public class PiParallel
         private int numberOfProcessors;
     }
 
-    PiParallel() {}
+    PiParallel()
+    {
+    }
 
     /**
      * Command-line entry point.
@@ -518,19 +659,29 @@ public class PiParallel
     {
         if (args.length < 1)
         {
-            System.err.println("USAGE: PiParallel digits [threads] [radix]");
+            System.err.println("USAGE: PiParallel digits [method] [threads] [radix]");
             System.err.println("    radix must be 2...36");
 
             return;
         }
 
         long precision = getPrecision(args[0]);
-        int numberOfProcessors = (args.length > 1 ? getInt(args[1], "threads", 1, Integer.MAX_VALUE) : ApfloatContext.getContext().getNumberOfProcessors()),
-            radix = (args.length > 2 ? getRadix(args[2]) : ApfloatContext.getContext().getDefaultRadix());
+        int method = (args.length > 1 ? getInt(args[1], "method", 0, 1) : 0),
+            numberOfProcessors = (args.length > 2 ? getInt(args[2], "threads", 1, Integer.MAX_VALUE) : ApfloatContext.getContext().getNumberOfProcessors()),
+            radix = (args.length > 3 ? getRadix(args[3]) : ApfloatContext.getContext().getDefaultRadix());
 
         ApfloatContext.getContext().setNumberOfProcessors(numberOfProcessors);
 
-        Operation<Apfloat> operation = new ParallelChudnovskyPiCalculator(precision, radix);
+        Operation<Apfloat> operation;
+
+        switch (method)
+        {
+            case 0:
+                operation = new ParallelChudnovskyPiCalculator(precision, radix);
+                break;
+            default:
+                operation = new ParallelRamanujanPiCalculator(precision, radix);
+        }
 
         setOut(new PrintWriter(System.out, true));
         setErr(new PrintWriter(System.err, true));

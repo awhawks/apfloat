@@ -2,7 +2,6 @@ package org.apfloat.internal;
 
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
-import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
 
@@ -24,7 +23,6 @@ import org.apfloat.spi.DataStorage;
 
 public class IntKaratsubaConvolutionStrategy
     extends IntMediumConvolutionStrategy
-    implements ConvolutionStrategy
 {
     /**
      * Cut-off point for Karatsuba / basic convolution.<p>

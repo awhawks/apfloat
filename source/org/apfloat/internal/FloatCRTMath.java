@@ -130,7 +130,7 @@ public class FloatCRTMath
         srcDst[1] = result;
 
         result = srcDst[0] - src[0] - carry;
-        carry = (result < 0 ? 1 : 0);
+        // carry = (result < 0 ? 1 : 0);
         result = (result < 0 ? result + MAX_POWER_OF_TWO_BASE : result);
 
         srcDst[0] = result;

@@ -79,6 +79,10 @@ public class PiParallelAWT
         {
             operation = new PiParallel.ParallelChudnovskyPiCalculator(precision, radix);
         }
+        else if (operation instanceof Pi.RamanujanPiCalculator)
+        {
+            operation = new PiParallel.ParallelRamanujanPiCalculator(precision, radix);
+        }
         return operation;
     }
 

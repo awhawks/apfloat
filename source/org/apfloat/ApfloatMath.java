@@ -19,7 +19,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApintMath
  *
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
@@ -787,7 +787,7 @@ public class ApfloatMath
         }
 
         // Get synchronization lock - getting the lock is also synchronized
-        Integer radixKey = getRadixPiKey(radix);
+        Integer radixKey = getRadixPiKey(new Integer(radix));   // Use new Integer since we synchronize on it; Integer.valueOf() could be shared instance
 
         Apfloat pi;
 
@@ -1203,7 +1203,7 @@ public class ApfloatMath
         throws ApfloatRuntimeException
     {
         // Get synchronization lock - getting the lock is also synchronized
-        Integer radixKey = getRadixLogKey(radix);
+        Integer radixKey = getRadixLogKey(new Integer(radix));      // Use new Integer since we synchronize on it; Integer.valueOf() could be shared instance
 
         Apfloat logRadix;
 
@@ -1422,14 +1422,7 @@ public class ApfloatMath
     {
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, x.radix());
 
-        if (x.signum() >= 0)
-        {
-            return log(x.add(sqrt(x.multiply(x).subtract(one))));
-        }
-        else
-        {
-            return log(x.subtract(sqrt(x.multiply(x).subtract(one)))).negate();
-        }
+        return log(x.add(sqrt(x.multiply(x).subtract(one))));
     }
 
     /**

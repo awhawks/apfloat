@@ -74,7 +74,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
@@ -82,27 +82,25 @@ public class PiDistributed
     extends PiParallel
 {
     /**
-     * Distributed version of the Chudnovskys'
-     * binary splitting algorithm.
+     * Distributed version of the binary splitting algorithm.
      * Uses multiple computers to calculate pi in parallel.
      */
 
-    protected static class DistributedChudnovskyPiCalculator
-        extends ParallelChudnovskyPiCalculator
+    protected static class DistributedBinarySplittingPiCalculator
+        extends ParallelBinarySplittingPiCalculator
     {
         /**
          * Construct a distributed pi calculator with the specified precision and radix.
          *
-         * @param precision The target precision.
-         * @param radix The radix to be used.
+         * @param series The binary splitting series to be used.
          */
 
-        public DistributedChudnovskyPiCalculator(long precision, int radix)
+        public DistributedBinarySplittingPiCalculator(BinarySplittingSeries series)
         {
-            super(precision, radix);
+            super(series);
         }
 
-        protected void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, BinarySplittingProgressIndicator progressIndicator)
+        public void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, BinarySplittingProgressIndicator progressIndicator)
             throws ApfloatRuntimeException
         {
             if (!(nodes[0] instanceof Node))
@@ -125,7 +123,7 @@ public class PiDistributed
                     public ApfloatHolder[] execute()
                     {
                         // Now get all threads available local on the server
-                        OperationExecutor[] threads = DistributedChudnovskyPiCalculator.super.getNodes();
+                        OperationExecutor[] threads = DistributedBinarySplittingPiCalculator.super.getNodes();
 
                         // Continue splitting by threads on server side
                         r(n1, n2, T, Q, P, F, threads, null);
@@ -158,7 +156,7 @@ public class PiDistributed
          * @return The nodes of the cluster.
          */
 
-        protected OperationExecutor[] getNodes()
+        public OperationExecutor[] getNodes()
         {
             ResourceBundle resourceBundle = null;
 
@@ -288,7 +286,7 @@ public class PiDistributed
             return nodes;
         }
 
-        protected OperationExecutor[] recombineNodes(OperationExecutor[] nodes, int numberNeeded)
+        public OperationExecutor[] recombineNodes(OperationExecutor[] nodes, int numberNeeded)
         {
             if (!(nodes[0] instanceof Node))
             {
@@ -347,6 +345,48 @@ public class PiDistributed
 
                 return newNodes;
             }
+        }
+    }
+
+    /**
+     * Class for calculating pi using the distributed Chudnovskys' binary splitting algorithm.
+     */
+
+    public static class DistributedChudnovskyPiCalculator
+        extends ParallelChudnovskyPiCalculator
+    {
+        /**
+         * Construct a pi calculator with the specified precision and radix.
+         *
+         * @param precision The target precision.
+         * @param radix The radix to be used.
+         */
+
+        public DistributedChudnovskyPiCalculator(long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            super(new DistributedBinarySplittingPiCalculator(new ChudnovskyBinarySplittingSeries(precision, radix)), precision, radix);
+        }
+    }
+
+    /**
+     * Class for calculating pi using the distributed Ramanujan's binary splitting algorithm.
+     */
+
+    public static class DistributedRamanujanPiCalculator
+        extends ParallelRamanujanPiCalculator
+    {
+        /**
+         * Construct a pi calculator with the specified precision and radix.
+         *
+         * @param precision The target precision.
+         * @param radix The radix to be used.
+         */
+
+        public DistributedRamanujanPiCalculator(long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            super(new DistributedBinarySplittingPiCalculator(new RamanujanBinarySplittingSeries(precision, radix)), precision, radix);
         }
     }
 
@@ -413,7 +453,9 @@ public class PiDistributed
         private int numberOfProcessors;
     }
 
-    PiDistributed() {}
+    PiDistributed()
+    {
+    }
 
     /**
      * Command-line entry point.
@@ -428,16 +470,26 @@ public class PiDistributed
     {
         if (args.length < 1)
         {
-            System.err.println("USAGE: PiDistributed digits [radix]");
+            System.err.println("USAGE: PiDistributed digits [method] [radix]");
             System.err.println("    radix must be 2...36");
 
             return;
         }
 
         long precision = getPrecision(args[0]);
-        int radix = (args.length > 2 ? getRadix(args[1]) : ApfloatContext.getContext().getDefaultRadix());
+        int method = (args.length > 1 ? getInt(args[1], "method", 0, 1) : 0),
+            radix = (args.length > 2 ? getRadix(args[2]) : ApfloatContext.getContext().getDefaultRadix());
 
-        Operation<Apfloat> operation = new DistributedChudnovskyPiCalculator(precision, radix);
+        Operation<Apfloat> operation;
+
+        switch (method)
+        {
+            case 0:
+                operation = new DistributedChudnovskyPiCalculator(precision, radix);
+                break;
+            default:
+                operation = new DistributedRamanujanPiCalculator(precision, radix);
+        }
 
         setOut(new PrintWriter(System.out, true));
         setErr(new PrintWriter(System.err, true));

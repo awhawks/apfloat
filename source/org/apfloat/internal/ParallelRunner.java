@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
+import org.apfloat.spi.Util;
 
 /**
  * Class for running Runnable objects in parallel using
@@ -19,28 +20,31 @@ import org.apfloat.ApfloatRuntimeException;
  *
  * The general paradigm for executing parallel tasks is:
  * <pre>
- * lock(key, numberOfProcessors);
+ * ParallelRunner parallelRunner = new ParallelRunner(numberOfProcessors);
+ * parallelRunner.lock(key);
  * try
  * {
- *     runParallel(key, parallelRunnable1);
- *     runParallel(key, parallelRunnable2);
- *     runParallel(key, parallelRunnable3);
+ *     parallelRunner.runParallel(parallelRunnable1);
+ *     parallelRunner.runParallel(parallelRunnable2);
+ *     parallelRunner.runParallel(parallelRunnable3);
  * }
  * finally
  * {
- *     unlock(key);
+ *     parallelRunner.unlock();
  * }
  * </pre>
  *
  * The <code>key</code> is any object that is used to determine distinct
  * groups for the synchronization. For example, the shared memory lock
  * object from {@link ApfloatContext#getSharedMemoryLock()} can be used
- * to limit memory consumption when the shared memory treshold is exceeded.
- * To avoid any blocking due to synchronization, a <code>new Object()</code>
- * can be used as the key.
+ * to limit memory consumption when the shared memory treshold is exceeded.<p>
+ *
+ * To avoid any blocking due to synchronization, a <code>ParallelRunner</code>
+ * can also be used without calling the {@link #lock(Object)} and {@link #unlock()}
+ * methods.
  *
  * @since 1.1
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
@@ -91,8 +95,8 @@ public class ParallelRunner
             int maxPosition = parallelRunnable.getLength();
             while (this.position.get() < maxPosition)
             {
-                int startValue = this.position.getAndAdd(BATCH_SIZE);
-                int length = Math.min(BATCH_SIZE, maxPosition - startValue);
+                int startValue = this.position.getAndAdd(this.batchSize);
+                int length = Math.min(this.batchSize, maxPosition - startValue);
                 if (length > 0)
                 {
                     Runnable runnable = parallelRunnable.getRunnable(startValue, length);
@@ -109,6 +113,9 @@ public class ParallelRunner
 
             // Reset position of parallel runnables
             this.position.set(0);
+
+            // Set the batch size to be some balanced value with respect to the batch size and the number of batches
+            this.batchSize = Math.max(MINIMUM_BATCH_SIZE, Util.sqrt4down(parallelRunnable.getLength()));
 
             // Start parallel threads, if any
             submit(this.numberOfProcessors - 1);
@@ -171,24 +178,75 @@ public class ParallelRunner
         private int numberOfProcessors;
         private AtomicReference<ParallelRunnable> parallelRunnable;
         private AtomicInteger position;
+        private volatile int batchSize;
         private List<Future<?>> futures;
     }
 
-    private ParallelRunner()
+    /**
+     * Create an instance of a parallel runner.
+     *
+     * @param numberOfProcessors The number of parallel threads to use.
+     */
+
+    public ParallelRunner(int numberOfProcessors)
     {
+        assert (numberOfProcessors > 0);
+        this.numberOfProcessors = numberOfProcessors;
     }
 
     /**
      * Start the synchronization for the given lock key.
-     * The key must be released using the {@link #unlock(Object)} method,
+     * The key must be released using the {@link #unlock()} method,
      * in the <code>finally</code> block of the immediately following
      * <code>try</code> block, just like for concurrency locks.
      *
      * @param key The lock key for synchronization.
-     * @param numberOfProcessors The number of parallel threads to contribute to the parallel processing.
      */
 
-    public static void lock(Object key, int numberOfProcessors)
+    public void lock(Object key)
+    {
+        lock(key, this.numberOfProcessors);
+        this.key = key;
+    }
+
+    /**
+     * Finish the synchronization.
+     * The key must be first locked using the {@link #lock(Object)} method.
+     */
+
+    public void unlock()
+    {
+        unlock(this.key);
+    }
+
+    /**
+     * Run Runnable objects in parallel.
+     * The whole length of the ParallelRunnable is split to multiple, small strides.
+     * The strides are run in parallel using multiple threads. The number of threads
+     * is the total number of threads contributed by the concurrent calls to the
+     * {@link #lock(Object)} method with the same <code>key</code>. The Runnables
+     * for processing the strides are run using the ExecutorService retrieved from
+     * {@link ApfloatContext#getExecutorService()}.
+     *
+     * @param parallelRunnable The ParallelRunnable containing the Runnable objects to be run.
+     */
+
+    public void runParallel(ParallelRunnable parallelRunnable)
+        throws ApfloatRuntimeException
+    {
+        if (this.key != null)
+        {
+            // Run inside locked block with key, possibly with contribution from other threads locking with the same key
+            runParallel(this.key, parallelRunnable);
+        }
+        else
+        {
+            // Run without locking, stand-alone
+            new ParallelRunnableTask(this.numberOfProcessors).run(parallelRunnable);
+        }
+    }
+
+    private static void lock(Object key, int numberOfProcessors)
     {
         assert (numberOfProcessors > 0);
         synchronized (ParallelRunner.tasks)
@@ -231,14 +289,7 @@ public class ParallelRunner
         }
     }
 
-    /**
-     * Finish the synchronization for the given lock key.
-     * The key must be first locked using the {@link #lock(Object,int)} method.
-     *
-     * @param key The lock key for synchronization.
-     */
-
-    public static void unlock(Object key)
+    private static void unlock(Object key)
     {
         synchronized (ParallelRunner.tasks)
         {
@@ -251,20 +302,7 @@ public class ParallelRunner
         }
     }
 
-    /**
-     * Run Runnable objects in parallel.
-     * The whole length of the ParallelRunnable is split to multiple, small strides.
-     * The strides are run in parallel using multiple threads. The number of threads
-     * is the total number of threads contributed by the concurrent calls to the
-     * {@link #lock(Object,int)} method with the same <code>key</code>. The Runnables
-     * for processing the strides are run using the ExecutorService retrieved from
-     * {@link ApfloatContext#getExecutorService()}.
-     *
-     * @param key The lock key for synchronization.
-     * @param parallelRunnable The ParallelRunnable containing the Runnable objects to be run.
-     */
-
-    public static void runParallel(Object key, ParallelRunnable parallelRunnable)
+    private static void runParallel(Object key, ParallelRunnable parallelRunnable)
         throws ApfloatRuntimeException
     {
         ParallelRunnableTask task;
@@ -279,7 +317,10 @@ public class ParallelRunner
         task.run(parallelRunnable);
     }
 
-    private static final int BATCH_SIZE = 16;
+    private int numberOfProcessors;
+    private Object key;
+
+    private static final int MINIMUM_BATCH_SIZE = 16;
 
     private static Map<Object,ParallelRunnableTask> tasks = new IdentityHashMap<Object,ParallelRunnableTask>();
 }

@@ -14,8 +14,9 @@ import org.apfloat.spi.Util;
  * @see DoubleSixStepFNTStrategy
  * @see DoubleTwoPassFNTStrategy
  * @see DoubleFactor3NTTStrategy
+ * @see DoubleFactor3SixStepNTTStrategy
  *
- * @version 1.4.1
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
@@ -44,17 +45,16 @@ public class DoubleNTTBuilder
         if (size != power2size)
         {
             // A factor of three will be used, so the power-of-two part is one third of the whole transform length
-            size = power2size;
             useFactor3 = true;
         }
 
         // Select transform for the power-of-two part
-        if (size <= cacheSize / 2)
+        if (power2size <= cacheSize / 2)
         {
             // The whole transform plus w-table fits into the cache, so use the simplest approach
             transform = new DoubleTableFNTStrategy();
         }
-        else if (size <= maxMemoryBlockSize && size <= Integer.MAX_VALUE)
+        else if (power2size <= maxMemoryBlockSize && power2size <= Integer.MAX_VALUE)
         {
             // The whole transform fits into the available main memory, so use a six-step in-memory approach
             transform = new DoubleSixStepFNTStrategy();
@@ -68,7 +68,16 @@ public class DoubleNTTBuilder
         if (useFactor3)
         {
             // Allow using a factor of three in any of the above selected transforms
-            transform = new DoubleFactor3NTTStrategy(transform);
+            if (size <= maxMemoryBlockSize && size <= Integer.MAX_VALUE && transform instanceof DoubleSixStepFNTStrategy)
+            {
+                // The whole transform (including the factor of 3) fits into the available main memory, so use a special in-memory approach
+                transform = new DoubleFactor3SixStepNTTStrategy((DoubleSixStepFNTStrategy) transform);
+            }
+            else
+            {
+                // Either basic table FNT or two-pass transform or six-step but with whole transform not fitting in memory
+                transform = new DoubleFactor3NTTStrategy(transform);
+            }
         }
 
         return transform;

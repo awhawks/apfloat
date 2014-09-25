@@ -13,59 +13,259 @@ import org.apfloat.ApfloatRuntimeException;
 /**
  * Calculates pi using four different algorithms.
  *
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
 public class Pi
 {
     /**
-     * Abstract base class for binary splitting algorithms.
+     * Terms for the binary splitting series.
      */
 
-    public static abstract class AbstractBinarySplittingPiCalculator
-        implements Serializable,
-                   Operation<Apfloat>
+    protected static interface BinarySplittingSeries
+        extends Serializable
     {
         /**
-         * Construct a pi calculator with the specified precision and radix.
+         * Binary splitting term.
+         *
+         * @param n The term.
+         */
+
+        public Apfloat a(long n)
+            throws ApfloatRuntimeException;
+
+        /**
+         * Binary splitting term.
+         *
+         * @param n The term.
+         */
+
+        public Apfloat p(long n)
+            throws ApfloatRuntimeException;
+
+        /**
+         * Binary splitting term.
+         *
+         * @param n The term.
+         */
+
+        public Apfloat q(long n)
+            throws ApfloatRuntimeException;
+    }
+
+    /**
+     * Abstract base class for the binary splitting series.
+     */
+
+    protected static abstract class AbstractBinarySplittingSeries
+        implements BinarySplittingSeries
+    {
+        /**
+         * Construct a binary splitting series with the specified precision and radix.
          *
          * @param precision The target precision.
          * @param radix The radix to be used.
          */
 
-        protected AbstractBinarySplittingPiCalculator(long precision, int radix)
+        protected AbstractBinarySplittingSeries(long precision, int radix)
         {
             this.precision = precision;
             this.radix = radix;
         }
 
         /**
-         * Binary splitting term.
-         *
-         * @param n The term.
+         * Target precision.
          */
 
-        protected abstract Apfloat a(long n)
-            throws ApfloatRuntimeException;
+        protected long precision;
 
         /**
-         * Binary splitting term.
-         *
-         * @param n The term.
+         * Radix to be used.
          */
 
-        protected abstract Apfloat p(long n)
-            throws ApfloatRuntimeException;
+        protected int radix;
+    }
 
+    /**
+     * Chudnovskys' algorithm terms for the binary splitting series.
+     */
+
+    protected static class ChudnovskyBinarySplittingSeries
+        extends AbstractBinarySplittingSeries
+    {
         /**
-         * Binary splitting term.
-         *
-         * @param n The term.
+         * Default constructor.
          */
 
-        protected abstract Apfloat q(long n)
-            throws ApfloatRuntimeException;
+        public ChudnovskyBinarySplittingSeries(long precision, int radix)
+        {
+            super(precision, radix);
+            this.A = new Apfloat(13591409, precision, radix);
+            this.B = new Apfloat(545140134, precision, radix);
+            this.J = new Apfloat(10939058860032000L, precision, radix);
+            this.ONE = new Apfloat(1, precision, radix);
+            this.TWO = new Apfloat(2, precision, radix);
+            this.FIVE = new Apfloat(5, precision, radix);
+            this.SIX = new Apfloat(6, precision, radix);
+        }
+
+        public Apfloat a(long n)
+            throws ApfloatRuntimeException
+        {
+            Apfloat s = new Apfloat(n, Apfloat.INFINITE, this.radix),
+                    v = this.A.add(this.B.multiply(s));
+
+            v = ((n & 1) == 0 ? v : v.negate());
+
+            return v;
+        }
+
+        public Apfloat p(long n)
+            throws ApfloatRuntimeException
+        {
+            Apfloat v;
+
+            if (n == 0)
+            {
+                v = this.ONE;
+            }
+            else
+            {
+                Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix),
+                        sixf = this.SIX.multiply(f);
+
+                v = sixf.subtract(this.ONE).multiply(this.TWO.multiply(f).subtract(this.ONE)).multiply(sixf.subtract(this.FIVE));
+            }
+
+            return v;
+        }
+
+        public Apfloat q(long n)
+            throws ApfloatRuntimeException
+        {
+            Apfloat v;
+
+            if (n == 0)
+            {
+                v = this.ONE;
+            }
+            else
+            {
+                Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix);
+
+                v = this.J.multiply(f.multiply(f).multiply(f));
+            }
+
+            return v;
+        }
+
+        private final Apfloat A;
+        private final Apfloat B;
+        private final Apfloat J;
+        private final Apfloat ONE;
+        private final Apfloat TWO;
+        private final Apfloat FIVE;
+        private final Apfloat SIX;
+    }
+
+    /**
+     * Ramanujan's algorithm terms for the binary splitting series.
+     */
+
+    protected static class RamanujanBinarySplittingSeries
+        extends AbstractBinarySplittingSeries
+    {
+        /**
+         * Default constructor.
+         */
+
+        public RamanujanBinarySplittingSeries(long precision, int radix)
+        {
+            super(precision, radix);
+            this.A = new Apfloat(1103, precision, radix);
+            this.B = new Apfloat(26390, precision, radix);
+            this.J = new Apfloat(3073907232L, precision, radix);
+            this.ONE = new Apfloat(1, precision, radix);
+            this.TWO = new Apfloat(2, precision, radix);
+            this.THREE = new Apfloat(3, precision, radix);
+            this.FOUR = new Apfloat(4, precision, radix);
+        }
+
+        public Apfloat a(long n)
+            throws ApfloatRuntimeException
+        {
+            Apfloat s = new Apfloat(n, Apfloat.INFINITE, this.radix),
+                    v = this.A.add(this.B.multiply(s));
+
+            return v;
+        }
+
+        public Apfloat p(long n)
+            throws ApfloatRuntimeException
+        {
+            Apfloat v;
+
+            if (n == 0)
+            {
+                v = this.ONE;
+            }
+            else
+            {
+                Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix),
+                        fourf = this.FOUR.multiply(f);
+
+                v = fourf.subtract(this.ONE).multiply(this.TWO.multiply(f).subtract(this.ONE)).multiply(fourf.subtract(this.THREE));
+            }
+
+            return v;
+        }
+
+        public Apfloat q(long n)
+            throws ApfloatRuntimeException
+        {
+            Apfloat v;
+
+            if (n == 0)
+            {
+                v = this.ONE;
+            }
+            else
+            {
+                Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix);
+
+                v = this.J.multiply(f.multiply(f).multiply(f));
+            }
+
+            return v;
+        }
+
+        private final Apfloat A;
+        private final Apfloat B;
+        private final Apfloat J;
+        private final Apfloat ONE;
+        private final Apfloat TWO;
+        private final Apfloat THREE;
+        private final Apfloat FOUR;
+    }
+
+    /**
+     * Class for implementing the binary splitting algorithm.
+     */
+
+    protected static class BinarySplittingPiCalculator
+        implements Serializable
+    {
+        /**
+         * Construct a pi calculator with the specified precision and radix.
+         *
+         * @param series The binary splitting series to be used.
+         */
+
+        public BinarySplittingPiCalculator(BinarySplittingSeries series)
+        {
+            this.series = series;
+        }
 
         /**
          * Entry point for the binary splitting algorithm.
@@ -78,7 +278,7 @@ public class Pi
          * @param progressIndicator Class to print out the progress of the calculation.
          */
 
-        protected void r(long n1, long n2, ApfloatHolder T, ApfloatHolder Q, ApfloatHolder P, BinarySplittingProgressIndicator progressIndicator)
+        public void r(long n1, long n2, ApfloatHolder T, ApfloatHolder Q, ApfloatHolder P, BinarySplittingProgressIndicator progressIndicator)
             throws ApfloatRuntimeException
         {
             checkAlive();
@@ -164,17 +364,25 @@ public class Pi
             }
         }
 
-        /**
-         * Target precision.
-         */
+        private Apfloat a(long n)
+            throws ApfloatRuntimeException
+        {
+            return this.series.a(n);
+        }
 
-        protected long precision;
+        private Apfloat p(long n)
+            throws ApfloatRuntimeException
+        {
+            return this.series.p(n);
+        }
 
-        /**
-         * Radix to be used.
-         */
+        private Apfloat q(long n)
+            throws ApfloatRuntimeException
+        {
+            return this.series.q(n);
+        }
 
-        protected int radix;
+        private BinarySplittingSeries series;
     }
 
     /**
@@ -182,7 +390,7 @@ public class Pi
      */
 
     public static class ChudnovskyPiCalculator
-        extends AbstractBinarySplittingPiCalculator
+        implements Operation<Apfloat>
     {
         /**
          * Construct a pi calculator with the specified precision and radix.
@@ -194,64 +402,9 @@ public class Pi
         public ChudnovskyPiCalculator(long precision, int radix)
             throws ApfloatRuntimeException
         {
-            super(precision, radix);
-            this.A = new Apfloat(13591409, precision, radix);
-            this.B = new Apfloat(545140134, precision, radix);
-            this.J = new Apfloat(10939058860032000L, precision, radix);
-            this.ONE = new Apfloat(1, precision, radix);
-            this.TWO = new Apfloat(2, precision, radix);
-            this.FIVE = new Apfloat(5, precision, radix);
-            this.SIX = new Apfloat(6, precision, radix);
-        }
-
-        protected Apfloat a(long n)
-            throws ApfloatRuntimeException
-        {
-            Apfloat s = new Apfloat(n, Apfloat.INFINITE, this.radix),
-                    v = this.A.add(this.B.multiply(s));
-
-            v = ((n & 1) == 0 ? v : v.negate());
-
-            return v;
-        }
-
-        protected Apfloat p(long n)
-            throws ApfloatRuntimeException
-        {
-            Apfloat v;
-
-            if (n == 0)
-            {
-                v = this.ONE;
-            }
-            else
-            {
-                Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix),
-                        sixf = this.SIX.multiply(f);
-
-                v = sixf.subtract(this.ONE).multiply(this.TWO.multiply(f).subtract(this.ONE)).multiply(sixf.subtract(this.FIVE));
-            }
-
-            return v;
-        }
-
-        protected Apfloat q(long n)
-            throws ApfloatRuntimeException
-        {
-            Apfloat v;
-
-            if (n == 0)
-            {
-                v = this.ONE;
-            }
-            else
-            {
-                Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix);
-
-                v = this.J.multiply(f.multiply(f).multiply(f));
-            }
-
-            return v;
+            this.calculator = new BinarySplittingPiCalculator(new ChudnovskyBinarySplittingSeries(precision, radix));
+            this.precision = precision;
+            this.radix = radix;
         }
 
         /**
@@ -270,7 +423,7 @@ public class Pi
             long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 32.654450041768516);
 
             long time = System.currentTimeMillis();
-            r(0, terms + 1, T, Q, null, new BinarySplittingProgressIndicator(terms));
+            this.calculator.r(0, terms + 1, T, Q, null, new BinarySplittingProgressIndicator(terms));
             time = System.currentTimeMillis() - time;
 
             Pi.err.println("100% complete, elapsed time " + time / 1000.0 + " seconds");
@@ -291,13 +444,9 @@ public class Pi
             return pi;
         }
 
-        private final Apfloat A;
-        private final Apfloat B;
-        private final Apfloat J;
-        private final Apfloat ONE;
-        private final Apfloat TWO;
-        private final Apfloat FIVE;
-        private final Apfloat SIX;
+        private BinarySplittingPiCalculator calculator;
+        private long precision;
+        private int radix;
     }
 
     /**
@@ -305,7 +454,7 @@ public class Pi
      */
 
     public static class RamanujanPiCalculator
-        extends AbstractBinarySplittingPiCalculator
+        implements Operation<Apfloat>
     {
         /**
          * Construct a pi calculator with the specified precision and radix.
@@ -317,62 +466,9 @@ public class Pi
         public RamanujanPiCalculator(long precision, int radix)
             throws ApfloatRuntimeException
         {
-            super(precision, radix);
-            this.A = new Apfloat(1103, precision, radix);
-            this.B = new Apfloat(26390, precision, radix);
-            this.J = new Apfloat(3073907232L, precision, radix);
-            this.ONE = new Apfloat(1, precision, radix);
-            this.TWO = new Apfloat(2, precision, radix);
-            this.THREE = new Apfloat(3, precision, radix);
-            this.FOUR = new Apfloat(4, precision, radix);
-        }
-
-        protected Apfloat a(long n)
-            throws ApfloatRuntimeException
-        {
-            Apfloat s = new Apfloat(n, Apfloat.INFINITE, this.radix),
-                    v = this.A.add(this.B.multiply(s));
-
-            return v;
-        }
-
-        protected Apfloat p(long n)
-            throws ApfloatRuntimeException
-        {
-            Apfloat v;
-
-            if (n == 0)
-            {
-                v = this.ONE;
-            }
-            else
-            {
-                Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix),
-                        fourf = this.FOUR.multiply(f);
-
-                v = fourf.subtract(this.ONE).multiply(this.TWO.multiply(f).subtract(this.ONE)).multiply(fourf.subtract(this.THREE));
-            }
-
-            return v;
-        }
-
-        protected Apfloat q(long n)
-            throws ApfloatRuntimeException
-        {
-            Apfloat v;
-
-            if (n == 0)
-            {
-                v = this.ONE;
-            }
-            else
-            {
-                Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix);
-
-                v = this.J.multiply(f.multiply(f).multiply(f));
-            }
-
-            return v;
+            this.calculator = new BinarySplittingPiCalculator(new RamanujanBinarySplittingSeries(precision, radix));
+            this.precision = precision;
+            this.radix = radix;
         }
 
         /**
@@ -391,7 +487,7 @@ public class Pi
             long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 18.38047940053836);
 
             long time = System.currentTimeMillis();
-            r(0, terms + 1, T, Q, null, new BinarySplittingProgressIndicator(terms));
+            this.calculator.r(0, terms + 1, T, Q, null, new BinarySplittingProgressIndicator(terms));
             time = System.currentTimeMillis() - time;
 
             Pi.err.println("100% complete, elapsed time " + time / 1000.0 + " seconds");
@@ -412,13 +508,9 @@ public class Pi
             return pi;
         }
 
-        private final Apfloat A;
-        private final Apfloat B;
-        private final Apfloat J;
-        private final Apfloat ONE;
-        private final Apfloat TWO;
-        private final Apfloat THREE;
-        private final Apfloat FOUR;
+        private BinarySplittingPiCalculator calculator;
+        private long precision;
+        private int radix;
     }
 
     /**
@@ -512,12 +604,6 @@ public class Pi
             this.radix = radix;
         }
 
-        // What precision is achieved with k Gauss-Legendre iterations
-        private static long gaussLegendrePrecision(int k, int r, int radix)
-        {
-            return (long) ((Math.pow(2.0, (double) k) * Math.sqrt((double) r) * Math.PI - Math.log(16.0 * Math.sqrt((double) r)) - k * Math.log(2.0)) / Math.log((double) radix));
-        }
-
         /**
          * Calculate pi using the Gauss-Legendre iteration.
          */
@@ -588,6 +674,12 @@ public class Pi
             return pi;
         }
 
+        // What precision is achieved with k Gauss-Legendre iterations
+        private static long gaussLegendrePrecision(int k, int r, int radix)
+        {
+            return (long) ((Math.pow(2.0, (double) k) * Math.sqrt((double) r) * Math.PI - Math.log(16.0 * Math.sqrt((double) r)) - k * Math.log(2.0)) / Math.log((double) radix));
+        }
+
         private long precision;
         private int radix;
     }
@@ -610,12 +702,6 @@ public class Pi
         {
             this.precision = precision;
             this.radix = radix;
-        }
-
-        // What precision is achieved with k Borweins' quartic iterations
-        private static long borweinPrecision(int k, int r, int radix)
-        {
-            return (long) ((Math.pow(4.0, (double) k) * Math.sqrt((double) r) * Math.PI - Math.log(16.0 * Math.sqrt((double) r)) - k * Math.log(4.0)) / Math.log((double) radix));
         }
 
         /**
@@ -689,6 +775,12 @@ public class Pi
             Pi.err.println("took " + time / 1000.0 + " seconds");
 
             return pi;
+        }
+
+        // What precision is achieved with k Borweins' quartic iterations
+        private static long borweinPrecision(int k, int r, int radix)
+        {
+            return (long) ((Math.pow(4.0, (double) k) * Math.sqrt((double) r) * Math.PI - Math.log(16.0 * Math.sqrt((double) r)) - k * Math.log(4.0)) / Math.log((double) radix));
         }
 
         private long precision;
@@ -869,7 +961,9 @@ public class Pi
         Pi.isAlive = isAlive;
     }
 
-    Pi() {}
+    Pi()
+    {
+    }
 
     /**
      * Command-line entry point.

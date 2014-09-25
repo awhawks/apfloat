@@ -2,7 +2,6 @@ package org.apfloat.internal;
 
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.ApfloatContext;
-import org.apfloat.spi.NTTStrategy;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.ArrayAccess;
 import org.apfloat.spi.Util;
@@ -42,13 +41,12 @@ import static org.apfloat.internal.FloatModConstants.*;
  *
  * All access to this class must be externally synchronized.
  *
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
 public class FloatSixStepFNTStrategy
     extends FloatParallelFNTStrategy
-    implements NTTStrategy
 {
     /**
      * Default constructor.
@@ -79,6 +77,53 @@ public class FloatSixStepFNTStrategy
 
         assert (length == (length & -length));          // Must be a power of two
 
+        ArrayAccess arrayAccess = dataStorage.getArray(DataStorage.READ_WRITE, 0, (int) length);
+
+        transform(arrayAccess, modulus);
+
+        arrayAccess.close();
+    }
+
+    public void inverseTransform(DataStorage dataStorage, int modulus, long totalTransformLength)
+        throws ApfloatRuntimeException
+    {
+        long length = dataStorage.getSize();            // Transform length n
+
+        if (Math.max(length, totalTransformLength) > MAX_TRANSFORM_LENGTH)
+        {
+            throw new TransformLengthExceededException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
+        }
+        else if (length > Integer.MAX_VALUE)
+        {
+            throw new ApfloatInternalException("Maximum array length exceeded: " + length);
+        }
+
+        if (length < 2)
+        {
+            return;
+        }
+
+        assert (length == (length & -length));          // Must be a power of two
+
+        ArrayAccess arrayAccess = dataStorage.getArray(DataStorage.READ_WRITE, 0, (int) length);
+
+        inverseTransform(arrayAccess, modulus, totalTransformLength);
+
+        arrayAccess.close();
+    }
+
+    void transform(ArrayAccess arrayAccess, int modulus)
+        throws ApfloatRuntimeException
+    {
+        int length = arrayAccess.getLength();
+
+        if (length < 2)
+        {
+            return;
+        }
+
+        assert (length == (length & -length));          // Must be a power of two
+
         // Treat the input data as a n1 x n2 matrix
 
         int logLength = Util.log2down(length),
@@ -96,52 +141,29 @@ public class FloatSixStepFNTStrategy
         float[] wTable = createWTable(w1, n1);
         int[] permutationTable = Scramble.createScrambleTable(n1);
 
-        Object key = getSharedMemoryLockKey(length);
+        FloatMatrix.transpose(arrayAccess, n1, n2);
 
-        lock(key);
-        try
+        // Do n2 transforms of length n1
+        transformRows(n1, n2, false, arrayAccess, wTable, permutationTable);
+
+        FloatMatrix.transpose(arrayAccess, n2, n1);
+
+        // Multiply each matrix element by w^(i*j)
+        multiplyElements(arrayAccess, 0, n1, n2, w, (float) 1);
+
+        // Do n1 transforms of length n2
+        if (n1 != n2)
         {
-            ArrayAccess arrayAccess = dataStorage.getArray(DataStorage.READ_WRITE, 0, (int) length);
-
-            FloatMatrix.transpose(arrayAccess, n1, n2);
-
-            // Do n2 transforms of length n1
-            transformRows(key, n1, n2, false, arrayAccess, wTable, permutationTable);
-
-            FloatMatrix.transpose(arrayAccess, n2, n1);
-
-            // Multiply each matrix element by w^(i*j)
-            multiplyElements(key, arrayAccess, 0, n1, n2, w, (float) 1);
-
-            // Do n1 transforms of length n2
-            if (n1 != n2)
-            {
-                float w2 = modPow(w, (float) n1);             // Forward n2:th root
-                wTable = createWTable(w2, n2);
-            }
-            transformRows(key, n2, n1, false, arrayAccess, wTable, null);
-
-            arrayAccess.close();
+            float w2 = modPow(w, (float) n1);             // Forward n2:th root
+            wTable = createWTable(w2, n2);
         }
-        finally
-        {
-            unlock(key);
-        }
+        transformRows(n2, n1, false, arrayAccess, wTable, null);
     }
 
-    public void inverseTransform(DataStorage dataStorage, int modulus, long totalTransformLength)
+    void inverseTransform(ArrayAccess arrayAccess, int modulus, long totalTransformLength)
         throws ApfloatRuntimeException
     {
-        long length = dataStorage.getSize();            // Transform length n
-
-        if (Math.max(length, totalTransformLength) > MAX_TRANSFORM_LENGTH)
-        {
-            throw new TransformLengthExceededException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
-        }
-        else if (length > Integer.MAX_VALUE)
-        {
-            throw new ApfloatInternalException("Maximum array length exceeded: " + length);
-        }
+        int length = arrayAccess.getLength();
 
         if (length < 2)
         {
@@ -168,39 +190,25 @@ public class FloatSixStepFNTStrategy
         float[] wTable = createWTable(w2, n2);
         int[] permutationTable = Scramble.createScrambleTable(n1);
 
-        Object key = getSharedMemoryLockKey(length);
+        // Do n1 transforms of length n2
+        transformRows(n2, n1, true, arrayAccess, wTable, null);
 
-        lock(key);
-        try
+        // Multiply each matrix element by w^(i*j) / totalTransformLength
+        multiplyElements(arrayAccess, 0, n1, n2, w, inverseTotalTransformLength);
+
+        FloatMatrix.transpose(arrayAccess, n1, n2);
+
+        // Do n2 transforms of length n1
+        if (n1 != n2)
         {
-            ArrayAccess arrayAccess = dataStorage.getArray(DataStorage.READ_WRITE, 0, (int) length);
-
-            // Do n1 transforms of length n2
-            transformRows(key, n2, n1, true, arrayAccess, wTable, null);
-
-            // Multiply each matrix element by w^(i*j) / totalTransformLength
-            multiplyElements(key, arrayAccess, 0, n1, n2, w, inverseTotalTransformLength);
-
-            FloatMatrix.transpose(arrayAccess, n1, n2);
-
-            // Do n2 transforms of length n1
-            if (n1 != n2)
+            // n2 = 2 * n1
+            for (int i = 1; i < n1; i++)
             {
-                // n2 = 2 * n1
-                for (int i = 1; i < n1; i++)
-                {
-                    wTable[i] = wTable[2 * i];
-                }
+                wTable[i] = wTable[2 * i];
             }
-            transformRows(key, n1, n2, true, arrayAccess, wTable, permutationTable);
-
-            FloatMatrix.transpose(arrayAccess, n2, n1);
-
-            arrayAccess.close();
         }
-        finally
-        {
-            unlock(key);
-        }
+        transformRows(n1, n2, true, arrayAccess, wTable, permutationTable);
+
+        FloatMatrix.transpose(arrayAccess, n2, n1);
     }
 }

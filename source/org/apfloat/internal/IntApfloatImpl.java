@@ -32,7 +32,7 @@ import static org.apfloat.internal.IntRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
@@ -370,7 +370,7 @@ public final class IntApfloatImpl
 
         if (Double.isInfinite(value) || Double.isNaN(value))
         {
-            throw new ApfloatInternalException(value + " is not a valid number");
+            throw new NumberFormatException(value + " is not a valid number");
         }
 
         this.radix = radix;
@@ -794,6 +794,11 @@ public final class IntApfloatImpl
 
         IntApfloatImpl that = (IntApfloatImpl) x;
 
+        if (this.radix != that.radix)
+        {
+            throw new RadixMismatchException("Cannot use numbers with different radixes: " + this.radix + " and " + that.radix);
+        }
+
         assert (this.sign != 0);
         assert (that.sign != 0);
 
@@ -1077,6 +1082,11 @@ public final class IntApfloatImpl
 
         IntApfloatImpl that = (IntApfloatImpl) x;
 
+        if (this.radix != that.radix)
+        {
+            throw new RadixMismatchException("Cannot multiply numbers with different radixes: " + this.radix + " and " + that.radix);
+        }
+
         int sign = this.sign * that.sign;
 
         if (sign == 0)
@@ -1105,7 +1115,9 @@ public final class IntApfloatImpl
              thatDataSize = Math.min(thatSize, basePrecision);
 
         DataStorage thisDataStorage = this.dataStorage.subsequence(0, thisDataSize),
-                    thatDataStorage = that.dataStorage.subsequence(0, thatDataSize);
+                    thatDataStorage = (this.dataStorage == that.dataStorage ?
+                                       thisDataStorage :                                                // Enable auto-convolution
+                                       that.dataStorage.subsequence(0, thatDataSize));
 
         ApfloatContext ctx = ApfloatContext.getContext();
         ConvolutionBuilder convolutionBuilder = ctx.getBuilderFactory().getConvolutionBuilder();
@@ -1153,6 +1165,11 @@ public final class IntApfloatImpl
         }
 
         IntApfloatImpl that = (IntApfloatImpl) x;
+
+        if (this.radix != that.radix)
+        {
+            throw new RadixMismatchException("Cannot divide numbers with different radixes: " + this.radix + " and " + that.radix);
+        }
 
         assert (this.sign != 0);
         assert (that.sign != 0);

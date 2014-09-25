@@ -15,12 +15,13 @@ import org.apfloat.spi.ArrayAccess;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.5
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
 public abstract class IntParallelFNTStrategy
     extends IntTableFNTStrategy
+    implements ParallelNTTStrategy
 {
     // Runnable for calculating the row transforms in parallel
     private class TableFNTRunnable
@@ -111,71 +112,15 @@ public abstract class IntParallelFNTStrategy
     {
     }
 
-    /**
-     * Get an object on which to synchronize data storage access.
-     * If <code>length</code> is more than the shared memory treshold, then use shared memory,
-     * otherwise create a dummy key that will not cause any real synchronization.
-     * The shared memory threshold is determined using
-     * {@link ApfloatContext#getSharedMemoryTreshold()}.
-     *
-     * @param length The length of data that will be accessed.
-     *
-     * @return The object on which the memory access should be synchronized.
-     */
-
-    protected static Object getSharedMemoryLockKey(long length)
+    public void setParallelRunner(ParallelRunner parallelRunner)
     {
-        Object key;
-        ApfloatContext ctx = ApfloatContext.getContext();
-
-        if (length > ctx.getSharedMemoryTreshold() / 4)
-        {
-            // Data size is big: synchronize on shared memory lock
-            key = ctx.getSharedMemoryLock();
-        }
-        else
-        {
-            // Data size is small: no synchronization - create a dummy lock key object
-            key = new Object();
-        }
-
-        return key;
-    }
-
-    /**
-     * Start the synchronization for the given lock key.
-     * The key must be released using the {@link #unlock(Object)} method,
-     * in the <code>finally</code> block of the immediately following
-     * <code>try</code> block, just like for concurrency locks.
-     * The number of processors is taken from {@link ApfloatContext#getNumberOfProcessors()}.
-     *
-     * @param key The lock key for synchronization.
-     */
-
-    protected static void lock(Object key)
-    {
-        ApfloatContext ctx = ApfloatContext.getContext();
-        int numberOfProcessors = ctx.getNumberOfProcessors();
-        ParallelRunner.lock(key, numberOfProcessors);
-    }
-
-    /**
-     * Finish the synchronization for the given lock key.
-     * The key must be first locked using the {@link #lock(Object)} method.
-     *
-     * @param key The lock key for synchronization.
-     */
-
-    protected static void unlock(Object key)
-    {
-        ParallelRunner.unlock(key);
+        this.parallelRunner = parallelRunner;
     }
 
     /**
      * Multiply each matrix element <code>(i, j)</code> by <code>w<sup>i * j</sup> * scaleFactor</code>.
      * The matrix size is n<sub>1</sub> x n<sub>2</sub>.
      *
-     * @param key The lock key for synchronization.
      * @param arrayAccess The memory array to multiply.
      * @param startRow Which row in the whole matrix the starting row in the <code>arrayAccess</code> is.
      * @param rows The number of rows in the <code>arrayAccess</code> to multiply.
@@ -184,7 +129,7 @@ public abstract class IntParallelFNTStrategy
      * @param scaleFactor An extra factor by which all elements are multiplied.
      */
 
-    protected void multiplyElements(Object key, final ArrayAccess arrayAccess, final int startRow, final int rows, final int columns, final int w, final int scaleFactor)
+    protected void multiplyElements(final ArrayAccess arrayAccess, final int startRow, final int rows, final int columns, final int w, final int scaleFactor)
         throws ApfloatRuntimeException
     {
         ParallelRunnable parallelRunnable = new ParallelRunnable()
@@ -201,7 +146,7 @@ public abstract class IntParallelFNTStrategy
             }
         };
 
-        ParallelRunner.runParallel(key, parallelRunnable);
+        this.parallelRunner.runParallel(parallelRunnable);
     }
 
     /**
@@ -211,7 +156,6 @@ public abstract class IntParallelFNTStrategy
      * to multiple threads to parallelize the calculation. The number of processors is
      * determined using {@link ApfloatContext#getNumberOfProcessors()}.
      *
-     * @param key The lock key for synchronization.
      * @param length Length of one transform (one row).
      * @param count Number of rows.
      * @param isInverse <code>true</code> if an inverse transform is performed, <code>false</code> if a forward transform is performed.
@@ -220,7 +164,7 @@ public abstract class IntParallelFNTStrategy
      * @param permutationTable Table of permutation indexes, or <code>null</code> if no permutation should be done.
      */
 
-    protected void transformRows(Object key, final int length, final int count, final boolean isInverse, final ArrayAccess arrayAccess, final int[] wTable, final int[] permutationTable)
+    protected void transformRows(final int length, final int count, final boolean isInverse, final ArrayAccess arrayAccess, final int[] wTable, final int[] permutationTable)
         throws ApfloatRuntimeException
     {
         ParallelRunnable parallelRunnable = new ParallelRunnable()
@@ -237,6 +181,11 @@ public abstract class IntParallelFNTStrategy
             }
         };
 
-        ParallelRunner.runParallel(key, parallelRunnable);
+        this.parallelRunner.runParallel(parallelRunnable);
     }
+
+    /**
+     * The parallel runner.
+     */
+    protected ParallelRunner parallelRunner;
 }

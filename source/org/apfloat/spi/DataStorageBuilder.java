@@ -20,7 +20,7 @@ import org.apfloat.ApfloatRuntimeException;
  *
  * @see DataStorage
  *
- * @version 1.0
+ * @version 1.5.1
  * @author Mikko Tommila
  */
 
@@ -38,6 +38,44 @@ public interface DataStorageBuilder
      * @return An empty <code>DataStorage</code> object of an appropriate type for storing <code>size</code> bytes of data.
      */
 
-    DataStorage createDataStorage(long size)
+    public DataStorage createDataStorage(long size)
+        throws ApfloatRuntimeException;
+
+    /**
+     * Get a data storage that is cached in memory, if possible, for the requested size of data.<p>
+     *
+     * Note that the returned data storage object is not set to have the
+     * requested size, so the client should call the object's {@link DataStorage#setSize(long)}
+     * method before storing data to it.
+     *
+     * @param size The size of data to be stored in the storage, in bytes.
+     *
+     * @return An empty <code>DataStorage</code> object of an appropriate type for storing <code>size</code> bytes of data, cached if possible.
+     *
+     * @since 1.5.1
+     */
+
+    public DataStorage createCachedDataStorage(long size)
+        throws ApfloatRuntimeException;
+
+    /**
+     * Convert cached data storage to the appropriate normal data storage type.<p>
+     *
+     * If the data storage already has the appropriate type for its size, the data
+     * storage may be returned unchanged. The argument data storage does not necessarily
+     * have to be created with the {@link #createCachedDataStorage(long)} method, it can
+     * be created as well with the {@link #createDataStorage(long)} method.<p>
+     *
+     * If the given data storage does not have the appropriate type for its size, then
+     * a new data storage of the appropriate type is created and the data is copied to it.<p>
+     *
+     * @param dataStorage The data storage to be converted, if necessary.
+     *
+     * @return A <code>DataStorage</code> that can be the original data storage or a copy of it, with the appropriate type.
+     *
+     * @since 1.5.1
+     */
+
+    public DataStorage createDataStorage(DataStorage dataStorage)
         throws ApfloatRuntimeException;
 }
