@@ -4,6 +4,7 @@ import java.io.PrintWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -13,6 +14,7 @@ import java.util.MissingResourceException;
 
 import org.apfloat.Apfloat;
 import org.apfloat.ApfloatContext;
+import org.apfloat.ApfloatMath;
 import org.apfloat.ApfloatRuntimeException;
 
 /**
@@ -74,7 +76,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.5.1
+ * @version 1.5.2
  * @author Mikko Tommila
  */
 
@@ -100,17 +102,22 @@ public class PiDistributed
             super(series);
         }
 
-        public void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, BinarySplittingProgressIndicator progressIndicator)
+        /**
+         * Entry point for the distributed binary splitting algorithm.
+         *
+         * @param n1 Start term.
+         * @param n2 End term.
+         * @param T Algorithm parameter.
+         * @param Q Algorithm parameter.
+         * @param P Algorithm parameter.
+         * @param F Pointer to inverse square root parameter.
+         * @param nodes The operation executors to be used for the calculation.
+         */
+
+        public void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, Node[] nodes)
             throws ApfloatRuntimeException
         {
-            if (!(nodes[0] instanceof Node))
-            {
-                // Method is running on server side
-                // Perform actual calculation or further split to threads
-
-                super.r(n1, n2, T, Q, P, F, nodes, null);
-            }
-            else if (nodes.length == 1)
+            if (nodes.length == 1)
             {
                 // End of splitting work between nodes
                 // Calculate remaining terms on the node
@@ -118,33 +125,181 @@ public class PiDistributed
 
                 if (DEBUG) Pi.err.println("PiDistributed.r(" + n1 + ", " + n2 + ") transferring to server side node " + nodes[0]);
 
-                ApfloatHolder[] TQPF = nodes[0].execute(new Operation<ApfloatHolder[]>()
+                ApfloatHolder[] TQP = nodes[0].execute(new Operation<ApfloatHolder[]>()
                 {
                     public ApfloatHolder[] execute()
                     {
-                        // Now get all threads available local on the server
-                        OperationExecutor[] threads = DistributedBinarySplittingPiCalculator.super.getNodes();
-
                         // Continue splitting by threads on server side
-                        r(n1, n2, T, Q, P, F, threads, null);
+                        r(n1, n2, T, Q, P, null);
 
-                        return new ApfloatHolder[] { T, Q, P, F };
+                        return new ApfloatHolder[] { T, Q, P };
                     }
                 });
 
-                T.setApfloat(TQPF[0].getApfloat());
-                Q.setApfloat(TQPF[1].getApfloat());
-                if (P != null) P.setApfloat(TQPF[2].getApfloat());
-                if (F != null) F.setApfloat(TQPF[3].getApfloat());
+                T.setApfloat(TQP[0].getApfloat());
+                Q.setApfloat(TQP[1].getApfloat());
+                if (P != null) P.setApfloat(TQP[2].getApfloat());
             }
             else
             {
                 // Multiple nodes available; split work in ratio of node weights and execute in parallel
                 // This split is done on the client side
 
-                if (DEBUG) Pi.err.println("PiDistributed.r(" + n1 + ", " + n2 + ") splitting " + formatArray(nodes));
+                Object[] objs = splitNodes(nodes);
 
-                super.r(n1, n2, T, Q, P, F, nodes, null);
+                final Node[] nodes1 = (Node[]) objs[0],
+                             nodes2 = (Node[]) objs[2];
+                long weight1 = (Long) objs[1],
+                     weight2 = (Long) objs[3];
+
+                final long nMiddle = n1 + (n2 - n1) * weight1 / (weight1 + weight2);
+                final ApfloatHolder LT = new ApfloatHolder(),
+                                    LQ = new ApfloatHolder(),
+                                    LP = new ApfloatHolder();
+
+                if (DEBUG) Pi.err.println("PiDistributed.r(" + n1 + ", " + n2 + ") splitting " + formatArray(nodes) + " to r(" + n1 + ", " + nMiddle + ") " + formatArray(nodes1) + ", r(" + nMiddle + ", " + n2 + ") " + formatArray(nodes2));
+
+                BackgroundOperation<Object> operation;
+
+                // Call recursively this r() method to further split the term calculation
+                operation = new BackgroundOperation<Object>(new Operation<Object>()
+                {
+                    public Object execute()
+                    {
+                        r(n1, nMiddle, LT, LQ, LP, null, nodes1);
+                        return null;
+                    }
+                });
+                r(nMiddle, n2, T, Q, P, null, nodes2);
+                operation.getResult();                          // Waits for operation to complete
+
+                // Calculate the combining multiplies using available nodes in parallel
+
+                // Up to 4 calculations will be executed in parallel
+                // If more than 4 nodes (threads) are available, each calculation can use multiple nodes (threads)
+                assert (P == null || F == null);
+                int numberNeeded = (P != null || F != null ? 1 : 0) + 3;
+                nodes = recombineNodes(nodes, numberNeeded);
+
+                final Operation<Apfloat> sqrtOperation = new Operation<Apfloat>()
+                {
+                    public Apfloat execute()
+                    {
+                        return ApfloatMath.inverseRoot(F.getApfloat(), 2);
+                    }
+                }, T1operation = new Operation<Apfloat>()
+                {
+                    public Apfloat execute()
+                    {
+                        return Q.getApfloat().multiply(LT.getApfloat());
+                    }
+                }, T2operation = new Operation<Apfloat>()
+                {
+                    public Apfloat execute()
+                    {
+                        return LP.getApfloat().multiply(T.getApfloat());
+                    }
+                }, Toperation = new Operation<Apfloat>()
+                {
+                    public Apfloat execute()
+                    {
+                        return T1operation.execute().add(T2operation.execute());
+                    }
+                }, Qoperation = new Operation<Apfloat>()
+                {
+                    public Apfloat execute()
+                    {
+                        return LQ.getApfloat().multiply(Q.getApfloat());
+                    }
+                }, Poperation = new Operation<Apfloat>()
+                {
+                    public Apfloat execute()
+                    {
+                        return LP.getApfloat().multiply(P.getApfloat());
+                    }
+                };
+                final Operation<Apfloat[]> QPoperation = new Operation<Apfloat[]>()
+                {
+                    public Apfloat[] execute()
+                    {
+                        return new Apfloat[] { Qoperation.execute(),
+                                               P == null ? null : Poperation.execute() };
+                    }
+                };
+
+                int availableNodes = nodes.length;
+
+                BackgroundOperation<Apfloat> sqrtBackgroundOperation = null,
+                                             operation1,
+                                             operation2,
+                                             operation3 = null;
+                if (F != null && availableNodes > 1)
+                {
+                    if (DEBUG) Pi.err.println("PiDistributed.r(" + n1 + ", " + n2 + ") calculating isqrt on node " + nodes[availableNodes - 1]);
+
+                    sqrtBackgroundOperation = nodes[availableNodes - 1].executeBackground(sqrtOperation);
+                    availableNodes--;
+                }
+
+                Apfloat t = null,
+                        q = null,
+                        p = null;
+
+                switch (availableNodes)
+                {
+                    case 1:
+                    {
+                        t = nodes[0].execute(Toperation);
+                        q = nodes[0].execute(Qoperation);
+                        if (P != null) p = nodes[0].execute(Poperation);
+                        break;
+                    }
+                    case 2:
+                    {
+                        operation1 = nodes[1].executeBackground(T1operation);
+                        Apfloat tmp1 = nodes[0].execute(T2operation),
+                                tmp2 = operation1.getResult();
+                        operation1 = nodes[1].executeBackground(Qoperation);
+                        t = executeAdd(nodes[0], tmp1, tmp2);
+                        if (P != null) p = nodes[0].execute(Poperation);
+                        q = operation1.getResult();
+                        break;
+                    }
+                    case 3:
+                    {
+                        BackgroundOperation<Apfloat[]> operation1a;
+                        operation1a = nodes[2].executeBackground(QPoperation);
+                        operation2 = nodes[1].executeBackground(T1operation);
+                        Apfloat tmp1 = nodes[0].execute(T2operation),
+                                tmp2 = operation2.getResult();
+                        t = executeAdd(nodes[1], tmp1, tmp2);
+                        Apfloat[] QP = operation1a.getResult();
+                        q = QP[0];
+                        if (P != null) p = QP[1];
+                        break;
+                    }
+                    default:
+                    {
+                        operation1 = nodes[availableNodes - 1].executeBackground(T1operation);
+                        operation2 = nodes[availableNodes - 3].executeBackground(Qoperation);
+                        if (P != null) operation3 = nodes[availableNodes - 4].executeBackground(Poperation);
+                        Apfloat tmp1 = nodes[availableNodes - 2].execute(T2operation),
+                                tmp2 = operation1.getResult();
+                        t = executeAdd(nodes[availableNodes - 1], tmp1, tmp2);
+                        q = operation2.getResult();
+                        if (P != null) p = operation3.getResult();
+                        break;
+                    }
+                }
+
+                T.setApfloat(t);
+                Q.setApfloat(q);
+                if (P != null) P.setApfloat(p);
+
+                if (sqrtBackgroundOperation != null)
+                {
+                    F.setApfloat(sqrtBackgroundOperation.getResult());
+                }
             }
         }
 
@@ -156,7 +311,7 @@ public class PiDistributed
          * @return The nodes of the cluster.
          */
 
-        public OperationExecutor[] getNodes()
+        public Node[] getNodes()
         {
             ResourceBundle resourceBundle = null;
 
@@ -270,7 +425,7 @@ public class PiDistributed
             // Get the available number of threads for each node
             for (Node node : nodes)
             {
-                Integer numberOfProcessors = node.execute(new Operation<Integer>()
+                int numberOfProcessors = node.execute(new Operation<Integer>()
                 {
                     public Integer execute()
                     {
@@ -286,16 +441,22 @@ public class PiDistributed
             return nodes;
         }
 
-        public OperationExecutor[] recombineNodes(OperationExecutor[] nodes, int numberNeeded)
-        {
-            if (!(nodes[0] instanceof Node))
-            {
-                // Method is running on server side
-                // Recombine threads if applicable
+        /**
+         * Attempt to combine or split nodes to form the needed number
+         * of nodes. The returned number of nodes is something between
+         * the number of nodes input and the number of nodes requested.
+         * The requested number of nodes can be less than or greater than
+         * the number of input nodes.
+         *
+         * @param nodes The nodes to recombine.
+         * @param numberNeeded The requested number of nodes.
+         *
+         * @return The set of recombined nodes.
+         */
 
-                return super.recombineNodes(nodes, numberNeeded);
-            }
-            else if (numberNeeded <= nodes.length)
+        public Node[] recombineNodes(Node[] nodes, int numberNeeded)
+        {
+            if (numberNeeded <= nodes.length)
             {
                 // Method is running on client side
                 // RemoteOperationExecutors can't be combined since they don't exist on the same machine like threads
@@ -310,9 +471,8 @@ public class PiDistributed
 
                 SortedSet<Node> allNodes = new TreeSet<Node>(),
                                 splittableNodes = new TreeSet<Node>();
-                for (OperationExecutor operationExecutor : nodes)
+                for (Node node : nodes)
                 {
-                    Node node = (Node) operationExecutor;
                     (node.getNumberOfProcessors() > 1 ? splittableNodes : allNodes).add(node);
                 }
 
@@ -346,6 +506,44 @@ public class PiDistributed
                 return newNodes;
             }
         }
+
+        // Split nodes to two sets that have roughly the same total weights
+        private Object[] splitNodes(Node[] nodes)
+        {
+            List<Node> list1 = new LinkedList<Node>(),
+                       list2 = new LinkedList<Node>();
+            long weight1 = 0,
+                 weight2 = 0;
+
+            // Start from heaviest node to make maximally equal split
+            for (int i = nodes.length; --i >= 0;)
+            {
+                if (weight1 < weight2)
+                {
+                    list1.add(0, nodes[i]);
+                    weight1 += nodes[i].getWeight();
+                }
+                else
+                {
+                    list2.add(0, nodes[i]);
+                    weight2 += nodes[i].getWeight();
+                }
+            }
+
+            return new Object[] { list1.toArray(new Node[list1.size()]), weight1,
+                                  list2.toArray(new Node[list2.size()]), weight2 };
+        }
+
+        private Apfloat executeAdd(Node node, final Apfloat x, final Apfloat y)
+        {
+            return node.execute(new Operation<Apfloat>()
+            {
+                public Apfloat execute()
+                {
+                    return x.add(y);
+                }
+            });
+        }
     }
 
     /**
@@ -365,8 +563,75 @@ public class PiDistributed
         public DistributedChudnovskyPiCalculator(long precision, int radix)
             throws ApfloatRuntimeException
         {
-            super(new DistributedBinarySplittingPiCalculator(new ChudnovskyBinarySplittingSeries(precision, radix)), precision, radix);
+            this(new DistributedBinarySplittingPiCalculator(new ChudnovskyBinarySplittingSeries(precision, radix)), precision, radix);
         }
+
+        private DistributedChudnovskyPiCalculator(DistributedBinarySplittingPiCalculator calculator, long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            super(calculator, precision, radix);
+            this.calculator = calculator;
+            this.precision = precision;
+            this.radix = radix;
+        }
+
+        public Apfloat execute()
+        {
+            Pi.err.println("Using the Chudnovsky brothers' binary splitting algorithm");
+
+            Node[] nodes = this.calculator.getNodes();
+
+            if (nodes.length > 1)
+            {
+                Pi.err.println("Using up to " + nodes.length + " parallel operations for calculation");
+            }
+
+            final Apfloat f = new Apfloat(640320, this.precision, this.radix);
+            final ApfloatHolder T = new ApfloatHolder(),
+                                Q = new ApfloatHolder(),
+                                F = new ApfloatHolder(f);
+
+            // Perform the calculation of T, Q and P to requested precision only, to improve performance
+
+            long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 32.65445004177);
+
+            long time = System.currentTimeMillis();
+            this.calculator.r(0, terms + 1, T, Q, null, F, nodes);
+            time = System.currentTimeMillis() - time;
+
+            Pi.err.println("Series terms calculation complete, elapsed time " + time / 1000.0 + " seconds");
+            Pi.err.print("Final value ");
+            Pi.err.flush();
+
+            nodes = this.calculator.recombineNodes(nodes, 1);
+
+            time = System.currentTimeMillis();
+            Apfloat pi = nodes[nodes.length - 1].execute(new Operation<Apfloat>()
+            {
+                public Apfloat execute()
+                {
+                    Apfloat t = T.getApfloat(),
+                            q = Q.getApfloat(),
+                            factor = F.getApfloat();
+
+                    if (factor == f)
+                    {
+                        factor = ApfloatMath.inverseRoot(f, 2);
+                    }
+
+                    return ApfloatMath.inverseRoot(factor.multiply(t), 1).multiply(new Apfloat(53360, Apfloat.INFINITE, DistributedChudnovskyPiCalculator.this.radix)).multiply(q);
+                }
+            });
+            time = System.currentTimeMillis() - time;
+
+            Pi.err.println("took " + time / 1000.0 + " seconds");
+
+            return pi;
+        }
+
+        private DistributedBinarySplittingPiCalculator calculator;
+        private long precision;
+        private int radix;
     }
 
     /**
@@ -386,8 +651,75 @@ public class PiDistributed
         public DistributedRamanujanPiCalculator(long precision, int radix)
             throws ApfloatRuntimeException
         {
-            super(new DistributedBinarySplittingPiCalculator(new RamanujanBinarySplittingSeries(precision, radix)), precision, radix);
+            this(new DistributedBinarySplittingPiCalculator(new RamanujanBinarySplittingSeries(precision, radix)), precision, radix);
         }
+
+        private DistributedRamanujanPiCalculator(DistributedBinarySplittingPiCalculator calculator, long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            super(calculator, precision, radix);
+            this.calculator = calculator;
+            this.precision = precision;
+            this.radix = radix;
+        }
+
+        public Apfloat execute()
+        {
+            Pi.err.println("Using the Ramanujan binary splitting algorithm");
+
+            Node[] nodes = this.calculator.getNodes();
+
+            if (nodes.length > 1)
+            {
+                Pi.err.println("Using up to " + nodes.length + " parallel operations for calculation");
+            }
+
+            final Apfloat f = new Apfloat(8, this.precision, this.radix);
+            final ApfloatHolder T = new ApfloatHolder(),
+                                Q = new ApfloatHolder(),
+                                F = new ApfloatHolder(f);
+
+            // Perform the calculation of T, Q and P to requested precision only, to improve performance
+
+            long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 18.38047940053836);
+
+            long time = System.currentTimeMillis();
+            this.calculator.r(0, terms + 1, T, Q, null, F, nodes);
+            time = System.currentTimeMillis() - time;
+
+            Pi.err.println("Series terms calculation complete, elapsed time " + time / 1000.0 + " seconds");
+            Pi.err.print("Final value ");
+            Pi.err.flush();
+
+            nodes = this.calculator.recombineNodes(nodes, 1);
+
+            time = System.currentTimeMillis();
+            Apfloat pi = nodes[nodes.length - 1].execute(new Operation<Apfloat>()
+            {
+                public Apfloat execute()
+                {
+                    Apfloat t = T.getApfloat(),
+                            q = Q.getApfloat(),
+                            factor = F.getApfloat();
+
+                    if (factor == f)
+                    {
+                        factor = ApfloatMath.inverseRoot(f, 2);
+                    }
+
+                    return ApfloatMath.inverseRoot(t, 1).multiply(factor).multiply(new Apfloat(9801, Apfloat.INFINITE, DistributedRamanujanPiCalculator.this.radix)).multiply(q);
+                }
+            });
+            time = System.currentTimeMillis() - time;
+
+            Pi.err.println("took " + time / 1000.0 + " seconds");
+
+            return pi;
+        }
+
+        private DistributedBinarySplittingPiCalculator calculator;
+        private long precision;
+        private int radix;
     }
 
     // RemoteOperationExecutor that actually implements the weight property

@@ -2,8 +2,6 @@ package org.apfloat.samples;
 
 import java.io.PrintWriter;
 import java.io.IOException;
-import java.util.List;
-import java.util.LinkedList;
 
 import org.apfloat.Apfloat;
 import org.apfloat.ApfloatContext;
@@ -20,7 +18,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.5.1
+ * @version 1.5.2
  * @author Mikko Tommila
  */
 
@@ -47,213 +45,87 @@ public class PiParallel
             super(series);
         }
 
-        /**
-         * Entry point for the parallel binary splitting algorithm.
-         *
-         * @param n1 Start term.
-         * @param n2 End term.
-         * @param T Algorithm parameter.
-         * @param Q Algorithm parameter.
-         * @param P Algorithm parameter.
-         * @param F Pointer to inverse square root parameter.
-         * @param nodes The operation executors to be used for the calculation.
-         * @param progressIndicator Class to print out the progress of the calculation.
-         */
-
-        public void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, final BinarySplittingProgressIndicator progressIndicator)
+        public void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final BinarySplittingProgressIndicator progressIndicator)
             throws ApfloatRuntimeException
         {
             checkAlive();
 
+            ApfloatContext ctx = ApfloatContext.getContext();
+            int numberOfProcessors = ctx.getNumberOfProcessors();
+
             if (n1 == n2)
             {
-                // Pathological case where available nodes > terms needed
+                // Pathological case where available threads > terms needed
 
                 T.setApfloat(Apfloat.ZERO);
                 Q.setApfloat(Apfloat.ONE);
                 if (P != null) P.setApfloat(Apfloat.ONE);
             }
-            else if (nodes.length == 1)
+            else if (numberOfProcessors == 1)
             {
-                // End of splitting work between nodes/threads
-                // calculate remaining terms on the node/thread
+                // End of splitting work between threads
+                // calculate remaining terms on the current thread
 
-                if (DEBUG) Pi.err.println("PiParallel.r(" + n1 + ", " + n2 + ") executing all on node " + nodes[0]);
-
-                ApfloatHolder[] TQP = nodes[0].execute(new Operation<ApfloatHolder[]>()
-                {
-                    public ApfloatHolder[] execute()
-                    {
-                        r(n1, n2, T, Q, P, progressIndicator);
-
-                        return new ApfloatHolder[] { T, Q, P };
-                    }
-                });
-
-                T.setApfloat(TQP[0].getApfloat());
-                Q.setApfloat(TQP[1].getApfloat());
-                if (P != null) P.setApfloat(TQP[2].getApfloat());
+                super.r(n1, n2, T, Q, P, progressIndicator);
             }
             else
             {
-                // Multiple nodes/threads available
-                // Split work in ratio of node weights and execute in parallel
+                // Multiple threads available
 
-                Object[] objs = splitNodes(nodes);
-
-                final OperationExecutor[] nodes1 = (OperationExecutor[]) objs[0],
-                                          nodes2 = (OperationExecutor[]) objs[2];
-                long weight1 = ((Long) objs[1]).longValue(),
-                     weight2 = ((Long) objs[3]).longValue();
-
-                final long nMiddle = n1 + (n2 - n1) * weight1 / (weight1 + weight2);
                 final ApfloatHolder LT = new ApfloatHolder(),
                                     LQ = new ApfloatHolder(),
                                     LP = new ApfloatHolder();
 
-                if (DEBUG) Pi.err.println("PiParallel.r(" + n1 + ", " + n2 + ") splitting " + formatArray(nodes) + " to r(" + n1 + ", " + nMiddle + ") " + formatArray(nodes1) + ", r(" + nMiddle + ", " + n2 + ") " + formatArray(nodes2));
+                if (split(n1, n2, numberOfProcessors))
+                {
+                    // Split work in ratio of number of threads and execute in parallel
 
-                BackgroundOperation<Object> operation;
+                    int numberOfProcessors1 = numberOfProcessors / 2,
+                        numberOfProcessors2 = numberOfProcessors - numberOfProcessors1;
 
-                // Call recursively this r() method to further split the term calculation
-                operation = new BackgroundOperation<Object>(new Operation<Object>()
-                {
-                    public Object execute()
-                    {
-                        r(n1, nMiddle, LT, LQ, LP, null, nodes1, progressIndicator);
-                        return null;
-                    }
-                });
-                r(nMiddle, n2, T, Q, P, null, nodes2, progressIndicator);
-                operation.getResult();                          // Waits for operation to complete
+                    final long nMiddle = n1 + (n2 - n1) * numberOfProcessors1 / numberOfProcessors;
 
-                // Calculate the combining multiplies using available nodes in parallel
+                    if (DEBUG) Pi.err.println("PiParallel.r(" + n1 + ", " + n2 + ") splitting " + numberOfProcessors + " threads to r(" + n1 + ", " + nMiddle + ") " + numberOfProcessors1 + " threads, r(" + nMiddle + ", " + n2 + ") " + numberOfProcessors2 + " threads");
 
-                // Up to 4 calculations will be executed in parallel
-                // If more than 4 nodes (threads) are available, each calculation can use multiple nodes (threads)
-                assert (P == null || F == null);
-                int numberNeeded = (P != null || F != null ? 1 : 0) + 3;
-                nodes = recombineNodes(nodes, numberNeeded);
+                    // Call recursively this r() method to further split the term calculation
+                    Operation<Object> operation1 = new Operation<Object>()
+                    {
+                        public Object execute()
+                        {
+                            r(n1, nMiddle, LT, LQ, LP, progressIndicator);
+                            return null;
+                        }
+                    };
+                    Operation<Object> operation2 = new Operation<Object>()
+                    {
+                        public Object execute()
+                        {
+                            r(nMiddle, n2, T, Q, P, progressIndicator);
+                            return null;
+                        }
+                    };
 
-                final Operation<Apfloat> sqrtOperation = new Operation<Apfloat>()
+                    BackgroundOperation<?> operation = new BackgroundOperation<Object>(new ThreadLimitedOperation<Object>(operation1, numberOfProcessors1));
+                    new ThreadLimitedOperation<Object>(operation2, numberOfProcessors2).execute();
+                    operation.getResult();                          // Waits for operation to complete
+                }
+                else
                 {
-                    public Apfloat execute()
-                    {
-                        return ApfloatMath.inverseRoot(F.getApfloat(), 2);
-                    }
-                }, T1operation = new Operation<Apfloat>()
-                {
-                    public Apfloat execute()
-                    {
-                        return Q.getApfloat().multiply(LT.getApfloat());
-                    }
-                }, T2operation = new Operation<Apfloat>()
-                {
-                    public Apfloat execute()
-                    {
-                        return LP.getApfloat().multiply(T.getApfloat());
-                    }
-                }, Toperation = new Operation<Apfloat>()
-                {
-                    public Apfloat execute()
-                    {
-                        return T1operation.execute().add(T2operation.execute());
-                    }
-                }, Qoperation = new Operation<Apfloat>()
-                {
-                    public Apfloat execute()
-                    {
-                        return LQ.getApfloat().multiply(Q.getApfloat());
-                    }
-                }, Poperation = new Operation<Apfloat>()
-                {
-                    public Apfloat execute()
-                    {
-                        return LP.getApfloat().multiply(P.getApfloat());
-                    }
-                };
-                final Operation<Apfloat[]> QPoperation = new Operation<Apfloat[]>()
-                {
-                    public Apfloat[] execute()
-                    {
-                        return new Apfloat[] { Qoperation.execute(),
-                                               P == null ? null : Poperation.execute() };
-                    }
-                };
+                    // Do not split at this point
 
-                int availableNodes = nodes.length;
+                    if (DEBUG) Pi.err.println("PiParallel.r(" + n1 + ", " + n2 + ") not splitting " + numberOfProcessors + " threads");
 
-                BackgroundOperation<Apfloat> sqrtBackgroundOperation = null,
-                                             operation1,
-                                             operation2,
-                                             operation3 = null;
-                if (F != null && availableNodes > 1)
-                {
-                    if (DEBUG) Pi.err.println("PiParallel.r(" + n1 + ", " + n2 + ") calculating isqrt on node " + nodes[availableNodes - 1]);
+                    long nMiddle = (n1 + n2) / 2;
 
-                    sqrtBackgroundOperation = nodes[availableNodes - 1].executeBackground(sqrtOperation);
-                    availableNodes--;
+                    r(n1, nMiddle, LT, LQ, LP, progressIndicator);
+                    r(nMiddle, n2, T, Q, P, progressIndicator);
                 }
 
-                Apfloat t = null,
-                        q = null,
-                        p = null;
+                // Combine recursed results whether split in parallel or not, using all threads available here
 
-                switch (availableNodes)
-                {
-                    case 1:
-                    {
-                        t = nodes[0].execute(Toperation);
-                        q = nodes[0].execute(Qoperation);
-                        if (P != null) p = nodes[0].execute(Poperation);
-                        break;
-                    }
-                    case 2:
-                    {
-                        operation1 = nodes[1].executeBackground(T1operation);
-                        Apfloat tmp1 = nodes[0].execute(T2operation),
-                                tmp2 = operation1.getResult();
-                        operation1 = nodes[1].executeBackground(Qoperation);
-                        t = executeAdd(nodes[0], tmp1, tmp2);
-                        if (P != null) p = nodes[0].execute(Poperation);
-                        q = operation1.getResult();
-                        break;
-                    }
-                    case 3:
-                    {
-                        BackgroundOperation<Apfloat[]> operation1a;
-                        operation1a = nodes[2].executeBackground(QPoperation);
-                        operation2 = nodes[1].executeBackground(T1operation);
-                        Apfloat tmp1 = nodes[0].execute(T2operation),
-                                tmp2 = operation2.getResult();
-                        t = executeAdd(nodes[1], tmp1, tmp2);
-                        Apfloat[] QP = operation1a.getResult();
-                        q = QP[0];
-                        if (P != null) p = QP[1];
-                        break;
-                    }
-                    default:
-                    {
-                        operation1 = nodes[availableNodes - 1].executeBackground(T1operation);
-                        operation2 = nodes[availableNodes - 3].executeBackground(Qoperation);
-                        if (P != null) operation3 = nodes[availableNodes - 4].executeBackground(Poperation);
-                        Apfloat tmp1 = nodes[availableNodes - 2].execute(T2operation),
-                                tmp2 = operation1.getResult();
-                        t = executeAdd(nodes[availableNodes - 1], tmp1, tmp2);
-                        q = operation2.getResult();
-                        if (P != null) p = operation3.getResult();
-                        break;
-                    }
-                }
-
-                T.setApfloat(t);
-                Q.setApfloat(q);
-                if (P != null) P.setApfloat(p);
-
-                if (sqrtBackgroundOperation != null)
-                {
-                    F.setApfloat(sqrtBackgroundOperation.getResult());
-                }
+                T.setApfloat(Q.getApfloat().multiply(LT.getApfloat()).add(LP.getApfloat().multiply(T.getApfloat())));
+                Q.setApfloat(LQ.getApfloat().multiply(Q.getApfloat()));
+                if (P != null) P.setApfloat(LP.getApfloat().multiply(P.getApfloat()));
 
                 if (progressIndicator != null)
                 {
@@ -262,108 +134,16 @@ public class PiParallel
             }
         }
 
-        // Split nodes to two sets that have roughly the same total weights
-        private Object[] splitNodes(OperationExecutor[] nodes)
+        private static boolean split(long n1, long n2, int numberOfProcessors)
         {
-            List<OperationExecutor> list1 = new LinkedList<OperationExecutor>(),
-                                    list2 = new LinkedList<OperationExecutor>();
-            long weight1 = 0,
-                 weight2 = 0;
+            long termsPerThread = (n2 - n1) / numberOfProcessors;
 
-            // Start from heaviest node to make maximally equal split
-            for (int i = nodes.length; --i >= 0;)
-            {
-                if (weight1 < weight2)
-                {
-                    list1.add(0, nodes[i]);
-                    weight1 += nodes[i].getWeight();
-                }
-                else
-                {
-                    list2.add(0, nodes[i]);
-                    weight2 += nodes[i].getWeight();
-                }
-            }
+            if (DEBUG) Pi.err.println("PiParallel.r(" + n1 + ", " + n2 + ") terms per thread " + termsPerThread);
 
-            return new Object[] { list1.toArray(new OperationExecutor[list1.size()]), weight1,
-                                  list2.toArray(new OperationExecutor[list2.size()]), weight2 };
-        }
+            ApfloatContext ctx = ApfloatContext.getContext();
+            long threshold = ctx.getSharedMemoryTreshold() / 32;    // Heuristically chosen value
 
-        private Apfloat executeAdd(OperationExecutor node, final Apfloat x, final Apfloat y)
-        {
-            return node.execute(new Operation<Apfloat>()
-            {
-                public Apfloat execute()
-                {
-                    return x.add(y);
-                }
-            });
-        }
-
-        /**
-         * Get the available set of operation executor nodes.
-         * This implementation returns {@link LocalOperationExecutor}s
-         * but subclasses may return other operation executors.
-         *
-         * @return The set of available operation executors.
-         */
-
-        public OperationExecutor[] getNodes()
-        {
-            ApfloatContext ctx = ApfloatContext.getGlobalContext();
-            int numberOfProcessors = ctx.getNumberOfProcessors();
-            OperationExecutor[] threads = new OperationExecutor[numberOfProcessors];
-
-            for (int i = 0; i < numberOfProcessors; i++)
-            {
-                threads[i] = new ThreadLimitedOperationExecutor(1);
-            }
-
-            if (DEBUG) Pi.err.println("PiParallel.getNodes " + formatArray(threads));
-
-            return threads;
-        }
-
-        /**
-         * Attempt to combine or split nodes to form the needed number
-         * of nodes. The returned number of nodes is something between
-         * the number of nodes input and the number of nodes requested.
-         * The requested number of nodes can be less than or greater than
-         * the number of input nodes.
-         *
-         * @param nodes The operation executors to recombine.
-         * @param numberNeeded The requested number of operation executors.
-         *
-         * @return The set of recombined operation executors.
-         */
-
-        public OperationExecutor[] recombineNodes(OperationExecutor[] nodes, int numberNeeded)
-        {
-            if (numberNeeded >= nodes.length)
-            {
-                // LocalOperationExecutors can't be split since each corresponds to one thread
-
-                if (DEBUG) Pi.err.println("PiParallel.recombineNodes unable to recombine nodes " + formatArray(nodes) + " (" + numberNeeded + " >= " + nodes.length + ")");
-
-                return nodes;
-            }
-            else
-            {
-                // Combine LocalOperationExecutors to executors that can use more than one thread in calculations
-
-                OperationExecutor[] newNodes = new OperationExecutor[numberNeeded];
-
-                for (int i = 0; i < numberNeeded; i++)
-                {
-                    int numberOfProcessors = (nodes.length + i) / numberNeeded;
-
-                    newNodes[i] = new ThreadLimitedOperationExecutor(numberOfProcessors);
-                }
-
-                if (DEBUG) Pi.err.println("PiParallel.recombineNodes recombined " + formatArray(nodes) + " to " + formatArray(newNodes));
-
-                return newNodes;
-            }
+            return termsPerThread < threshold;
         }
     }
 
@@ -372,7 +152,7 @@ public class PiParallel
      */
 
     public static class ParallelChudnovskyPiCalculator
-        implements Operation<Apfloat>
+        extends ChudnovskyPiCalculator
     {
         /**
          * Construct a pi calculator with the specified precision and radix.
@@ -388,82 +168,31 @@ public class PiParallel
         }
 
         /**
-         * Construct a pi calculator with the specified parallel binary splitting algorithm.
+         * Construct a pi calculator with the specified binary splitting algorithm.
          *
          * @param calculator The binary splitting algorithm to be used.
          * @param precision The target precision.
          * @param radix The radix to be used.
          */
 
-        protected ParallelChudnovskyPiCalculator(ParallelBinarySplittingPiCalculator calculator, long precision, int radix)
+        protected ParallelChudnovskyPiCalculator(BinarySplittingPiCalculator calculator, long precision, int radix)
             throws ApfloatRuntimeException
         {
-            this.calculator = calculator;
-            this.precision = precision;
-            this.radix = radix;
+            super(calculator, precision, radix);
         }
-
-        /**
-         * Calculate pi using the Chudnovskys' binary splitting algorithm.
-         */
 
         public Apfloat execute()
         {
-            Pi.err.println("Using the Chudnovsky brothers' binary splitting algorithm");
+            ApfloatContext ctx = ApfloatContext.getContext();
+            int numberOfProcessors = ctx.getNumberOfProcessors();
 
-            OperationExecutor[] nodes = this.calculator.getNodes();
-
-            if (nodes.length > 1)
+            if (numberOfProcessors > 1)
             {
-                Pi.err.println("Using up to " + nodes.length + " parallel operations for calculation");
+                Pi.err.println("Using up to " + numberOfProcessors + " parallel operations for calculation");
             }
 
-            final Apfloat f = new Apfloat(640320, this.precision, this.radix);
-            final ApfloatHolder T = new ApfloatHolder(),
-                                Q = new ApfloatHolder(),
-                                F = new ApfloatHolder(f);
-
-            // Perform the calculation of T, Q and P to requested precision only, to improve performance
-
-            long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 32.65445004177);
-
-            long time = System.currentTimeMillis();
-            this.calculator.r(0, terms + 1, T, Q, null, F, nodes, new BinarySplittingProgressIndicator(terms));
-            time = System.currentTimeMillis() - time;
-
-            Pi.err.println("Series terms calculation complete, elapsed time " + time / 1000.0 + " seconds");
-            Pi.err.print("Final value ");
-            Pi.err.flush();
-
-            nodes = this.calculator.recombineNodes(nodes, 1);
-
-            time = System.currentTimeMillis();
-            Apfloat pi = nodes[nodes.length - 1].execute(new Operation<Apfloat>()
-            {
-                public Apfloat execute()
-                {
-                    Apfloat t = T.getApfloat(),
-                            q = Q.getApfloat(),
-                            factor = F.getApfloat();
-
-                    if (factor == f)
-                    {
-                        factor = ApfloatMath.inverseRoot(f, 2);
-                    }
-
-                    return ApfloatMath.inverseRoot(factor.multiply(t), 1).multiply(new Apfloat(53360, Apfloat.INFINITE, ParallelChudnovskyPiCalculator.this.radix)).multiply(q);
-                }
-            });
-            time = System.currentTimeMillis() - time;
-
-            Pi.err.println("took " + time / 1000.0 + " seconds");
-
-            return pi;
+            return super.execute();
         }
-
-        private ParallelBinarySplittingPiCalculator calculator;
-        private long precision;
-        private int radix;
     }
 
     /**
@@ -471,7 +200,7 @@ public class PiParallel
      */
 
     public static class ParallelRamanujanPiCalculator
-        implements Operation<Apfloat>
+        extends RamanujanPiCalculator
     {
         /**
          * Construct a pi calculator with the specified precision and radix.
@@ -487,82 +216,31 @@ public class PiParallel
         }
 
         /**
-         * Construct a pi calculator with the specified parallel binary splitting algorithm.
+         * Construct a pi calculator with the specified binary splitting algorithm.
          *
          * @param calculator The binary splitting algorithm to be used.
          * @param precision The target precision.
          * @param radix The radix to be used.
          */
 
-        protected ParallelRamanujanPiCalculator(ParallelBinarySplittingPiCalculator calculator, long precision, int radix)
+        protected ParallelRamanujanPiCalculator(BinarySplittingPiCalculator calculator, long precision, int radix)
             throws ApfloatRuntimeException
         {
-            this.calculator = calculator;
-            this.precision = precision;
-            this.radix = radix;
+            super(calculator, precision, radix);
         }
-
-        /**
-         * Calculate pi using the Ramanujan's binary splitting algorithm.
-         */
 
         public Apfloat execute()
         {
-            Pi.err.println("Using the Ramanujan binary splitting algorithm");
+            ApfloatContext ctx = ApfloatContext.getContext();
+            int numberOfProcessors = ctx.getNumberOfProcessors();
 
-            OperationExecutor[] nodes = this.calculator.getNodes();
-
-            if (nodes.length > 1)
+            if (numberOfProcessors > 1)
             {
-                Pi.err.println("Using up to " + nodes.length + " parallel operations for calculation");
+                Pi.err.println("Using up to " + numberOfProcessors + " parallel operations for calculation");
             }
 
-            final Apfloat f = new Apfloat(8, this.precision, this.radix);
-            final ApfloatHolder T = new ApfloatHolder(),
-                                Q = new ApfloatHolder(),
-                                F = new ApfloatHolder(f);
-
-            // Perform the calculation of T, Q and P to requested precision only, to improve performance
-
-            long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 18.38047940053836);
-
-            long time = System.currentTimeMillis();
-            this.calculator.r(0, terms + 1, T, Q, null, F, nodes, new BinarySplittingProgressIndicator(terms));
-            time = System.currentTimeMillis() - time;
-
-            Pi.err.println("Series terms calculation complete, elapsed time " + time / 1000.0 + " seconds");
-            Pi.err.print("Final value ");
-            Pi.err.flush();
-
-            nodes = this.calculator.recombineNodes(nodes, 1);
-
-            time = System.currentTimeMillis();
-            Apfloat pi = nodes[nodes.length - 1].execute(new Operation<Apfloat>()
-            {
-                public Apfloat execute()
-                {
-                    Apfloat t = T.getApfloat(),
-                            q = Q.getApfloat(),
-                            factor = F.getApfloat();
-
-                    if (factor == f)
-                    {
-                        factor = ApfloatMath.inverseRoot(f, 2);
-                    }
-
-                    return ApfloatMath.inverseRoot(t, 1).multiply(factor).multiply(new Apfloat(9801, Apfloat.INFINITE, ParallelRamanujanPiCalculator.this.radix)).multiply(q);
-                }
-            });
-            time = System.currentTimeMillis() - time;
-
-            Pi.err.println("took " + time / 1000.0 + " seconds");
-
-            return pi;
+            return super.execute();
         }
-
-        private ParallelBinarySplittingPiCalculator calculator;
-        private long precision;
-        private int radix;
     }
 
     /**
@@ -596,49 +274,26 @@ public class PiParallel
         {
             checkAlive();
 
+            ApfloatContext threadCtx = ApfloatContext.getThreadContext();
             ApfloatContext ctx = (ApfloatContext) ApfloatContext.getContext().clone();
             ctx.setNumberOfProcessors(this.numberOfProcessors);
             ApfloatContext.setThreadContext(ctx);
 
             T result = this.operation.execute();
 
-            ApfloatContext.removeThreadContext();
+            if (threadCtx != null)
+            {
+                ApfloatContext.setThreadContext(threadCtx);
+            }
+            else
+            {
+               ApfloatContext.removeThreadContext();
+            }
 
             return result;
         }
 
         private Operation<T> operation;
-        private int numberOfProcessors;
-    }
-
-    private static class ThreadLimitedOperationExecutor
-        extends LocalOperationExecutor
-    {
-        public ThreadLimitedOperationExecutor(int numberOfProcessors)
-        {
-            this.numberOfProcessors = numberOfProcessors;
-        }
-
-        public <T> T execute(Operation<T> operation)
-        {
-            return super.execute(new ThreadLimitedOperation<T>(operation, this.numberOfProcessors));
-        }
-
-        public <T> BackgroundOperation<T> executeBackground(Operation<T> operation)
-        {
-            return super.executeBackground(new ThreadLimitedOperation<T>(operation, this.numberOfProcessors));
-        }
-
-        public int getWeight()
-        {
-            return this.numberOfProcessors;
-        }
-
-        public String toString()
-        {
-            return String.valueOf(this.numberOfProcessors);
-        }
-
         private int numberOfProcessors;
     }
 
@@ -687,19 +342,6 @@ public class PiParallel
         setErr(new PrintWriter(System.err, true));
 
         run(precision, radix, operation);
-    }
-
-    private static String formatArray(Object[] array)
-    {
-        StringBuilder buffer = new StringBuilder();
-        buffer.append("{ ");
-        for (int i = 0; i < array.length; i++)
-        {
-            buffer.append(i == 0 ? "" : ", ");
-            buffer.append(array[i]);
-        }
-        buffer.append(" }");
-        return buffer.toString();
     }
 
     private static final boolean DEBUG = false;

@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision integers.
  *
- * @version 1.5
+ * @version 1.5.2
  * @author Mikko Tommila
  */
 
@@ -481,14 +481,16 @@ public class ApintMath
      * Modular power.
      *
      * @param a Base.
-     * @param b Exponent. Should be non-negative, since the modulus can't be factorized with this implementation.
+     * @param b Exponent.
      * @param m Modulus.
      *
      * @return <code>a<sup>b</sup> mod m</code>
+     *
+     * @exception java.lang.ArithmeticException If the exponent is negative but the GCD of <code>a</code> and <code>m</code> is not 1 and the modular inverse does not exist.
      */
 
     public static Apint modPow(Apint a, Apint b, Apint m)
-        throws ApfloatRuntimeException
+        throws ArithmeticException, ApfloatRuntimeException
     {
         if (b.signum() == 0)
         {
@@ -503,15 +505,18 @@ public class ApintMath
         {
             return m;                           // By definition
         }
-        else if (b.signum() < 0)
-        {
-            throw new ApfloatRuntimeException("Negative exponent not supported; unable to factorize modulus");
-        }
 
         m = abs(m);
 
         Apfloat inverseModulus = ApfloatMath.inverseRoot(m, 1, m.scale() + Apfloat.EXTRA_PRECISION);
         a = a.mod(m);
+
+        if (b.signum() < 0)
+        {
+            // Calculate modular inverse first
+            a = modInverse(a, m);
+            b = b.negate();
+        }
 
         Apint two = new Apint(2, b.radix());    // Sub-optimal; the divisor could be some power of two
         Apint[] qr;
@@ -536,6 +541,50 @@ public class ApintMath
         }
 
         return r;
+    }
+
+    private static Apint modInverse(Apint a, Apint m)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        // Extended Euclidean algorithm
+        Apint one = new Apint(1, m.radix()),
+              x = Apint.ZERO,
+              y = one,
+              oldX = one,
+              oldY = Apint.ZERO,
+              oldA = a,
+              b = m;
+
+        while (b.signum() != 0)
+        {
+            Apint q = a.divide(b);
+
+            Apint tmp = b;
+            b = a.mod(b);
+            a = tmp;
+
+            tmp = x;
+            x = oldX.subtract(q.multiply(x));
+            oldX = tmp;
+
+            tmp = y;
+            y = oldY.subtract(q.multiply(y));
+            oldY = tmp;
+        }
+
+        if (!abs(a).equals(one))
+        {
+            // GCD is not 1
+            throw new ArithmeticException("Modular inverse does not exist");
+        }
+
+        if (oldX.signum() != oldA.signum())
+        {
+            // Adjust by one modulus if sign is wrong
+            oldX = oldX.add(copySign(m, oldA));
+        }
+
+        return oldX;
     }
 
     /**

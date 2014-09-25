@@ -13,7 +13,7 @@ import org.apfloat.ApfloatRuntimeException;
 /**
  * Calculates pi using four different algorithms.
  *
- * @version 1.5.1
+ * @version 1.5.2
  * @author Mikko Tommila
  */
 
@@ -402,7 +402,21 @@ public class Pi
         public ChudnovskyPiCalculator(long precision, int radix)
             throws ApfloatRuntimeException
         {
-            this.calculator = new BinarySplittingPiCalculator(new ChudnovskyBinarySplittingSeries(precision, radix));
+            this(new BinarySplittingPiCalculator(new ChudnovskyBinarySplittingSeries(precision, radix)), precision, radix);
+        }
+
+        /**
+         * Construct a pi calculator with the specified binary splitting algorithm.
+         *
+         * @param calculator The binary splitting algorithm to be used.
+         * @param precision The target precision.
+         * @param radix The radix to be used.
+         */
+
+        protected ChudnovskyPiCalculator(BinarySplittingPiCalculator calculator, long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            this.calculator = calculator;
             this.precision = precision;
             this.radix = radix;
         }
@@ -466,7 +480,21 @@ public class Pi
         public RamanujanPiCalculator(long precision, int radix)
             throws ApfloatRuntimeException
         {
-            this.calculator = new BinarySplittingPiCalculator(new RamanujanBinarySplittingSeries(precision, radix));
+            this(new BinarySplittingPiCalculator(new RamanujanBinarySplittingSeries(precision, radix)), precision, radix);
+        }
+
+        /**
+         * Construct a pi calculator with the specified binary splitting algorithm.
+         *
+         * @param calculator The binary splitting algorithm to be used.
+         * @param precision The target precision.
+         * @param radix The radix to be used.
+         */
+
+        protected RamanujanPiCalculator(BinarySplittingPiCalculator calculator, long precision, int radix)
+            throws ApfloatRuntimeException
+        {
+            this.calculator = calculator;
             this.precision = precision;
             this.radix = radix;
         }
