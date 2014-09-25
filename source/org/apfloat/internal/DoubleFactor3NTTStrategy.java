@@ -40,7 +40,7 @@ public class DoubleFactor3NTTStrategy
 
         if (length > MAX_TRANSFORM_LENGTH)
         {
-            throw new ApfloatRuntimeException("Maximum transform length exceeded: " + length + " > " + MAX_TRANSFORM_LENGTH);
+            throw new TransformLengthExceededException("Maximum transform length exceeded: " + length + " > " + MAX_TRANSFORM_LENGTH);
         }
 
         if (length == power2length)
@@ -79,7 +79,7 @@ public class DoubleFactor3NTTStrategy
 
         if (Math.max(length, totalTransformLength) > MAX_TRANSFORM_LENGTH)
         {
-            throw new ApfloatRuntimeException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
+            throw new TransformLengthExceededException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
         }
 
         if (length == power2length)

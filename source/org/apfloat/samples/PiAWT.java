@@ -27,9 +27,9 @@ import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.BuilderFactory;
 
 /**
- * Graphical AWT elements for calculating pi using three different algorithms.
+ * Graphical AWT elements for calculating pi using four different algorithms.
  *
- * @version 1.3
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -79,7 +79,7 @@ public class PiAWT
         this.precisionLabel = new Label("Precision:");
         add(this.precisionLabel, constraints);
 
-        this.precisionField = new TextField("133000", 12);
+        this.precisionField = new TextField("1000000", 12);
         add(this.precisionField, constraints);
 
         this.radixLabel = new Label("Radix:");
@@ -94,9 +94,32 @@ public class PiAWT
         constraints.gridwidth = GridBagConstraints.REMAINDER;
         add(this.radixChoice, constraints);
 
+        this.methodLabel = new Label("Method:");
         constraints.gridwidth = 1;
-        constraints.gridheight = 2;
-        initMethod(this, constraints);
+        constraints.gridheight = 3;
+        add(this.methodLabel, constraints);
+
+        Panel panel = new Panel(new GridBagLayout());
+        GridBagConstraints panelConstraints = new GridBagConstraints();
+        panelConstraints.gridwidth = GridBagConstraints.REMAINDER;
+        panelConstraints.anchor = GridBagConstraints.NORTHWEST;
+        panelConstraints.weightx = 1;
+        panelConstraints.weighty = 1;
+
+        this.methods = new CheckboxGroup();
+        this.chudnovsky = new Checkbox("Chudnovsky", true, this.methods);
+        panel.add(this.chudnovsky, panelConstraints);
+
+        this.ramanujan = new Checkbox("Ramanujan", false, this.methods);
+        panel.add(this.ramanujan, panelConstraints);
+
+        this.gaussLegendre = new Checkbox("Gauss-Legendre", false, this.methods);
+        panel.add(this.gaussLegendre, panelConstraints);
+
+        this.borwein = new Checkbox("Borwein", false, this.methods);
+        panel.add(this.borwein, panelConstraints);
+
+        add(panel, constraints);
 
         this.implementationLabel = new Label("Implementation:");
         constraints.gridwidth = 1;
@@ -105,16 +128,24 @@ public class PiAWT
 
         this.implementationChoice = new Choice();
         this.builderFactories = new ArrayList<BuilderFactory>();
+        String defaultBuilderFactoryClassName = ApfloatContext.getContext().getBuilderFactory().getClass().getName();
         Iterator<BuilderFactory> providers = ServiceRegistry.lookupProviders(org.apfloat.spi.BuilderFactory.class);
-        while (providers.hasNext())
+        for (int i = 0; providers.hasNext(); i++)
         {
             BuilderFactory builderFactory = providers.next();
+            String builderFactoryClassName = builderFactory.getClass().getName();
             this.builderFactories.add(builderFactory);
-            this.implementationChoice.add(builderFactory.getClass().getName());
+            this.implementationChoice.add(builderFactoryClassName);
+            if (builderFactoryClassName.equals(defaultBuilderFactoryClassName))
+            {
+                this.implementationChoice.select(i);
+            }
         }
-        this.implementationChoice.select(0);
         constraints.gridwidth = GridBagConstraints.REMAINDER;
         add(this.implementationChoice, constraints);
+
+        constraints.gridwidth = 1;
+        initThreads(this, constraints);
 
         this.goButton = new Button("Go!");
         constraints.gridwidth = 1;
@@ -167,36 +198,17 @@ public class PiAWT
     }
 
     /**
-     * Initialize the "method" section GUI elements.
-     * Two elements should be added to the <code>container</code>.
+     * Initialize the "threads" section GUI elements.
+     * Elements should be added for the remainder of the width of the <code>container</code>.
      *
      * @param container The container where the elements are to be added.
      * @param constraints The constraints with which the elements are to be added to the <code>container</code>.
      */
 
-    protected void initMethod(Container container, Object constraints)
+    protected void initThreads(Container container, GridBagConstraints constraints)
     {
-        this.methodLabel = new Label("Method:");
-        container.add(this.methodLabel, constraints);
-
-        Panel panel = new Panel(new GridBagLayout());
-        GridBagConstraints panelConstraints = new GridBagConstraints();
-        panelConstraints.gridwidth = GridBagConstraints.REMAINDER;
-        panelConstraints.anchor = GridBagConstraints.NORTHWEST;
-        panelConstraints.weightx = 1;
-        panelConstraints.weighty = 1;
-
-        this.methods = new CheckboxGroup();
-        this.chudnovsky = new Checkbox("Chudnovsky", true, this.methods);
-        panel.add(this.chudnovsky, panelConstraints);
-
-        this.gaussLegendre = new Checkbox("Gauss-Legendre", false, this.methods);
-        panel.add(this.gaussLegendre, panelConstraints);
-
-        this.borwein = new Checkbox("Borwein", false, this.methods);
-        panel.add(this.borwein, panelConstraints);
-
-        container.add(panel, constraints);
+        constraints.gridwidth = GridBagConstraints.REMAINDER;
+        container.add(new Label(), constraints);
     }
 
     /**
@@ -309,6 +321,10 @@ public class PiAWT
         {
             return new Pi.ChudnovskyPiCalculator(precision, radix);
         }
+        else if (this.ramanujan.getState())
+        {
+            return new Pi.RamanujanPiCalculator(precision, radix);
+        }
         else if (this.gaussLegendre.getState())
         {
             return new Pi.GaussLegendrePiCalculator(precision, radix);
@@ -401,6 +417,7 @@ public class PiAWT
     private Label methodLabel;
     private CheckboxGroup methods;
     private Checkbox chudnovsky;
+    private Checkbox ramanujan;
     private Checkbox gaussLegendre;
     private Checkbox borwein;
     private Label implementationLabel;

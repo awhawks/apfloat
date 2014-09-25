@@ -36,13 +36,13 @@ import static org.apfloat.internal.DoubleModConstants.*;
  * using multiple threads, if the number of processors is greater than one
  * in {@link ApfloatContext#getNumberOfProcessors() }.<p>
  *
- * If the data block to be transformed is larger than the memory treshold setting
+ * If the data block to be transformed is larger than the shared memory treshold setting
  * in the current ApfloatContext, this class will synchronize all data access on
  * the shared memory lock retrieved from {@link ApfloatContext#getSharedMemoryLock() }.<p>
  *
  * All access to this class must be externally synchronized.
  *
- * @version 1.1
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -65,11 +65,11 @@ public class DoubleSixStepFNTStrategy
 
         if (length > MAX_TRANSFORM_LENGTH)
         {
-            throw new ApfloatRuntimeException("Maximum transform length exceeded: " + length + " > " + MAX_TRANSFORM_LENGTH);
+            throw new TransformLengthExceededException("Maximum transform length exceeded: " + length + " > " + MAX_TRANSFORM_LENGTH);
         }
         else if (length > Integer.MAX_VALUE)
         {
-            throw new ApfloatRuntimeException("Maximum array length exceeded: " + length);
+            throw new ApfloatInternalException("Maximum array length exceeded: " + length);
         }
 
         if (length < 2)
@@ -96,21 +96,22 @@ public class DoubleSixStepFNTStrategy
         double[] wTable = createWTable(w1, n1);
         int[] permutationTable = Scramble.createScrambleTable(n1);
 
-        Object lock = getMemoryLock(length);
+        Object key = getSharedMemoryLockKey(length);
 
-        synchronized (lock)
+        lock(key);
+        try
         {
             ArrayAccess arrayAccess = dataStorage.getArray(DataStorage.READ_WRITE, 0, (int) length);
 
             DoubleMatrix.transpose(arrayAccess, n1, n2);
 
             // Do n2 transforms of length n1
-            transformRows(n1, n2, false, arrayAccess, wTable, permutationTable);
+            transformRows(key, n1, n2, false, arrayAccess, wTable, permutationTable);
 
             DoubleMatrix.transpose(arrayAccess, n2, n1);
 
             // Multiply each matrix element by w^(i*j)
-            multiplyElements(arrayAccess, 0, n1, n2, w, (double) 1);
+            multiplyElements(key, arrayAccess, 0, n1, n2, w, (double) 1);
 
             // Do n1 transforms of length n2
             if (n1 != n2)
@@ -118,9 +119,13 @@ public class DoubleSixStepFNTStrategy
                 double w2 = modPow(w, (double) n1);             // Forward n2:th root
                 wTable = createWTable(w2, n2);
             }
-            transformRows(n2, n1, false, arrayAccess, wTable, null);
+            transformRows(key, n2, n1, false, arrayAccess, wTable, null);
 
             arrayAccess.close();
+        }
+        finally
+        {
+            unlock(key);
         }
     }
 
@@ -131,11 +136,11 @@ public class DoubleSixStepFNTStrategy
 
         if (Math.max(length, totalTransformLength) > MAX_TRANSFORM_LENGTH)
         {
-            throw new ApfloatRuntimeException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
+            throw new TransformLengthExceededException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
         }
         else if (length > Integer.MAX_VALUE)
         {
-            throw new ApfloatRuntimeException("Maximum array length exceeded: " + length);
+            throw new ApfloatInternalException("Maximum array length exceeded: " + length);
         }
 
         if (length < 2)
@@ -163,17 +168,18 @@ public class DoubleSixStepFNTStrategy
         double[] wTable = createWTable(w2, n2);
         int[] permutationTable = Scramble.createScrambleTable(n1);
 
-        Object lock = getMemoryLock(length);
+        Object key = getSharedMemoryLockKey(length);
 
-        synchronized (lock)
+        lock(key);
+        try
         {
             ArrayAccess arrayAccess = dataStorage.getArray(DataStorage.READ_WRITE, 0, (int) length);
 
             // Do n1 transforms of length n2
-            transformRows(n2, n1, true, arrayAccess, wTable, null);
+            transformRows(key, n2, n1, true, arrayAccess, wTable, null);
 
             // Multiply each matrix element by w^(i*j) / totalTransformLength
-            multiplyElements(arrayAccess, 0, n1, n2, w, inverseTotalTransformLength);
+            multiplyElements(key, arrayAccess, 0, n1, n2, w, inverseTotalTransformLength);
 
             DoubleMatrix.transpose(arrayAccess, n1, n2);
 
@@ -186,11 +192,15 @@ public class DoubleSixStepFNTStrategy
                     wTable[i] = wTable[2 * i];
                 }
             }
-            transformRows(n1, n2, true, arrayAccess, wTable, permutationTable);
+            transformRows(key, n1, n2, true, arrayAccess, wTable, permutationTable);
 
             DoubleMatrix.transpose(arrayAccess, n2, n1);
 
             arrayAccess.close();
+        }
+        finally
+        {
+            unlock(key);
         }
     }
 }

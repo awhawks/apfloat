@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision integers.
  *
- * @version 1.4
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -187,7 +187,7 @@ public class ApintMath
             // (x - 1)^2 = x^2 - 2*x + 1
             pow = pow.subtract(x).subtract(x).add(one);
         }
-        else if (n == 2)
+        else if (n == 3)
         {
             // (x - 1)^3 = x^3 - 3*x^2 + 3*x - 1 = x^3 - 3*x*(x - 1) - 1
             pow = pow.subtract(new Apint(3, x.radix()).multiply(x).multiply(x.subtract(one))).subtract(one);
@@ -210,7 +210,7 @@ public class ApintMath
             // (x + 1)^2 = x^2 + 2*x + 1
             pow = pow.add(x).add(x).add(one);
         }
-        else if (n == 2)
+        else if (n == 3)
         {
             // (x + 1)^3 = x^3 + 3*x^2 + 3*x + 1 = x^3 + 3*x*(x + 1) + 1
             pow = pow.add(new Apint(3, x.radix()).multiply(x).multiply(x.add(one))).add(one);
@@ -554,10 +554,7 @@ public class ApintMath
     public static Apint factorial(long n)
         throws ArithmeticException, NumberFormatException, ApfloatRuntimeException
     {
-        ApfloatContext ctx = ApfloatContext.getContext();
-        int radix = ctx.getDefaultRadix();
-
-        return factorial(n, radix);
+        return new Apint(ApfloatMath.factorial(n, Apfloat.INFINITE));
     }
 
     /**
@@ -577,57 +574,7 @@ public class ApintMath
     public static Apint factorial(long n, int radix)
         throws ArithmeticException, NumberFormatException, ApfloatRuntimeException
     {
-        if (n < 0)
-        {
-            throw new ArithmeticException("Factorial of negative number");
-        }
-        else if (n < 2)
-        {
-            return new Apint(1, radix);
-        }
-
-        // Thanks to Peter Luschny for the improved algorithm.
-        // The idea is to split the factorial to two parts:
-        // a product of odd numbers, and a power of two.
-        // This saves some operations, as squaring is more
-        // efficient than multiplication, in the power of two.
-        // For any n, factorial(n) = oddProduct(n) * factorial(m) * 2^m,
-        // where m = n >>> 1, which gives the following algorithm.
-        Apint oddProduct = new Apint(1, radix),
-              factorialProduct = oddProduct;
-        long exponentOfTwo = 0;
-
-        for (int i = 62 - Long.numberOfLeadingZeros(n); i >= 0; i--)
-        {
-            long m = n >>> i,
-                 k = m >>> 1;
-            exponentOfTwo += k;
-            oddProduct = oddProduct.multiply(oddProduct(k + 1, m, radix));
-            factorialProduct = factorialProduct.multiply(oddProduct);
-        }
-
-        return factorialProduct.multiply(pow(new Apint(2, radix), exponentOfTwo));
-    }
-
-    private static Apint oddProduct(long n, long m, int radix)
-        throws ApfloatRuntimeException
-    {
-        n = n | 1;       // Round n up to the next odd number
-        m = (m - 1) | 1; // Round m down to the next odd number
-
-        if (n > m)
-        {
-            return new Apint(1, radix);
-        }
-        else if (n == m)
-        {
-            return new Apint(n, radix);
-        }
-        else
-        {
-            long k = (n + m) >>> 1;
-            return oddProduct(n, k, radix).multiply(oddProduct(k + 1, m, radix));
-        }
+        return new Apint(ApfloatMath.factorial(n, Apfloat.INFINITE, radix));
     }
 
     /**

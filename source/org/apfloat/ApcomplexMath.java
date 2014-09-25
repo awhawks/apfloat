@@ -2,13 +2,17 @@ package org.apfloat;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Queue;
+import java.util.PriorityQueue;
 
 import org.apfloat.spi.Util;
 
 /**
  * Various mathematical functions for arbitrary precision complex numbers.
  *
- * @version 1.4.2
+ * @see ApfloatMath
+ *
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -80,10 +84,12 @@ public class ApcomplexMath
      * @param z The argument.
      *
      * @return <code>arctan(y / x)</code> from the appropriate branch, where <code>z = x + <i>i</i> y</code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>z</code> is zero.
      */
 
     public static Apfloat arg(Apcomplex z)
-        throws ApfloatRuntimeException
+        throws ArithmeticException, ApfloatRuntimeException
     {
         return ApfloatMath.atan2(z.imag(), z.real());
     }
@@ -133,6 +139,13 @@ public class ApcomplexMath
             n = -n;
         }
 
+        return powAbs(z, n);
+    }
+
+    // Absolute value of n used
+    private static Apcomplex powAbs(Apcomplex z, long n)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
         long precision = z.precision();
         z = ApfloatHelper.extendPrecision(z);   // Big exponents will accumulate round-off errors
 
@@ -207,38 +220,74 @@ public class ApcomplexMath
     public static Apcomplex root(Apcomplex z, long n)
         throws ArithmeticException, ApfloatRuntimeException
     {
+        return root(z, n, 0);
+    }
+
+    /**
+     * Positive integer root. The specified branch counting from the smallest angle
+     * and same sign of imaginary part as <code>z</code> is chosen.
+     *
+     * @param z The argument.
+     * @param n Which root to take.
+     * @param k Which branch to take.
+     *
+     * @return <code>n</code>:th root of <code>z</code>, that is <code>z<sup>1/n</sup>e<sup>i2&pi;sk/n</sup></code> where <code>s</code> is the signum of the imaginary part of <code>z</code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>n</code> is zero.
+     *
+     * @since 1.5
+     */
+
+    public static Apcomplex root(Apcomplex z, long n, long k)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
         if (n == 0)
         {
-            if (z.real().signum() == 0 && z.imag().signum() == 0)
-            {
-                throw new ArithmeticException("Zeroth root of zero");
-            }
-
-            return new Apcomplex(new Apfloat(1, Apfloat.INFINITE, z.radix()));
+            throw new ArithmeticException("Zeroth root");
         }
         else if (z.real().signum() == 0 && z.imag().signum() == 0)
         {
-            return Apcomplex.ZERO;                // Avoid division by zero
+            if (n < 0)
+            {
+                throw new ArithmeticException("Inverse root of zero");
+            }
+            return Apcomplex.ZERO;              // Avoid division by zero
         }
         else if (n == 1)
         {
             return z;
         }
-        else if (n == 0x8000000000000000L)
+        k %= n;
+        if (z.imag().signum() == 0 && z.real().signum() > 0 && k == 0)
         {
-            return sqrt(inverseRoot(z, n / -2));
+            return new Apcomplex(ApfloatMath.root(z.real(), n));
         }
-        else if (n < 0)
+        else if (n < 0)                         // Also correctly handles 0x8000000000000000L
         {
-            return inverseRoot(z, -n);
+            return inverseRootAbs(z, -n, k);
         }
         else if (n == 2)
         {
-            return z.multiply(inverseRoot(z, 2));
+            return z.multiply(inverseRootAbs(z, 2, k));
         }
-        else    // The case n=3 can't be optimized now because wrong branch would be chosen
+        else if (n == 3)
         {
-            return Apcomplex.ONE.divide(inverseRoot(z, n));
+            // Choose the correct branch
+            if (z.real().signum() < 0)
+            {
+                k = (z.imag().signum() == 0 ? 1 - k : k - 1);
+                k %= n;
+            }
+            else
+            {
+                k = -k;
+            }
+            Apcomplex w = z.multiply(z);
+            return z.multiply(inverseRootAbs(w, 3, k));
+        }
+        else
+        {
+            return inverseRootAbs(inverseRootAbs(z, n, k), 1, 0);
         }
     }
 
@@ -257,52 +306,77 @@ public class ApcomplexMath
     public static Apcomplex inverseRoot(Apcomplex z, long n)
         throws ArithmeticException, ApfloatRuntimeException
     {
+        return inverseRoot(z, n, 0);
+    }
+
+    /**
+     * Inverse positive integer root. The specified branch counting from the smallest angle
+     * and different sign of imaginary part than <code>z</code> is chosen.
+     *
+     * @param z The argument.
+     * @param n Which inverse root to take.
+     * @param k Which branch to take.
+     *
+     * @return Inverse <code>n</code>:th root of <code>z</code>, that is <code>z<sup>-1/n</sup>e<sup>-i2&pi;k/n</sup></code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>z</code> or <code>n</code> is zero.
+     */
+
+    public static Apcomplex inverseRoot(Apcomplex z, long n, long k)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
         if (z.real().signum() == 0 && z.imag().signum() == 0)
         {
             throw new ArithmeticException("Inverse root of zero");
         }
         else if (n == 0)
         {
-            return new Apcomplex(new Apfloat(1, Apfloat.INFINITE, z.radix()));
+            throw new ArithmeticException("Inverse zeroth root");
         }
-        else if (z.equals(Apcomplex.ONE))
+        k %= n;
+        if (z.imag().signum() == 0 && z.real().signum() > 0 && k == 0)
+        {
+            return new Apcomplex(ApfloatMath.inverseRoot(z.real(), n));
+        }
+        else if (n < 0)
+        {
+            return inverseRootAbs(inverseRootAbs(z, -n, k), 1, 0);      // Also correctly handles 0x8000000000000000L
+        }
+
+        return inverseRootAbs(z, n, k);
+    }
+
+    // Absolute value of n used
+    private static Apcomplex inverseRootAbs(Apcomplex z, long n, long k)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        if (z.equals(Apcomplex.ONE) && k == 0)
         {
             // Trivial case
             return z;
         }
-        else if (z.imag().signum() == 0 && z.real().signum() > 0)
-        {
-            return new Apcomplex(ApfloatMath.inverseRoot(z.real(), n));
-        }
         else if (n == 2 && z.imag().signum() == 0 && z.real().signum() < 0)
         {
             // Avoid round-off errors and produce a pure imaginary result
-            return new Apcomplex(Apfloat.ZERO, ApfloatMath.inverseRoot(z.real().negate(), n).negate());
-        }
-        else if (n == 0x8000000000000000L)
-        {
-            Apcomplex w = inverseRoot(z, n / -2);
-            return inverseRoot(w, 2);
-        }
-        else if (n < 0)
-        {
-            return Apcomplex.ONE.divide(inverseRoot(z, -n));
+            Apfloat y = ApfloatMath.inverseRoot(z.real().negate(), n);
+            return new Apcomplex(Apfloat.ZERO, k == 0 ? y.negate() : y);
         }
 
         long targetPrecision = z.precision();
 
         if (targetPrecision == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate inverse root to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate inverse root to infinite precision");
         }
 
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix()),
-                divisor = new Apfloat(n, Apfloat.INFINITE, z.radix());
+                divisor = ApfloatMath.abs(new Apfloat(n, Apfloat.INFINITE, z.radix()));
 
         double doubleReal,
                doubleImag,
                magnitude,
-               angle;
+               angle,
+               doubleN = Math.abs((double) n);
 
         long realScale = z.real().scale(),
              imagScale = z.imag().scale(),
@@ -310,9 +384,9 @@ public class ApcomplexMath
              scaleDiff = scale - Math.min(realScale, imagScale),
              doublePrecision = ApfloatHelper.getDoublePrecision(z.radix()),
              precision = doublePrecision,       // Accuracy of initial guess
-             scaleQuot = scale / n,
+             scaleQuot = scale / n,             // If n is 0x8000000000000000 then this will be zero
              scaleRem = scale - scaleQuot * n;
-        double scaleRemFactor = Math.pow((double) z.radix(), (double) -scaleRem / (double) n);
+        double scaleRemFactor = Math.pow((double) z.radix(), (double) -scaleRem / doubleN);
 
         Apcomplex result;
 
@@ -326,17 +400,17 @@ public class ApcomplexMath
             Apcomplex tweak = new Apcomplex(Apcomplex.ZERO,
                                             tmpImag.divide(divisor.multiply(tmpReal)));
 
-            tmpReal = ApfloatMath.scale(tmpReal, -tmpReal.scale());     // Allow exponents in exess of doubles'
+            tmpReal = ApfloatMath.scale(tmpReal, -tmpReal.scale());     // Allow exponents in excess of doubles'
 
             if ((magnitude = tmpReal.doubleValue()) >= 0.0)
             {
-                doubleReal = Math.pow(magnitude, -1.0 / (double) n) * scaleRemFactor;
+                doubleReal = Math.pow(magnitude, -1.0 / doubleN) * scaleRemFactor;
                 doubleImag = 0.0;
             }
             else
             {
-                magnitude = Math.pow(-magnitude, -1.0 / (double) n) * scaleRemFactor;
-                angle = (tmpImag.signum() >= 0 ? -Math.PI : Math.PI) / (double) n;
+                magnitude = Math.pow(-magnitude, -1.0 / doubleN) * scaleRemFactor;
+                angle = (tmpImag.signum() >= 0 ? -Math.PI : Math.PI) / doubleN;
                 doubleReal = magnitude * Math.cos(angle);
                 doubleImag = magnitude * Math.sin(angle);
             }
@@ -359,13 +433,13 @@ public class ApcomplexMath
 
             if ((magnitude = tmpImag.doubleValue()) >= 0.0)
             {
-                magnitude = Math.pow(magnitude, -1.0 / (double) n) * scaleRemFactor;
-                angle = -Math.PI / (2.0 * (double) n);
+                magnitude = Math.pow(magnitude, -1.0 / doubleN) * scaleRemFactor;
+                angle = -Math.PI / (2.0 * doubleN);
             }
             else
             {
-                magnitude = Math.pow(-magnitude, -1.0 / (double) n) * scaleRemFactor;
-                angle = Math.PI / (2.0 * (double) n);
+                magnitude = Math.pow(-magnitude, -1.0 / doubleN) * scaleRemFactor;
+                angle = Math.PI / (2.0 * doubleN);
             }
 
             doubleReal = magnitude * Math.cos(angle);
@@ -388,8 +462,8 @@ public class ApcomplexMath
             doubleReal = tmpReal.doubleValue();
             doubleImag = tmpImag.doubleValue();
 
-            magnitude = Math.pow(doubleReal * doubleReal + doubleImag * doubleImag, -1.0 / (2.0 * (double) n)) * scaleRemFactor;
-            angle = -Math.atan2(doubleImag, doubleReal) / (double) n;
+            magnitude = Math.pow(doubleReal * doubleReal + doubleImag * doubleImag, -1.0 / (2.0 * doubleN)) * scaleRemFactor;
+            angle = -Math.atan2(doubleImag, doubleReal) / doubleN;
 
             doubleReal = magnitude * Math.cos(angle);
             doubleImag = magnitude * Math.sin(angle);
@@ -397,6 +471,36 @@ public class ApcomplexMath
             tmpReal = ApfloatMath.scale(new Apfloat(doubleReal, doublePrecision, z.radix()), -scaleQuot);
             tmpImag = ApfloatMath.scale(new Apfloat(doubleImag, doublePrecision, z.radix()), -scaleQuot);
             result = new Apcomplex(tmpReal, tmpImag);
+        }
+
+        // Alter the angle by the branch chosen
+        if (k != 0)
+        {
+            Apcomplex branch;
+            // Handle exact cases
+            k = (k < 0 ? k + n : k);
+            if (n % 4 == 0 && (n >>> 2) == k)
+            {
+                branch = new Apcomplex(Apfloat.ZERO, one);
+            }
+            else if (n % 4 == 0 && (n >>> 2) * 3 == k)
+            {
+                branch = new Apcomplex(Apfloat.ZERO, one.negate());
+            }
+            else if (n % 2 == 0 && (n >>> 1) == k)
+            {
+                branch = one.negate();
+            }
+            else
+            {
+                angle = 2.0 * Math.PI * (double) k / doubleN;
+                doubleReal = Math.cos(angle);
+                doubleImag = Math.sin(angle);
+                Apfloat tmpReal = new Apfloat(doubleReal, doublePrecision, z.radix());
+                Apfloat tmpImag = new Apfloat(doubleImag, doublePrecision, z.radix());
+                branch = new Apcomplex(tmpReal, tmpImag);
+            }
+            result = result.multiply(z.imag().signum() >= 0 ? branch.conj() : branch);
         }
 
         int iterations = 0;
@@ -424,7 +528,7 @@ public class ApcomplexMath
             precision *= 2;
             result = ApfloatHelper.setPrecision(result, Math.min(precision, targetPrecision));
 
-            Apcomplex t = one.subtract(z.multiply(pow(result, n)));
+            Apcomplex t = one.subtract(z.multiply(powAbs(result, n)));
             if (iterations < precisingIteration)
             {
                 t = new Apcomplex(t.real().precision(precision / 2),
@@ -436,11 +540,74 @@ public class ApcomplexMath
             // Precising iteration
             if (iterations == precisingIteration)
             {
-                result = result.add(result.multiply(one.subtract(z.multiply(pow(result, n)))).divide(divisor));
+                result = result.add(result.multiply(one.subtract(z.multiply(powAbs(result, n)))).divide(divisor));
             }
         }
 
         return ApfloatHelper.setPrecision(result, targetPrecision);
+    }
+
+    /**
+     * All values of the positive integer root.<p>
+     *
+     * Returns all of the <code>n</code> values of the root, in the order
+     * of the angle, starting from the smallest angle and same sign of
+     * imaginary part as <code>z</code>.
+     *
+     * @param z The argument.
+     * @param n Which root to take.
+     *
+     * @return All values of the <code>n</code>:th root of <code>z</code>, that is <code>z<sup>1/n</sup></code>, in the order of the angle.
+     *
+     * @exception java.lang.ArithmeticException If <code>n</code> is zero.
+     *
+     * @since 1.5
+     */
+
+    public static Apcomplex[] allRoots(Apcomplex z, int n)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        if (n == 0)
+        {
+            throw new ArithmeticException("Zeroth root");
+        }
+        else if (n == 1)
+        {
+            return new Apcomplex[] { z };
+        }
+        else if (n == 0x80000000)
+        {
+            throw new ApfloatRuntimeException("Maximum array size exceeded");
+        }
+        else if (z.real().signum() == 0 && z.imag().signum() == 0)
+        {
+            if (n < 0)
+            {
+                throw new ArithmeticException("Inverse root of zero");
+            }
+            Apcomplex[] allRoots = new Apcomplex[n];
+            Arrays.fill(allRoots, Apcomplex.ZERO);
+            return allRoots;                                    // Avoid division by zero
+        }
+
+        boolean inverse = (n < 0);
+        n = Math.abs(n);
+
+        long precision = z.precision();
+        z = ApfloatHelper.extendPrecision(z);                   // Big roots will accumulate round-off errors
+
+        Apcomplex w = inverseRootAbs(new Apfloat(1, precision, z.radix()), n, 1);
+        w = (z.imag().signum() >= 0 ^ inverse ? w.conj() : w);  // Complex n:th root of unity
+
+        Apcomplex[] allRoots = new Apcomplex[n];
+        Apcomplex root = (inverse ? inverseRootAbs(z, n, 0) : root(z, n));
+        allRoots[0] = ApfloatHelper.setPrecision(root, precision);
+        for (int i = 1; i < n; i++)
+        {
+            root = root.multiply(w);
+            allRoots[i] = ApfloatHelper.setPrecision(root, precision);
+        }
+        return allRoots;
     }
 
     /**
@@ -466,7 +633,7 @@ public class ApcomplexMath
 
         if (workingPrecision == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate agm to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate agm to infinite precision");
         }
 
         // Some minimum precision is required for the algorithm to work
@@ -538,7 +705,7 @@ public class ApcomplexMath
 
         if (targetPrecision == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate logarithm to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate logarithm to infinite precision");
         }
 
         Apfloat imagBias;
@@ -655,16 +822,15 @@ public class ApcomplexMath
 
         if (targetPrecision == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate exponent to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate exponent to infinite precision");
         }
         else if (z.real().compareTo(new Apfloat((double) Long.MAX_VALUE * Math.log((double) radix), doublePrecision, radix)) >= 0)
         {
-            throw new ApfloatRuntimeException("Overflow");
+            throw new OverflowException("Overflow");
         }
         else if (targetPrecision == 0)
         {
-            throw new ApfloatRuntimeException("Complete loss of accurate digits in imaginary part");
-            // return ApfloatMath.exp(z.real().precision(1));
+            throw new LossOfPrecisionException("Complete loss of accurate digits in imaginary part");
         }
 
         boolean negateResult = false;                           // If the final result is to be negated
@@ -851,27 +1017,15 @@ public class ApcomplexMath
     {
         long targetPrecision = Math.min(z.precision(), w.precision());
 
-        if (w.real().signum() == 0 && w.imag().signum() == 0)
+        Apcomplex result = ApfloatHelper.checkPow(z, w, targetPrecision);
+        if (result != null)
         {
-            if (z.real().signum() == 0 && z.imag().signum() == 0)
-            {
-                throw new ArithmeticException("Zero to power zero");
-            }
+            return result;
+        }
 
-            return new Apcomplex(new Apfloat(1, Apfloat.INFINITE, z.radix()));
-        }
-        else if (z.real().signum() == 0 && z.imag().signum() == 0 || z.equals(Apcomplex.ONE) || w.equals(Apcomplex.ONE))
-        {
-            return z.precision(targetPrecision);
-        }
-        else if (z.real().signum() >= 0 && z.imag().signum() == 0 && w.imag().signum() == 0)
+        if (z.real().signum() >= 0 && z.imag().signum() == 0 && w.imag().signum() == 0)
         {
             return ApfloatMath.pow(z.real(), w.real());
-        }
-
-        if (targetPrecision == Apfloat.INFINITE)
-        {
-            throw new ApfloatRuntimeException("Cannot calculate power to infinite precision");
         }
 
         return exp(w.multiply(log(z)));
@@ -1113,7 +1267,7 @@ public class ApcomplexMath
      */
 
     public static Apcomplex tan(Apcomplex z)
-        throws ApfloatRuntimeException
+        throws ArithmeticException, ApfloatRuntimeException
     {
         boolean negate = z.imag().signum() > 0;
         z = (negate ? z.negate() : z);
@@ -1139,7 +1293,7 @@ public class ApcomplexMath
      */
 
     public static Apcomplex tanh(Apcomplex z)
-        throws ApfloatRuntimeException
+        throws ArithmeticException, ApfloatRuntimeException
     {
         boolean negate = z.real().signum() < 0;
         z = (negate ? z.negate() : z);
@@ -1200,8 +1354,8 @@ public class ApcomplexMath
         }
         z = tmp;
 
-        // Sort by size
-        Arrays.sort(z, new Comparator<Apcomplex>()
+        // Create a heap, ordered by size
+        Queue<Apcomplex> heap = new PriorityQueue<Apcomplex>(z.length, new Comparator<Apcomplex>()
         {
             public int compare(Apcomplex z, Apcomplex w)
             {
@@ -1210,23 +1364,19 @@ public class ApcomplexMath
                 return (zSize < wSize ? -1 : (zSize > wSize ? 1 : 0));
             }
         });
+        heap.addAll(Arrays.asList(z));
 
-        // Recursively multiply
-        return ApfloatHelper.setPrecision(recursiveProduct(z, 0, z.length - 1), maxPrec);
-    }
+        // Multiply two smallest elements in the heap and put the product back to the heap, until only one element remains
+        // Thanks to Peter Luschny and Spiro Trikaliotis for the improved algorithm!
+        while (heap.size() > 1)
+        {
+            Apcomplex a = heap.remove();
+            Apcomplex b = heap.remove();
+            Apcomplex c = a.multiply(b);
+            heap.add(c);
+        }
 
-    private static Apcomplex recursiveProduct(Apcomplex[] z, int n, int m)
-        throws ApfloatRuntimeException
-    {
-        if (n == m)
-        {
-            return z[n];
-        }
-        else
-        {
-            int k = (n + m) >>> 1;
-            return recursiveProduct(z, n, k).multiply(recursiveProduct(z, k + 1, m));
-        }
+        return ApfloatHelper.setPrecision(heap.remove(), maxPrec);
     }
 
     /**

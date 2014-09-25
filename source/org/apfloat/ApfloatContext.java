@@ -6,11 +6,10 @@ import java.lang.management.MemoryUsage;
 import java.util.Enumeration;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Hashtable;
 import java.util.Properties;
-import java.util.WeakHashMap;
 import java.util.ResourceBundle;
 import java.util.MissingResourceException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -56,6 +55,7 @@ import org.apfloat.spi.Util;
  *   <li><code>cacheL2Size</code>, set as in {@link #setCacheL2Size(int)}</li>
  *   <li><code>cacheBurst</code>, set as in {@link #setCacheBurst(int)}</li>
  *   <li><code>memoryTreshold</code>, set as in {@link #setMemoryTreshold(int)}</li>
+ *   <li><code>shredMemoryTreshold</code>, set as in {@link #setSharedMemoryTreshold(long)}</li>
  *   <li><code>blockSize</code>, set as in {@link #setBlockSize(int)}</li>
  *   <li><code>numberOfProcessors</code>, set as in {@link #setNumberOfProcessors(int)}</li>
  *   <li><code>filePath</code>, set as in {@link #setProperty(String,String)} with property name {@link #FILE_PATH}</li>
@@ -74,6 +74,7 @@ import org.apfloat.spi.Util;
  * cacheL2Size=262144
  * cacheBurst=32
  * memoryTreshold=65536
+ * sharedMemoryTreshold=65536
  * blockSize=65536
  * numberOfProcessors=1
  * filePath=
@@ -120,10 +121,14 @@ import org.apfloat.spi.Util;
  *       This way all threads can access the maximum amount of physical memory
  *       available. The drawback is that the threads will synchronize on the
  *       same memory block, so only one thread can use it at a time. This can
- *       obviously have a huge effect on performance, since you can end up in a
- *       situation where all but one thread are idle most of the time. Note that
- *       the shared memory will be used for all data blocks larger than the
- *       memory treshold (see {@link #getMemoryTreshold()}). </li>
+ *       have a major effect on performance, if threads are idle, waiting to acquire
+ *       the shared memory lock for most of the time. To work around this, some
+ *       mechanism can be set up for pooling the threads competing for the same
+ *       lock, and executing the task using parallel threads from the thread pool.
+ *       For example the default apfloat multiplication algorithm uses such a
+ *       mechanism. Note that synchronization against the shared memory lock
+ *       will be used for all data blocks larger than the shared memory
+ *       treshold (see {@link #getSharedMemoryTreshold()}).</li>
  *   <li>{@link #setFilenameGenerator(FilenameGenerator)}: When you clone an
  *       ApfloatContext, the filename generator is by default shared. For most
  *       situations this is fine. If you for some reason want to separate
@@ -150,7 +155,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.4.1
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -198,6 +203,12 @@ public class ApfloatContext
      */
 
     public static final String MEMORY_TRESHOLD = "memoryTreshold";
+
+    /**
+     * Property name for specifying the apfloat shared memory treshold.
+     */
+
+    public static final String SHARED_MEMORY_TRESHOLD = "sharedMemoryTreshold";
 
     /**
      * Property name for specifying the I/O block size.
@@ -257,10 +268,12 @@ public class ApfloatContext
      * Create a new ApfloatContext using the specified properties.
      *
      * @param properties The properties for the ApfloatContext.
+     *
+     * @exception org.apfloat.ApfloatConfigurationException If a property value can't be converted to the correct type.
      */
 
     public ApfloatContext(Properties properties)
-        throws ApfloatRuntimeException
+        throws ApfloatConfigurationException
     {
         this.properties = (Properties) ApfloatContext.defaultProperties.clone();
         this.properties.putAll(properties);
@@ -277,24 +290,14 @@ public class ApfloatContext
 
     public static ApfloatContext getContext()
     {
-        synchronized (ApfloatContext.threadContexts)    // Avoid two monitor entry/exit blocks in multi-thread environments
+        ApfloatContext ctx = getThreadContext();
+
+        if (ctx == null)
         {
-            if (ApfloatContext.threadContexts.isEmpty())
-            {
-                return getGlobalContext();
-            }
-            else
-            {
-                ApfloatContext ctx = getThreadContext();
-
-                if (ctx == null)
-                {
-                    ctx = getGlobalContext();
-                }
-
-                return ctx;
-            }
+            ctx = getGlobalContext();
         }
+
+        return ctx;
     }
 
     /**
@@ -645,6 +648,46 @@ public class ApfloatContext
     }
 
     /**
+     * Get the shared memory treshold.
+     *
+     * @return The shared memory treshold.
+     *
+     * @see #setSharedMemoryTreshold(long)
+     */
+
+    public long getSharedMemoryTreshold()
+    {
+        return this.sharedMemoryTreshold;
+    }
+
+    /**
+     * Set the maximum size of apfloats in bytes that can be used
+     * without synchronizing against the shared memory lock.
+     * The minimum value for this setting is 128.<p>
+     *
+     * If only one thread is used then this setting has no effect.
+     * If multiple threads are used, and this setting is too small,
+     * performance will suffer as the synchronization blocking and
+     * other overhead becomes significant. On the other hand, if the
+     * numbers are being stored in memory, and the shared memory
+     * treshold is too big, you can get an <code>OutOfMemoryError</code>.<p>
+     *
+     * The optimal value depends on the application and the way parallelism
+     * is used. As a rule of thumb, this should be set to a value that is
+     * the maximum memory block size divided by the number of parallel threads.
+     * The default is a somewhat more conservative one fourth of this number.
+     *
+     * @param sharedMemoryTreshold The number of bytes that apfloats will at most have, without synchronizing against the shared memory lock, within this context.
+     */
+
+    public void setSharedMemoryTreshold(long sharedMemoryTreshold)
+    {
+        sharedMemoryTreshold = Math.max(sharedMemoryTreshold, 128);
+        this.properties.setProperty(SHARED_MEMORY_TRESHOLD, String.valueOf(sharedMemoryTreshold));
+        this.sharedMemoryTreshold = sharedMemoryTreshold;
+    }
+
+    /**
      * Get the I/O block size.
      *
      * @return The I/O block size.
@@ -776,10 +819,12 @@ public class ApfloatContext
      *
      * @param propertyName The name of the property.
      * @param propertyValue The value of the property as a <code>String</code>.
+     *
+     * @exception org.apfloat.ApfloatConfigurationException If the property value can't be converted to the correct type.
      */
 
     public void setProperty(String propertyName, String propertyValue)
-        throws ApfloatRuntimeException
+        throws ApfloatConfigurationException
     {
         try
         {
@@ -799,7 +844,7 @@ public class ApfloatContext
             {
                 setCacheL1Size(Integer.parseInt(propertyValue));
             }
-            if (propertyName.equals(CACHE_L2_SIZE))
+            else if (propertyName.equals(CACHE_L2_SIZE))
             {
                 setCacheL2Size(Integer.parseInt(propertyValue));
             }
@@ -807,9 +852,13 @@ public class ApfloatContext
             {
                 setCacheBurst(Integer.parseInt(propertyValue));
             }
-            if (propertyName.equals(MEMORY_TRESHOLD))
+            else if (propertyName.equals(MEMORY_TRESHOLD))
             {
                 setMemoryTreshold(Integer.parseInt(propertyValue));
+            }
+            else if (propertyName.equals(SHARED_MEMORY_TRESHOLD))
+            {
+                setSharedMemoryTreshold(Long.parseLong(propertyValue));
             }
             else if (propertyName.equals(BLOCK_SIZE))
             {
@@ -848,7 +897,7 @@ public class ApfloatContext
         }
         catch (Exception e)
         {
-            throw new ApfloatRuntimeException("Error setting property \"" + propertyName + "\" to value \"" + propertyValue + '\"', e);
+            throw new ApfloatConfigurationException("Error setting property \"" + propertyName + "\" to value \"" + propertyValue + '\"', e);
         }
     }
 
@@ -867,7 +916,7 @@ public class ApfloatContext
     /**
      * Get the shared memory lock object.
      * All internal functions that allocate a memory block larger than the
-     * memory treshold should synchronize the allocation and memory access
+     * shared memory treshold should synchronize the allocation and memory access
      * on the object returned by this method.
      *
      * @return The object on which large memory block allocation and access should be synchronized.
@@ -881,7 +930,7 @@ public class ApfloatContext
     /**
      * Set the shared memory lock object.
      * All internal functions that allocate a memory block larger than the
-     * memory treshold should synchronize the allocation and memory access
+     * shared memory treshold should synchronize the allocation and memory access
      * on the object passed to this method.<p>
      *
      * The object is not used for anything else than synchronization, so the
@@ -1058,10 +1107,12 @@ public class ApfloatContext
      * The names of the properties can be all of the constants defined above.
      *
      * @param properties The properties.
+     *
+     * @exception org.apfloat.ApfloatConfigurationException If a property value can't be converted to the correct type.
      */
 
     public void setProperties(Properties properties)
-        throws ApfloatRuntimeException
+        throws ApfloatConfigurationException
     {
         Enumeration<?> keys = properties.propertyNames();
         while (keys.hasMoreElements())
@@ -1093,7 +1144,7 @@ public class ApfloatContext
         {
             ApfloatContext ctx = (ApfloatContext) super.clone();    // Copy all attributes by reference
             ctx.properties = (Properties) ctx.properties.clone();   // Create shallow copies
-            ctx.attributes = (Hashtable<String, Object>) ctx.attributes.clone();
+            ctx.attributes = new ConcurrentHashMap<String, Object>(ctx.attributes);
 
             return ctx;
         }
@@ -1105,7 +1156,7 @@ public class ApfloatContext
     }
 
     private static ApfloatContext globalContext;
-    private static Map<Thread, ApfloatContext> threadContexts = Collections.synchronizedMap(new WeakHashMap<Thread, ApfloatContext>()); // Use WeakHashMap to automatically remove completed threads
+    private static Map<Thread, ApfloatContext> threadContexts = new ConcurrentWeakHashMap<Thread, ApfloatContext>(); // Use a weak hash map to automatically remove completed threads; concurrent to avoid blocking threads
     private static Properties defaultProperties;
     private static ExecutorService defaultExecutorService;
 
@@ -1117,13 +1168,14 @@ public class ApfloatContext
     private volatile int cacheL2Size;
     private volatile int cacheBurst;
     private volatile int memoryTreshold;
+    private volatile long sharedMemoryTreshold;
     private volatile int blockSize;
     private volatile int numberOfProcessors;
     private volatile Thread cleanupThread;
     private volatile Properties properties;
     private volatile Object sharedMemoryLock = new Object();
     private volatile ExecutorService executorService = ApfloatContext.defaultExecutorService;
-    private volatile Hashtable<String, Object> attributes = new Hashtable<String, Object>();
+    private volatile ConcurrentHashMap<String, Object> attributes = new ConcurrentHashMap<String, Object>();
 
     static
     {
@@ -1146,6 +1198,7 @@ public class ApfloatContext
         ApfloatContext.defaultProperties.setProperty(CACHE_L2_SIZE, "262144");
         ApfloatContext.defaultProperties.setProperty(CACHE_BURST, "32");
         ApfloatContext.defaultProperties.setProperty(MEMORY_TRESHOLD, "65536");
+        ApfloatContext.defaultProperties.setProperty(SHARED_MEMORY_TRESHOLD, String.valueOf(maxMemoryBlockSize / numberOfProcessors / 4));
         ApfloatContext.defaultProperties.setProperty(BLOCK_SIZE, "65536");
         ApfloatContext.defaultProperties.setProperty(NUMBER_OF_PROCESSORS, String.valueOf(numberOfProcessors));
         ApfloatContext.defaultProperties.setProperty(FILE_PATH, "");

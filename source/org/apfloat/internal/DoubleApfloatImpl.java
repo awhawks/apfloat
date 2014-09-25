@@ -8,6 +8,8 @@ import java.io.IOException;
 import org.apfloat.Apfloat;
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
+import org.apfloat.InfiniteExpansionException;
+import org.apfloat.OverflowException;
 import org.apfloat.spi.ApfloatImpl;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
@@ -30,7 +32,7 @@ import static org.apfloat.internal.DoubleRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.4
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -368,7 +370,7 @@ public final class DoubleApfloatImpl
 
         if (Double.isInfinite(value) || Double.isNaN(value))
         {
-            throw new ApfloatRuntimeException(value + " is not a valid number");
+            throw new ApfloatInternalException(value + " is not a valid number");
         }
 
         this.radix = radix;
@@ -787,7 +789,7 @@ public final class DoubleApfloatImpl
     {
         if (!(x instanceof DoubleApfloatImpl))
         {
-            throw new ApfloatRuntimeException("Wrong operand type: " + x.getClass().getName());
+            throw new ImplementationMismatchException("Wrong operand type: " + x.getClass().getName());
         }
 
         DoubleApfloatImpl that = (DoubleApfloatImpl) x;
@@ -843,7 +845,7 @@ public final class DoubleApfloatImpl
 
                 if (this.exponent == MAX_EXPONENT[this.radix] && carrySize > 0)
                 {
-                    throw new ApfloatRuntimeException("Overflow");
+                    throw new OverflowException("Overflow");
                 }
 
                 if (precision != Apfloat.INFINITE &&
@@ -1031,7 +1033,7 @@ public final class DoubleApfloatImpl
 
                 if (this.exponent == MAX_EXPONENT[this.radix] && leadingZeros == 0)
                 {
-                    throw new ApfloatRuntimeException("Overflow");
+                    throw new OverflowException("Overflow");
                 }
             }
 
@@ -1070,7 +1072,7 @@ public final class DoubleApfloatImpl
     {
         if (!(x instanceof DoubleApfloatImpl))
         {
-            throw new ApfloatRuntimeException("Wrong operand type: " + x.getClass().getName());
+            throw new ImplementationMismatchException("Wrong operand type: " + x.getClass().getName());
         }
 
         DoubleApfloatImpl that = (DoubleApfloatImpl) x;
@@ -1086,7 +1088,7 @@ public final class DoubleApfloatImpl
 
         if (exponent > MAX_EXPONENT[this.radix])
         {
-            throw new ApfloatRuntimeException("Overflow");
+            throw new OverflowException("Overflow");
         }
         else if (exponent < -MAX_EXPONENT[this.radix])
         {
@@ -1147,7 +1149,7 @@ public final class DoubleApfloatImpl
     {
         if (!(x instanceof DoubleApfloatImpl))
         {
-            throw new ApfloatRuntimeException("Wrong operand type: " + x.getClass().getName());
+            throw new ImplementationMismatchException("Wrong operand type: " + x.getClass().getName());
         }
 
         DoubleApfloatImpl that = (DoubleApfloatImpl) x;
@@ -1161,7 +1163,7 @@ public final class DoubleApfloatImpl
 
         if (exponent > MAX_EXPONENT[this.radix])
         {
-            throw new ApfloatRuntimeException("Overflow");
+            throw new OverflowException("Overflow");
         }
         else if (exponent < -MAX_EXPONENT[this.radix])
         {
@@ -1213,7 +1215,7 @@ public final class DoubleApfloatImpl
 
                 if (basePrecision == Apfloat.INFINITE)
                 {
-                    throw new ApfloatRuntimeException("Cannot perform inexact division to infinite precision");
+                    throw new InfiniteExpansionException("Cannot perform inexact division to infinite precision");
                 }
 
                 size = basePrecision;
@@ -1509,14 +1511,14 @@ public final class DoubleApfloatImpl
     {
         if (!(x instanceof DoubleApfloatImpl))
         {
-            throw new ApfloatRuntimeException("Wrong operand type: " + x.getClass().getName());
+            throw new ImplementationMismatchException("Wrong operand type: " + x.getClass().getName());
         }
 
         DoubleApfloatImpl that = (DoubleApfloatImpl) x;
 
         if (this.radix != that.radix)
         {
-            throw new ApfloatRuntimeException("Cannot compare values with different radixes: " + this.radix + " and " + that.radix);
+            throw new RadixMismatchException("Cannot compare values with different radixes: " + this.radix + " and " + that.radix);
         }
         else if (this.sign == 0 && that.sign == 0)      // Both are zero
         {
@@ -1658,7 +1660,7 @@ public final class DoubleApfloatImpl
     {
         if (!(x instanceof DoubleApfloatImpl))
         {
-            throw new ApfloatRuntimeException("Wrong operand type: " + x.getClass().getName());
+            throw new ImplementationMismatchException("Wrong operand type: " + x.getClass().getName());
         }
 
         DoubleApfloatImpl that = (DoubleApfloatImpl) x;
@@ -1677,7 +1679,7 @@ public final class DoubleApfloatImpl
         }
         else if (this.radix != that.radix)
         {
-            throw new ApfloatRuntimeException("Cannot compare values with different radixes: " + this.radix + " and " + that.radix);
+            throw new RadixMismatchException("Cannot compare values with different radixes: " + this.radix + " and " + that.radix);
         }
         else if (scale() < that.scale())                // Now we know that both have same sign (which is not zero)
         {
@@ -1943,7 +1945,7 @@ public final class DoubleApfloatImpl
 
         if (length > Integer.MAX_VALUE || length < 0)           // Detect overflow
         {
-            throw new ApfloatRuntimeException("Number is too large to fit in a String");
+            throw new ApfloatInternalException("Number is too large to fit in a String");
         }
 
         StringWriter writer = new StringWriter((int) length);
@@ -1954,7 +1956,7 @@ public final class DoubleApfloatImpl
         }
         catch (IOException ioe)
         {
-            throw new ApfloatRuntimeException("Unexpected I/O error writing to StringWriter", ioe);
+            throw new ApfloatInternalException("Unexpected I/O error writing to StringWriter", ioe);
         }
 
         String value = writer.toString();

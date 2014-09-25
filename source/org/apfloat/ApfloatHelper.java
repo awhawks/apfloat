@@ -13,7 +13,7 @@ import static org.apfloat.spi.RadixConstants.*;
 /**
  * Various utility methods related to apfloats.
  *
- * @version 1.3
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -358,6 +358,68 @@ class ApfloatHelper
         {
             throw new NumberFormatException("Invalid radix " + radix + "; radix must be between " + Character.MIN_RADIX + " and " + Character.MAX_RADIX);
         }
+    }
+
+    private static void checkPowPrecision(long targetPrecision)
+        throws InfiniteExpansionException
+
+    {
+        if (targetPrecision == Apfloat.INFINITE)
+        {
+            throw new InfiniteExpansionException("Cannot calculate power to infinite precision");
+        }
+    }
+
+    private static Apcomplex checkPowBasic(Apcomplex z, Apcomplex w, long targetPrecision)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        if (w.real().signum() == 0 && w.imag().signum() == 0)
+        {
+            if (z.real().signum() == 0 && z.imag().signum() == 0)
+            {
+                throw new ArithmeticException("Zero to power zero");
+            }
+
+            return new Apcomplex(new Apfloat(1, Apfloat.INFINITE, z.radix()));
+        }
+        else if (z.real().signum() == 0 && z.imag().signum() == 0 || z.equals(Apcomplex.ONE) || w.equals(Apcomplex.ONE))
+        {
+            return z.precision(targetPrecision);
+        }
+
+        return null;
+    }
+
+    public static Apcomplex checkPow(Apcomplex z, Apcomplex w, long targetPrecision)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        Apcomplex result = checkPowBasic(z, w, targetPrecision);
+        if (result != null)
+        {
+            return result;
+        }
+
+        checkPowPrecision(targetPrecision);
+
+        return null;
+    }
+
+    public static Apfloat checkPow(Apfloat x, Apfloat y, long targetPrecision)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        Apcomplex result = checkPowBasic(x, y, targetPrecision);
+        if (result != null)
+        {
+            return result.real();
+        }
+        else if (x.signum() < 0)
+        {
+            throw new ArithmeticException("Power of negative number; result would be complex");
+        }
+
+        checkPowPrecision(targetPrecision);
+
+        return null;
     }
 
     public static int getFloatPrecision(int radix)

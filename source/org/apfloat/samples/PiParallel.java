@@ -20,7 +20,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.1
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -33,7 +33,7 @@ public class PiParallel
      * Uses multiple threads to calculate pi in parallel.
      */
 
-    protected static class ParallelPiCalculator
+    protected static class ParallelChudnovskyPiCalculator
         extends ChudnovskyPiCalculator
     {
         /**
@@ -43,7 +43,7 @@ public class PiParallel
          * @param radix The radix to be used.
          */
 
-        public ParallelPiCalculator(long precision, int radix)
+        public ParallelChudnovskyPiCalculator(long precision, int radix)
             throws ApfloatRuntimeException
         {
             super(precision, radix);
@@ -62,7 +62,7 @@ public class PiParallel
          * @param progressIndicator Class to print out the progress of the calculation.
          */
 
-        protected void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, final ChudnovskyProgressIndicator progressIndicator)
+        protected void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, final BinarySplittingProgressIndicator progressIndicator)
             throws ApfloatRuntimeException
         {
             checkAlive();
@@ -141,7 +141,7 @@ public class PiParallel
                 {
                     public Apfloat execute()
                     {
-                        return ApfloatMath.inverseRoot(new Apfloat(640320, ParallelPiCalculator.this.precision, ParallelPiCalculator.this.radix), 2);
+                        return ApfloatMath.inverseRoot(new Apfloat(640320, ParallelChudnovskyPiCalculator.this.precision, ParallelChudnovskyPiCalculator.this.radix), 2);
                     }
                 }, T1operation = new Operation<Apfloat>()
                 {
@@ -392,7 +392,7 @@ public class PiParallel
             long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 32.65445004177);
 
             long time = System.currentTimeMillis();
-            r(0, terms + 1, T, Q, null, F, nodes, new ParallelChudnovskyProgressIndicator(terms));
+            r(0, terms + 1, T, Q, null, F, nodes, new BinarySplittingProgressIndicator(terms));
             time = System.currentTimeMillis() - time;
 
             Pi.err.println("Series terms calculation complete, elapsed time " + time / 1000.0 + " seconds");
@@ -412,10 +412,10 @@ public class PiParallel
 
                     if (factor == null)
                     {
-                        factor = ApfloatMath.inverseRoot(new Apfloat(640320, ParallelPiCalculator.this.precision, ParallelPiCalculator.this.radix), 2);
+                        factor = ApfloatMath.inverseRoot(new Apfloat(640320, ParallelChudnovskyPiCalculator.this.precision, ParallelChudnovskyPiCalculator.this.radix), 2);
                     }
 
-                    return ApfloatMath.inverseRoot(factor.multiply(t), 1).multiply(new Apfloat(53360, Apfloat.INFINITE, ParallelPiCalculator.this.radix)).multiply(q);
+                    return ApfloatMath.inverseRoot(factor.multiply(t), 1).multiply(new Apfloat(53360, Apfloat.INFINITE, ParallelChudnovskyPiCalculator.this.radix)).multiply(q);
                 }
             });
             time = System.currentTimeMillis() - time;
@@ -423,21 +423,6 @@ public class PiParallel
             Pi.err.println("took " + time / 1000.0 + " seconds");
 
             return pi;
-        }
-    }
-
-    private static class ParallelChudnovskyProgressIndicator
-        extends ChudnovskyProgressIndicator
-    {
-        public ParallelChudnovskyProgressIndicator(long terms)
-        {
-            super(terms);
-        }
-
-        // Synchronized since multiple threads may be calling this at the same time
-        public synchronized void progress(long n1, long n2)
-        {
-            super.progress(n1, n2);
         }
     }
 
@@ -545,7 +530,7 @@ public class PiParallel
 
         ApfloatContext.getContext().setNumberOfProcessors(numberOfProcessors);
 
-        Operation<Apfloat> operation = new ParallelPiCalculator(precision, radix);
+        Operation<Apfloat> operation = new ParallelChudnovskyPiCalculator(precision, radix);
 
         setOut(new PrintWriter(System.out, true));
         setErr(new PrintWriter(System.err, true));

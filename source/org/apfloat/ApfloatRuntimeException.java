@@ -1,8 +1,7 @@
 package org.apfloat;
 
 /**
- * Exception indicating some unexpected apfloat
- * implementation specific error situation.
+ * Exception indicating some unexpected error situation.
  * This exception can be thrown in different situations, for example:
  *
  * <ul>
@@ -11,12 +10,11 @@ package org.apfloat;
  *   <li>Overflow. If the exponent is too large to fit in a <code>long</code>,
  *       the situation can't be handled. Also, there is no "infinity" apfloat
  *       value that could be returned as the result.</li>
- *   <li>Backing storage failure. For example, if a number is stored on disk,
- *       an <code>IOException</code> can be thrown in any of the disk operations,
- *       if e.g. a file can't be created, or if the disk is full.</li>
- *   <li>Operands of some operation have different radixes.</li>
- *   <li>Other internal limitation, e.g. the maximum transform length
- *       mathematically possible for the implementation, is exceeded.</li>
+ *   <li>Total loss of precision. For example, <code>ApfloatMath.sin(new Apfloat(1e100))</code>.
+ *       If the magnitude (100) is far greater than the precision (1) then
+ *       the value of the <code>sin()</code> function can't be determined
+ *       to any accuracy.</li>
+ *   <li>Some other internal limitation.</li>
  * </ul>
  *
  * @version 1.1

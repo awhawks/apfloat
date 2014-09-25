@@ -51,7 +51,7 @@ public class IntMediumConvolutionStrategy
 
         if (shortSize > Integer.MAX_VALUE)
         {
-            throw new ApfloatRuntimeException("Too long shorter number, size = " + shortSize);
+            throw new ApfloatInternalException("Too long shorter number, size = " + shortSize);
         }
 
         final int bufferSize = (int) shortSize;

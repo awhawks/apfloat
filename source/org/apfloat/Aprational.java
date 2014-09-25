@@ -14,6 +14,7 @@ import org.apfloat.spi.ApfloatImpl;
  * a numerator and a denominator of type {@link Apint}.<p>
  *
  * @see Apint
+ * @see AprationalMath
  *
  * @version 1.4
  * @author Mikko Tommila

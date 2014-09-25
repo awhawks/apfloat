@@ -10,7 +10,7 @@ import org.apfloat.spi.Util;
 /**
  * Default initial settings for the global {@link ApfloatContext}.
  *
- * @version 1.4.1
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -45,6 +45,7 @@ public class apfloat
             { ApfloatContext.CACHE_L2_SIZE, "262144" },
             { ApfloatContext.CACHE_BURST, "32" },
             { ApfloatContext.MEMORY_TRESHOLD, "65536" },
+            { ApfloatContext.SHARED_MEMORY_TRESHOLD, String.valueOf(maxMemoryBlockSize / numberOfProcessors / 4));
             { ApfloatContext.BLOCK_SIZE, "65536" },
             { ApfloatContext.NUMBER_OF_PROCESSORS, String.valueOf(numberOfProcessors) },
             { ApfloatContext.FILE_PATH, "" },

@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Hashtable;
+import java.util.Queue;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -15,7 +17,9 @@ import org.apfloat.spi.Util;
  * Due to different types of round-off errors that can occur in the implementation,
  * no guarantees about e.g. monotonicity are given for any of the methods.
  *
- * @version 1.4.2
+ * @see ApintMath
+ *
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -123,7 +127,7 @@ public class ApfloatMath
      *
      * @return <code>n</code>:th root of <code>x</code>, that is <code>x<sup>1/n</sup></code>.
      *
-     * @exception java.lang.ArithmeticException If <code>n</code> and <code>x</code> are zero, or <code>x</code> is negative and <code>n</code> is even.
+     * @exception java.lang.ArithmeticException If <code>n</code> is zero, or <code>x</code> is negative and <code>n</code> is even.
      */
 
     public static Apfloat root(Apfloat x, long n)
@@ -131,12 +135,7 @@ public class ApfloatMath
     {
         if (n == 0)
         {
-            if (x.signum() == 0)
-            {
-                throw new ArithmeticException("Zeroth root of zero");
-            }
-
-            return new Apfloat(1, Apfloat.INFINITE, x.radix());
+            throw new ArithmeticException("Zeroth root");
         }
         else if (x.signum() == 0)
         {
@@ -254,7 +253,7 @@ public class ApfloatMath
         }
         else if (n == 0)
         {
-            return new Apfloat(1, Apfloat.INFINITE, x.radix());
+            throw new ArithmeticException("Inverse zeroth root");
         }
         else if ((n & 1) == 0 && x.signum() < 0)
         {
@@ -271,7 +270,7 @@ public class ApfloatMath
         }
         else if (targetPrecision == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate inverse root to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate inverse root to infinite precision");
         }
         else if (n == 0x8000000000000000L)
         {
@@ -568,7 +567,7 @@ public class ApfloatMath
         {
             return x;                           // abs(x) < abs(y)
         }
-        else if (x.precision() <= x.scale() - y.scale())
+        else if (x.precision() <= x.scale() - y.scale())                        // We now know that x.scale() >= y.scale()
         {
             return Apfloat.ZERO;                // Degenerate case; not enough precision to make any sense
         }
@@ -699,7 +698,7 @@ public class ApfloatMath
 
         if (workingPrecision == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate agm to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate agm to infinite precision");
         }
 
         // Some extra precision is required for the algorithm to work accurately
@@ -784,7 +783,7 @@ public class ApfloatMath
         }
         else if (precision == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate pi to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate pi to infinite precision");
         }
 
         // Get synchronization lock - getting the lock is also synchronized
@@ -1151,7 +1150,7 @@ public class ApfloatMath
 
         if (targetPrecision == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate logarithm to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate logarithm to infinite precision");
         }
 
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, x.radix());
@@ -1260,11 +1259,11 @@ public class ApfloatMath
 
         if (targetPrecision == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate exponent to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate exponent to infinite precision");
         }
         else if (x.compareTo(new Apfloat((double) Long.MAX_VALUE * Math.log((double) radix), doublePrecision, radix)) >= 0)
         {
-            throw new ApfloatRuntimeException("Overflow");
+            throw new OverflowException("Overflow");
         }
         else if (x.scale() <= Long.MIN_VALUE / 2 + Apfloat.EXTRA_PRECISION)
         {
@@ -1384,22 +1383,10 @@ public class ApfloatMath
     {
         long targetPrecision = Math.min(x.precision(), y.precision());
 
-        if (y.signum() == 0)
+        Apfloat result = ApfloatHelper.checkPow(x, y, targetPrecision);
+        if (result != null)
         {
-            if (x.signum() == 0)
-            {
-                throw new ArithmeticException("Zero to power zero");
-            }
-
-            return new Apfloat(1, Apfloat.INFINITE, x.radix());
-        }
-        else if (x.signum() == 0 || x.equals(Apfloat.ONE) || y.equals(Apfloat.ONE))
-        {
-            return x.precision(targetPrecision);
-        }
-        else if (x.signum() < 0)
-        {
-            throw new ArithmeticException("Power of negative number; result would be complex");
+            return result;
         }
 
         // Try to precalculate the needed values just once to the required precision,
@@ -1411,7 +1398,7 @@ public class ApfloatMath
         targetPrecision = Util.ifFinite(targetPrecision, targetPrecision + one.equalDigits(x)); // If the log() argument is close to 1, the result is less accurate
         x = x.precision(Math.min(x.precision(), targetPrecision));
 
-        Apfloat result = log(x);
+        result = log(x);
         long intermediatePrecision = Math.min(y.precision(), result.precision());
         result = ApfloatHelper.extendPrecision(result);
         result = ApfloatHelper.extendPrecision(y).multiply(result);
@@ -1637,7 +1624,7 @@ public class ApfloatMath
         }
         else if (Math.min(x.precision(), y.precision()) == Apfloat.INFINITE)
         {
-            throw new ApfloatRuntimeException("Cannot calculate atan2 to infinite precision");
+            throw new InfiniteExpansionException("Cannot calculate atan2 to infinite precision");
         }
         else
         {
@@ -1689,7 +1676,7 @@ public class ApfloatMath
      */
 
     public static Apfloat tan(Apfloat x)
-        throws ApfloatRuntimeException
+        throws ArithmeticException, ApfloatRuntimeException
     {
         Apcomplex w = ApcomplexMath.exp(new Apcomplex(Apfloat.ZERO, x));
 
@@ -1743,8 +1730,8 @@ public class ApfloatMath
         }
         x = tmp;
 
-        // Sort by size
-        Arrays.sort(x, new Comparator<Apfloat>()
+        // Create a heap, ordered by size
+        Queue<Apfloat> heap = new PriorityQueue<Apfloat>(x.length, new Comparator<Apfloat>()
         {
             public int compare(Apfloat x, Apfloat y)
             {
@@ -1753,23 +1740,19 @@ public class ApfloatMath
                 return (xSize < ySize ? -1 : (xSize > ySize ? 1 : 0));
             }
         });
+        heap.addAll(Arrays.asList(x));
 
-        // Recursively multiply
-        return recursiveProduct(x, 0, x.length - 1).precision(maxPrec);
-    }
+        // Multiply two smallest elements in the heap and put the product back to the heap, until only one element remains
+        // Thanks to Peter Luschny and Spiro Trikaliotis for the improved algorithm!
+        while (heap.size() > 1)
+        {
+            Apfloat a = heap.remove();
+            Apfloat b = heap.remove();
+            Apfloat c = a.multiply(b);
+            heap.add(c);
+        }
 
-    private static Apfloat recursiveProduct(Apfloat[] x, int n, int m)
-        throws ApfloatRuntimeException
-    {
-        if (n == m)
-        {
-            return x[n];
-        }
-        else
-        {
-            int k = (n + m) >>> 1;
-            return recursiveProduct(x, n, k).multiply(recursiveProduct(x, k + 1, m));
-        }
+        return heap.remove().precision(maxPrec);
     }
 
     /**
@@ -1850,6 +1833,74 @@ public class ApfloatMath
         }
 
         return s;
+    }
+
+    static Apfloat factorial(long n, long precision)
+        throws ArithmeticException, NumberFormatException, ApfloatRuntimeException
+    {
+        ApfloatContext ctx = ApfloatContext.getContext();
+        int radix = ctx.getDefaultRadix();
+
+        return factorial(n, precision, radix);
+    }
+
+    static Apfloat factorial(long n, long precision, int radix)
+        throws ArithmeticException, NumberFormatException, ApfloatRuntimeException
+    {
+        if (n < 0)
+        {
+            throw new ArithmeticException("Factorial of negative number");
+        }
+        else if (n < 2)
+        {
+            return new Apfloat(1, precision, radix);
+        }
+
+        long targetPrecision = precision;
+        precision = ApfloatHelper.extendPrecision(precision);
+
+        // Thanks to Peter Luschny for the improved algorithm.
+        // The idea is to split the factorial to two parts:
+        // a product of odd numbers, and a power of two.
+        // This saves some operations, as squaring is more
+        // efficient than multiplication, in the power of two.
+        // For any n, factorial(n) = oddProduct(n) * factorial(m) * 2^m,
+        // where m = n >>> 1, which gives the following algorithm.
+        Apfloat oddProduct = new Apfloat(1, precision, radix),
+                factorialProduct = oddProduct;
+        long exponentOfTwo = 0;
+
+        for (int i = 62 - Long.numberOfLeadingZeros(n); i >= 0; i--)
+        {
+            long m = n >>> i,
+                 k = m >>> 1;
+            exponentOfTwo += k;
+            oddProduct = oddProduct.multiply(oddProduct(k + 1, m, precision, radix));
+            factorialProduct = factorialProduct.multiply(oddProduct);
+        }
+
+        return factorialProduct.multiply(pow(new Apfloat(2, precision, radix), exponentOfTwo)).precision(targetPrecision);
+    }
+
+    private static Apfloat oddProduct(long n, long m, long precision, int radix)
+        throws ApfloatRuntimeException
+    {
+        n = n | 1;       // Round n up to the next odd number
+        m = (m - 1) | 1; // Round m down to the next odd number
+
+        if (n > m)
+        {
+            return new Apfloat(1, precision, radix);
+        }
+        else if (n == m)
+        {
+            return new Apfloat(n, precision, radix);
+        }
+        else
+        {
+            long k = (n + m) >>> 1;
+            return oddProduct(n, k, precision, radix).multiply(oddProduct(k + 1, m, precision, radix));
+        }
     }
 
     // Clean up static maps at shutdown, to allow garbage collecting temporary files

@@ -36,11 +36,11 @@ public class LongTableFNTStrategy
 
         if (length > MAX_TRANSFORM_LENGTH)
         {
-            throw new ApfloatRuntimeException("Maximum transform length exceeded: " + length + " > " + MAX_TRANSFORM_LENGTH);
+            throw new TransformLengthExceededException("Maximum transform length exceeded: " + length + " > " + MAX_TRANSFORM_LENGTH);
         }
         else if (length > Integer.MAX_VALUE)
         {
-            throw new ApfloatRuntimeException("Maximum array length exceeded: " + length);
+            throw new ApfloatInternalException("Maximum array length exceeded: " + length);
         }
 
         setModulus(MODULUS[modulus]);                                       // Modulus
@@ -61,11 +61,11 @@ public class LongTableFNTStrategy
 
         if (Math.max(length, totalTransformLength) > MAX_TRANSFORM_LENGTH)
         {
-            throw new ApfloatRuntimeException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
+            throw new TransformLengthExceededException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
         }
         else if (length > Integer.MAX_VALUE)
         {
-            throw new ApfloatRuntimeException("Maximum array length exceeded: " + length);
+            throw new ApfloatInternalException("Maximum array length exceeded: " + length);
         }
 
         setModulus(MODULUS[modulus]);                                       // Modulus

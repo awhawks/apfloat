@@ -20,7 +20,7 @@ import org.apfloat.spi.FilenameGenerator;
  * Abstract base class for disk-based data storage, containing the common
  * functionality independent of the element type.
  *
- * @version 1.1
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -50,7 +50,7 @@ public abstract class DiskDataStorage
             {
                 if (!this.file.createNewFile())
                 {
-                    throw new ApfloatRuntimeException("Failed to create new file \"" + this.filename + '\"');
+                    throw new BackingStorageException("Failed to create new file \"" + this.filename + '\"');
                 }
 
                 // Ensure file is deleted always
@@ -60,7 +60,7 @@ public abstract class DiskDataStorage
             }
             catch (IOException ioe)
             {
-                throw new ApfloatRuntimeException("Unable to access file \"" + this.filename + '\"', ioe);
+                throw new BackingStorageException("Unable to access file \"" + this.filename + '\"', ioe);
             }
 
             this.fileChannel = this.randomAccessFile.getChannel();
@@ -120,7 +120,7 @@ public abstract class DiskDataStorage
             }
             catch (IOException ioe)
             {
-                throw new ApfloatRuntimeException("Unable to write to file \"" + getFilename() + '\"', ioe);
+                throw new BackingStorageException("Unable to write to file \"" + getFilename() + '\"', ioe);
             }
         }
 
@@ -139,7 +139,7 @@ public abstract class DiskDataStorage
             }
             catch (IOException ioe)
             {
-                throw new ApfloatRuntimeException("Unable to read from file \"" + getFilename() + '\"', ioe);
+                throw new BackingStorageException("Unable to read from file \"" + getFilename() + '\"', ioe);
             }
         }
 
@@ -272,7 +272,7 @@ public abstract class DiskDataStorage
         }
         catch (IOException ioe)
         {
-            throw new ApfloatRuntimeException("Unable to copy to file \"" + getFilename() + '\"', ioe);
+            throw new BackingStorageException("Unable to copy to file \"" + getFilename() + '\"', ioe);
         }
     }
 
@@ -285,7 +285,7 @@ public abstract class DiskDataStorage
         }
         catch (IOException ioe)
         {
-            throw new ApfloatRuntimeException("Unable to access file \"" + getFilename() + '\"', ioe);
+            throw new BackingStorageException("Unable to access file \"" + getFilename() + '\"', ioe);
         }
     }
 
@@ -309,7 +309,7 @@ public abstract class DiskDataStorage
         }
         catch (IOException ioe)
         {
-            throw new ApfloatRuntimeException("Unable to access file \"" + getFilename() + '\"', ioe);
+            throw new BackingStorageException("Unable to access file \"" + getFilename() + '\"', ioe);
         }
     }
 

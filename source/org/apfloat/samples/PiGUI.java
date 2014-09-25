@@ -8,9 +8,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
 /**
- * AWT client application for calculating pi using three different algorithms.
+ * AWT client application for calculating pi using four different algorithms.
  *
- * @version 1.0.2
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -25,7 +25,7 @@ public class PiGUI
     protected PiGUI()
     {
         super("Pi calculator");
-        setSize(576, 448);
+        setSize(720, 540);
 
         addWindowListener(new WindowAdapter()
         {

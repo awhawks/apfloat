@@ -7,9 +7,9 @@ import java.awt.Label;
 import org.apfloat.ApfloatContext;
 
 /**
- * Applet for calculating pi using three different algorithms.
+ * Applet for calculating pi using four different algorithms.
  *
- * @version 1.4
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -30,7 +30,7 @@ public class PiApplet
             return new PiAWT(this);
         }
 
-        private void resetExecutorService()
+        public void resetExecutorService()
         {
             // Recreate the executor service in case the old thread group was destroyed by reloading the applet
             ApfloatContext ctx = ApfloatContext.getContext();

@@ -12,7 +12,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>float</code> element type.
  *
- * @version 1.4.2
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -71,7 +71,7 @@ public final class FloatDiskDataStorage
                         src.get(array, this.readPosition, readLength);
 
                         this.readPosition += readLength;
-                        buffer.position(readLength * 4);
+                        buffer.position(buffer.position() + readLength * 4);
 
                         return readLength * 4;
                     }
@@ -102,7 +102,7 @@ public final class FloatDiskDataStorage
                         dst.put(array, this.writePosition, writeLength);
 
                         this.writePosition += writeLength;
-                        buffer.position(writeLength * 4);
+                        buffer.position(buffer.position() + writeLength * 4);
 
                         return writeLength * 4;
                     }
@@ -164,7 +164,7 @@ public final class FloatDiskDataStorage
 
         if (columns != (columns & -columns) || rows != (rows & -rows) || startColumn + columns > width)
         {
-            throw new ApfloatRuntimeException("Invalid size");
+            throw new ApfloatInternalException("Invalid size");
         }
 
         int blockSize = columns * rows,

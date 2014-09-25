@@ -19,6 +19,8 @@ import org.apfloat.spi.ApfloatImpl;
  * numbers to an integer value: {@link Apfloat#floor() }, {@link Apfloat#ceil() },
  * and {@link Apfloat#truncate() }.
  *
+ * @see ApintMath
+ *
  * @version 1.3
  * @author Mikko Tommila
  */

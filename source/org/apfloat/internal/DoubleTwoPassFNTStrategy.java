@@ -62,7 +62,7 @@ import static org.apfloat.internal.DoubleModConstants.*;
  *
  * @see DataStorage#getTransposedArray(int,int,int,int)
  *
- * @version 1.1
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -85,7 +85,7 @@ public class DoubleTwoPassFNTStrategy
 
         if (length > MAX_TRANSFORM_LENGTH)
         {
-            throw new ApfloatRuntimeException("Maximum transform length exceeded: " + length + " > " + MAX_TRANSFORM_LENGTH);
+            throw new TransformLengthExceededException("Maximum transform length exceeded: " + length + " > " + MAX_TRANSFORM_LENGTH);
         }
 
         if (length < 2)
@@ -112,16 +112,17 @@ public class DoubleTwoPassFNTStrategy
         double[] wTable = createWTable(w1, n1);
         int[] permutationTable = Scramble.createScrambleTable(n1);
 
-        Object lock = getMemoryLock(length);
+        Object key = getSharedMemoryLockKey(length);
 
-        synchronized (lock)
+        lock(key);
+        try
         {
             int maxBlockSize = getMaxMemoryBlockSize(length),   // Maximum memory array size that can be allocated
                 b;
 
             if (n1 > maxBlockSize || n2 > maxBlockSize)
             {
-                throw new ApfloatRuntimeException("Not enough memory available to fit one row or column of matrix to memory; n1=" + n1 + ", n2=" + n2 + ", available=" + maxBlockSize);
+                throw new ApfloatInternalException("Not enough memory available to fit one row or column of matrix to memory; n1=" + n1 + ", n2=" + n2 + ", available=" + maxBlockSize);
             }
 
             b = maxBlockSize / n1;
@@ -132,7 +133,7 @@ public class DoubleTwoPassFNTStrategy
                 ArrayAccess arrayAccess = dataStorage.getTransposedArray(DataStorage.READ_WRITE, i, b, n1);
 
                 // Do b transforms of size n1
-                transformRows(n1, b, false, arrayAccess, wTable, permutationTable);
+                transformRows(key, n1, b, false, arrayAccess, wTable, permutationTable);
 
                 arrayAccess.close();
             }
@@ -151,13 +152,17 @@ public class DoubleTwoPassFNTStrategy
                 ArrayAccess arrayAccess = dataStorage.getArray(DataStorage.READ_WRITE, i * n2, b * n2);
 
                 // Multiply each matrix element by w^(i*j)
-                multiplyElements(arrayAccess, i, b, n2, w, (double) 1);
+                multiplyElements(key, arrayAccess, i, b, n2, w, (double) 1);
 
                 // Do b transforms of size n2
-                transformRows(n2, b, false, arrayAccess, wTable, null);
+                transformRows(key, n2, b, false, arrayAccess, wTable, null);
 
                 arrayAccess.close();
             }
+        }
+        finally
+        {
+            unlock(key);
         }
     }
 
@@ -168,7 +173,7 @@ public class DoubleTwoPassFNTStrategy
 
         if (Math.max(length, totalTransformLength) > MAX_TRANSFORM_LENGTH)
         {
-            throw new ApfloatRuntimeException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
+            throw new TransformLengthExceededException("Maximum transform length exceeded: " + Math.max(length, totalTransformLength) + " > " + MAX_TRANSFORM_LENGTH);
         }
 
         if (length < 2)
@@ -196,16 +201,17 @@ public class DoubleTwoPassFNTStrategy
         double[] wTable = createWTable(w2, n2);
         int[] permutationTable = Scramble.createScrambleTable(n1);
 
-        Object lock = getMemoryLock(length);
+        Object key = getSharedMemoryLockKey(length);
 
-        synchronized (lock)
+        lock(key);
+        try
         {
             int maxBlockSize = getMaxMemoryBlockSize(length),   // Maximum memory array size that can be allocated
                 b;
 
             if (n1 > maxBlockSize || n2 > maxBlockSize)
             {
-                throw new ApfloatRuntimeException("Not enough memory available to fit one row or column of matrix to memory; n1=" + n1 + ", n2=" + n2 + ", available=" + maxBlockSize);
+                throw new ApfloatInternalException("Not enough memory available to fit one row or column of matrix to memory; n1=" + n1 + ", n2=" + n2 + ", available=" + maxBlockSize);
             }
 
             b = maxBlockSize / n2;
@@ -216,10 +222,10 @@ public class DoubleTwoPassFNTStrategy
                 ArrayAccess arrayAccess = dataStorage.getArray(DataStorage.READ_WRITE, i * n2, b * n2);
 
                 // Do b transforms of size n2
-                transformRows(n2, b, true, arrayAccess, wTable, null);
+                transformRows(key, n2, b, true, arrayAccess, wTable, null);
 
                 // Multiply each matrix element by w^(i*j) / n
-                multiplyElements(arrayAccess, i, b, n2, w, inverseTotalTransformLength);
+                multiplyElements(key, arrayAccess, i, b, n2, w, inverseTotalTransformLength);
 
                 arrayAccess.close();
             }
@@ -241,10 +247,14 @@ public class DoubleTwoPassFNTStrategy
                 ArrayAccess arrayAccess = dataStorage.getTransposedArray(DataStorage.READ_WRITE, i, b, n1);
 
                 // Do b transforms of size n1
-                transformRows(n1, b, true, arrayAccess, wTable, permutationTable);
+                transformRows(key, n1, b, true, arrayAccess, wTable, permutationTable);
 
                 arrayAccess.close();
             }
+        }
+        finally
+        {
+            unlock(key);
         }
     }
 

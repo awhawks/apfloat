@@ -27,6 +27,8 @@ import org.apfloat.spi.ApfloatImpl;
  * digits (in radix 10). In fact, the resulting number will be something like
  * <code>0.30000001192092896</code>...
  *
+ * @see ApfloatMath
+ *
  * @version 1.3
  * @author Mikko Tommila
  */

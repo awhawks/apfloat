@@ -1,6 +1,7 @@
 package org.apfloat.samples;
 
 import java.awt.Container;
+import java.awt.GridBagConstraints;
 import java.awt.Label;
 import java.awt.TextField;
 
@@ -11,7 +12,7 @@ import org.apfloat.ApfloatRuntimeException;
 /**
  * Graphical AWT elements for calculating pi using multiple threads in parallel.
  *
- * @version 1.1
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -29,20 +30,13 @@ public class PiParallelAWT
         super(statusIndicator);
     }
 
-    /**
-     * Initialize the "threads" section GUI elements.
-     * Two elements should be added to the <code>container</code>.
-     *
-     * @param container The container where the elements are to be added.
-     * @param constraints The constraints with which the elements are to be added to the <code>container</code>.
-     */
-
-    protected void initMethod(Container container, Object constraints)
+    protected void initThreads(Container container, GridBagConstraints constraints)
     {
         this.threadsLabel = new Label("Threads:");
         container.add(this.threadsLabel, constraints);
 
         this.threadsField = new TextField(ApfloatContext.getContext().getProperty(ApfloatContext.NUMBER_OF_PROCESSORS), 5);
+        constraints.gridwidth = GridBagConstraints.REMAINDER;
         container.add(this.threadsField, constraints);
     }
 
@@ -80,7 +74,12 @@ public class PiParallelAWT
         ApfloatContext ctx = ApfloatContext.getContext();
         int numberOfProcessors = Integer.parseInt(this.threadsField.getText());
         ctx.setNumberOfProcessors(numberOfProcessors);
-        return new PiParallel.ParallelPiCalculator(precision, radix);
+        Operation<Apfloat> operation = super.getOperation(precision, radix);
+        if (operation instanceof Pi.ChudnovskyPiCalculator)
+        {
+            operation = new PiParallel.ParallelChudnovskyPiCalculator(precision, radix);
+        }
+        return operation;
     }
 
     private Label threadsLabel;

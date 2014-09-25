@@ -18,6 +18,7 @@ import static java.util.FormattableFlags.*;
  * for the {@link Apfloat} class and its subclasses.<p>
  *
  * @see Apfloat
+ * @see ApcomplexMath
  *
  * @version 1.3
  * @author Mikko Tommila

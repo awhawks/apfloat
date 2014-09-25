@@ -43,7 +43,7 @@ public class IntMatrix
             n2 != (n2 & -n2) ||
             n1 <= 0 || n2 <= 0)
         {
-            throw new ApfloatRuntimeException("Matrix size must be a power of two, not " + n1 + " x " + n2);
+            throw new ApfloatInternalException("Matrix size must be a power of two, not " + n1 + " x " + n2);
         }
         if (n1 == n2)
         {
@@ -71,7 +71,7 @@ public class IntMatrix
         }
         else
         {
-            throw new ApfloatRuntimeException("Must be n1 = n2, n1 = 2*n2 or n2 = 2*n1; matrix is " + n1 + " x " + n2);
+            throw new ApfloatInternalException("Must be n1 = n2, n1 = 2*n2 or n2 = 2*n1; matrix is " + n1 + " x " + n2);
         }
     }
 

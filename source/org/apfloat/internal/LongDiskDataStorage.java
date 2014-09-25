@@ -12,7 +12,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>long</code> element type.
  *
- * @version 1.4.2
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -71,7 +71,7 @@ public final class LongDiskDataStorage
                         src.get(array, this.readPosition, readLength);
 
                         this.readPosition += readLength;
-                        buffer.position(readLength * 8);
+                        buffer.position(buffer.position() + readLength * 8);
 
                         return readLength * 8;
                     }
@@ -102,7 +102,7 @@ public final class LongDiskDataStorage
                         dst.put(array, this.writePosition, writeLength);
 
                         this.writePosition += writeLength;
-                        buffer.position(writeLength * 8);
+                        buffer.position(buffer.position() + writeLength * 8);
 
                         return writeLength * 8;
                     }
@@ -164,7 +164,7 @@ public final class LongDiskDataStorage
 
         if (columns != (columns & -columns) || rows != (rows & -rows) || startColumn + columns > width)
         {
-            throw new ApfloatRuntimeException("Invalid size");
+            throw new ApfloatInternalException("Invalid size");
         }
 
         int blockSize = columns * rows,

@@ -74,7 +74,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.2.1
+ * @version 1.5
  * @author Mikko Tommila
  */
 
@@ -87,8 +87,8 @@ public class PiDistributed
      * Uses multiple computers to calculate pi in parallel.
      */
 
-    protected static class DistributedPiCalculator
-        extends ParallelPiCalculator
+    protected static class DistributedChudnovskyPiCalculator
+        extends ParallelChudnovskyPiCalculator
     {
         /**
          * Construct a distributed pi calculator with the specified precision and radix.
@@ -97,12 +97,12 @@ public class PiDistributed
          * @param radix The radix to be used.
          */
 
-        public DistributedPiCalculator(long precision, int radix)
+        public DistributedChudnovskyPiCalculator(long precision, int radix)
         {
             super(precision, radix);
         }
 
-        protected void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, ChudnovskyProgressIndicator progressIndicator)
+        protected void r(final long n1, final long n2, final ApfloatHolder T, final ApfloatHolder Q, final ApfloatHolder P, final ApfloatHolder F, OperationExecutor[] nodes, BinarySplittingProgressIndicator progressIndicator)
             throws ApfloatRuntimeException
         {
             if (!(nodes[0] instanceof Node))
@@ -125,7 +125,7 @@ public class PiDistributed
                     public ApfloatHolder[] execute()
                     {
                         // Now get all threads available local on the server
-                        OperationExecutor[] threads = DistributedPiCalculator.super.getNodes();
+                        OperationExecutor[] threads = DistributedChudnovskyPiCalculator.super.getNodes();
 
                         // Continue splitting by threads on server side
                         r(n1, n2, T, Q, P, F, threads, null);
@@ -437,7 +437,7 @@ public class PiDistributed
         long precision = getPrecision(args[0]);
         int radix = (args.length > 2 ? getRadix(args[1]) : ApfloatContext.getContext().getDefaultRadix());
 
-        Operation<Apfloat> operation = new DistributedPiCalculator(precision, radix);
+        Operation<Apfloat> operation = new DistributedChudnovskyPiCalculator(precision, radix);
 
         setOut(new PrintWriter(System.out, true));
         setErr(new PrintWriter(System.err, true));

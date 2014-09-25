@@ -281,205 +281,205 @@ public class CalculatorParser implements CalculatorParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final private boolean jj_2_1(int xla) {
+  private boolean jj_2_1(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_1(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_2(int xla) {
+  private boolean jj_2_2(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_2(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_3(int xla) {
+  private boolean jj_2_3(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_3(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_4(int xla) {
+  private boolean jj_2_4(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_4(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_5(int xla) {
+  private boolean jj_2_5(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_5(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_6(int xla) {
+  private boolean jj_2_6(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_6(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_7(int xla) {
+  private boolean jj_2_7(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_7(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_8(int xla) {
+  private boolean jj_2_8(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_8(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_9(int xla) {
+  private boolean jj_2_9(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_9(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_10(int xla) {
+  private boolean jj_2_10(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_10(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_11(int xla) {
+  private boolean jj_2_11(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_11(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_12(int xla) {
+  private boolean jj_2_12(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_12(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_13(int xla) {
+  private boolean jj_2_13(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_13(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_14(int xla) {
+  private boolean jj_2_14(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_14(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_15(int xla) {
+  private boolean jj_2_15(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_15(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_16(int xla) {
+  private boolean jj_2_16(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_16(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_17(int xla) {
+  private boolean jj_2_17(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_17(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_18(int xla) {
+  private boolean jj_2_18(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_18(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_19(int xla) {
+  private boolean jj_2_19(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_19(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_20(int xla) {
+  private boolean jj_2_20(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_20(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_21(int xla) {
+  private boolean jj_2_21(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_21(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_22(int xla) {
+  private boolean jj_2_22(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_22(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_23(int xla) {
+  private boolean jj_2_23(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_23(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_24(int xla) {
+  private boolean jj_2_24(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_24(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_25(int xla) {
+  private boolean jj_2_25(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_25(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_2_26(int xla) {
+  private boolean jj_2_26(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_26(); }
     catch(LookaheadSuccess ls) { return true; }
   }
 
-  final private boolean jj_3_4() {
+  private boolean jj_3_4() {
     if (jj_scan_token(EOL)) return true;
     return false;
   }
 
-  final private boolean jj_3R_13() {
+  private boolean jj_3R_13() {
     if (jj_3R_15()) return true;
     return false;
   }
 
-  final private boolean jj_3_3() {
+  private boolean jj_3_3() {
     if (jj_scan_token(DELIMITER)) return true;
     return false;
   }
 
-  final private boolean jj_3_2() {
+  private boolean jj_3_2() {
     if (jj_scan_token(DELIMITER)) return true;
     if (jj_3R_5()) return true;
     return false;
   }
 
-  final private boolean jj_3_1() {
+  private boolean jj_3_1() {
     if (jj_3R_5()) return true;
     return false;
   }
 
-  final private boolean jj_3_22() {
+  private boolean jj_3_22() {
     if (jj_scan_token(18)) return true;
     if (jj_3R_5()) return true;
     return false;
   }
 
-  final private boolean jj_3_21() {
+  private boolean jj_3_21() {
     if (jj_3R_13()) return true;
     return false;
   }
 
-  final private boolean jj_3_20() {
+  private boolean jj_3_20() {
     if (jj_3R_12()) return true;
     return false;
   }
 
-  final private boolean jj_3R_14() {
+  private boolean jj_3R_14() {
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3_19()) {
@@ -495,18 +495,18 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3_19() {
+  private boolean jj_3_19() {
     if (jj_3R_11()) return true;
     return false;
   }
 
-  final private boolean jj_3_18() {
+  private boolean jj_3_18() {
     if (jj_scan_token(17)) return true;
     if (jj_3R_9()) return true;
     return false;
   }
 
-  final private boolean jj_3R_10() {
+  private boolean jj_3R_10() {
     if (jj_3R_14()) return true;
     Token xsp;
     xsp = jj_scanpos;
@@ -514,24 +514,24 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3_17() {
+  private boolean jj_3_17() {
     if (jj_3R_10()) return true;
     return false;
   }
 
-  final private boolean jj_3_16() {
+  private boolean jj_3_16() {
     if (jj_scan_token(12)) return true;
     if (jj_3R_9()) return true;
     return false;
   }
 
-  final private boolean jj_3_15() {
+  private boolean jj_3_15() {
     if (jj_scan_token(13)) return true;
     if (jj_3R_9()) return true;
     return false;
   }
 
-  final private boolean jj_3R_9() {
+  private boolean jj_3R_9() {
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3_15()) {
@@ -544,25 +544,25 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3_14() {
+  private boolean jj_3_14() {
     if (jj_scan_token(16)) return true;
     if (jj_3R_9()) return true;
     return false;
   }
 
-  final private boolean jj_3_13() {
+  private boolean jj_3_13() {
     if (jj_scan_token(15)) return true;
     if (jj_3R_9()) return true;
     return false;
   }
 
-  final private boolean jj_3_12() {
+  private boolean jj_3_12() {
     if (jj_scan_token(14)) return true;
     if (jj_3R_9()) return true;
     return false;
   }
 
-  final private boolean jj_3_11() {
+  private boolean jj_3_11() {
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3_12()) {
@@ -575,7 +575,7 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3R_8() {
+  private boolean jj_3R_8() {
     if (jj_3R_9()) return true;
     Token xsp;
     while (true) {
@@ -585,17 +585,17 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3_26() {
+  private boolean jj_3_26() {
     if (jj_scan_token(DECIMAL)) return true;
     return false;
   }
 
-  final private boolean jj_3_25() {
+  private boolean jj_3_25() {
     if (jj_scan_token(INTEGER)) return true;
     return false;
   }
 
-  final private boolean jj_3R_11() {
+  private boolean jj_3R_11() {
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3_25()) {
@@ -605,19 +605,19 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3_10() {
+  private boolean jj_3_10() {
     if (jj_scan_token(13)) return true;
     if (jj_3R_8()) return true;
     return false;
   }
 
-  final private boolean jj_3_9() {
+  private boolean jj_3_9() {
     if (jj_scan_token(12)) return true;
     if (jj_3R_8()) return true;
     return false;
   }
 
-  final private boolean jj_3_8() {
+  private boolean jj_3_8() {
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3_9()) {
@@ -627,12 +627,12 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3R_15() {
+  private boolean jj_3R_15() {
     if (jj_scan_token(IDENTIFIER)) return true;
     return false;
   }
 
-  final private boolean jj_3R_7() {
+  private boolean jj_3R_7() {
     if (jj_3R_8()) return true;
     Token xsp;
     while (true) {
@@ -642,13 +642,13 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3_23() {
+  private boolean jj_3_23() {
     if (jj_scan_token(20)) return true;
     if (jj_3R_5()) return true;
     return false;
   }
 
-  final private boolean jj_3_24() {
+  private boolean jj_3_24() {
     if (jj_3R_5()) return true;
     Token xsp;
     while (true) {
@@ -658,29 +658,29 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3R_6() {
+  private boolean jj_3R_6() {
     if (jj_3R_13()) return true;
     if (jj_scan_token(11)) return true;
     return false;
   }
 
-  final private boolean jj_3_7() {
+  private boolean jj_3_7() {
     if (jj_3R_7()) return true;
     return false;
   }
 
-  final private boolean jj_3_6() {
+  private boolean jj_3_6() {
     if (jj_3R_6()) return true;
     return false;
   }
 
-  final private boolean jj_3R_12() {
+  private boolean jj_3R_12() {
     if (jj_3R_15()) return true;
     if (jj_scan_token(18)) return true;
     return false;
   }
 
-  final private boolean jj_3R_5() {
+  private boolean jj_3R_5() {
     Token xsp;
     xsp = jj_scanpos;
     if (jj_3_6()) {
@@ -690,23 +690,27 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3_5() {
+  private boolean jj_3_5() {
     if (jj_scan_token(0)) return true;
     return false;
   }
 
+  /** Generated Token Manager. */
   public CalculatorParserTokenManager token_source;
   SimpleCharStream jj_input_stream;
-  public Token token, jj_nt;
+  /** Current token. */
+  public Token token;
+  /** Next token. */
+  public Token jj_nt;
   private int jj_ntk;
   private Token jj_scanpos, jj_lastpos;
   private int jj_la;
-  public boolean lookingAhead = false;
-  private boolean jj_semLA;
 
+  /** Constructor with InputStream. */
   public CalculatorParser(java.io.InputStream stream) {
      this(stream, null);
   }
+  /** Constructor with InputStream and supplied encoding */
   public CalculatorParser(java.io.InputStream stream, String encoding) {
     try { jj_input_stream = new SimpleCharStream(stream, encoding, 1, 1); } catch(java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
     token_source = new CalculatorParserTokenManager(jj_input_stream);
@@ -714,9 +718,11 @@ public class CalculatorParser implements CalculatorParserConstants {
     jj_ntk = -1;
   }
 
+  /** Reinitialise. */
   public void ReInit(java.io.InputStream stream) {
      ReInit(stream, null);
   }
+  /** Reinitialise. */
   public void ReInit(java.io.InputStream stream, String encoding) {
     try { jj_input_stream.ReInit(stream, encoding, 1, 1); } catch(java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
     token_source.ReInit(jj_input_stream);
@@ -724,6 +730,7 @@ public class CalculatorParser implements CalculatorParserConstants {
     jj_ntk = -1;
   }
 
+  /** Constructor. */
   public CalculatorParser(java.io.Reader stream) {
     jj_input_stream = new SimpleCharStream(stream, 1, 1);
     token_source = new CalculatorParserTokenManager(jj_input_stream);
@@ -731,6 +738,7 @@ public class CalculatorParser implements CalculatorParserConstants {
     jj_ntk = -1;
   }
 
+  /** Reinitialise. */
   public void ReInit(java.io.Reader stream) {
     jj_input_stream.ReInit(stream, 1, 1);
     token_source.ReInit(jj_input_stream);
@@ -738,19 +746,21 @@ public class CalculatorParser implements CalculatorParserConstants {
     jj_ntk = -1;
   }
 
+  /** Constructor with generated Token Manager. */
   public CalculatorParser(CalculatorParserTokenManager tm) {
     token_source = tm;
     token = new Token();
     jj_ntk = -1;
   }
 
+  /** Reinitialise. */
   public void ReInit(CalculatorParserTokenManager tm) {
     token_source = tm;
     token = new Token();
     jj_ntk = -1;
   }
 
-  final private Token jj_consume_token(int kind) throws ParseException {
+  private Token jj_consume_token(int kind) throws ParseException {
     Token oldToken;
     if ((oldToken = token).next != null) token = token.next;
     else token = token.next = token_source.getNextToken();
@@ -764,7 +774,7 @@ public class CalculatorParser implements CalculatorParserConstants {
 
   static private final class LookaheadSuccess extends java.lang.Error { }
   final private LookaheadSuccess jj_ls = new LookaheadSuccess();
-  final private boolean jj_scan_token(int kind) {
+  private boolean jj_scan_token(int kind) {
     if (jj_scanpos == jj_lastpos) {
       jj_la--;
       if (jj_scanpos.next == null) {
@@ -780,6 +790,8 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
+
+/** Get the next Token. */
   final public Token getNextToken() {
     if (token.next != null) token = token.next;
     else token = token.next = token_source.getNextToken();
@@ -787,8 +799,9 @@ public class CalculatorParser implements CalculatorParserConstants {
     return token;
   }
 
+/** Get the specific Token. */
   final public Token getToken(int index) {
-    Token t = lookingAhead ? jj_scanpos : token;
+    Token t = token;
     for (int i = 0; i < index; i++) {
       if (t.next != null) t = t.next;
       else t = t.next = token_source.getNextToken();
@@ -796,13 +809,14 @@ public class CalculatorParser implements CalculatorParserConstants {
     return t;
   }
 
-  final private int jj_ntk() {
+  private int jj_ntk() {
     if ((jj_nt=token.next) == null)
       return (jj_ntk = (token.next=token_source.getNextToken()).kind);
     else
       return (jj_ntk = jj_nt.kind);
   }
 
+  /** Generate ParseException. */
   public ParseException generateParseException() {
     Token errortok = token.next;
     int line = errortok.beginLine, column = errortok.beginColumn;
@@ -810,9 +824,11 @@ public class CalculatorParser implements CalculatorParserConstants {
     return new ParseException("Parse error at line " + line + ", column " + column + ".  Encountered: " + mess);
   }
 
+  /** Enable tracing. */
   final public void enable_tracing() {
   }
 
+  /** Disable tracing. */
   final public void disable_tracing() {
   }
 

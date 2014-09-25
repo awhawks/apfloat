@@ -23,7 +23,7 @@ public class CalculatorGUI
     protected CalculatorGUI()
     {
         super("Calculator");
-        setSize(576, 448);
+        setSize(720, 540);
 
         addWindowListener(new WindowAdapter()
         {

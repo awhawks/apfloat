@@ -54,7 +54,7 @@ public final class FloatMemoryDataStorage
 
         if (size > Integer.MAX_VALUE)
         {
-            throw new ApfloatRuntimeException("Size too big for memory array: " + size);
+            throw new ApfloatInternalException("Size too big for memory array: " + size);
         }
 
         this.data = new float[(int) size];
@@ -96,7 +96,7 @@ public final class FloatMemoryDataStorage
 
         if (size > Integer.MAX_VALUE)
         {
-            throw new ApfloatRuntimeException("Size too big for memory array: " + size);
+            throw new ApfloatInternalException("Size too big for memory array: " + size);
         }
 
         int newSize = (int) size;
@@ -115,7 +115,7 @@ public final class FloatMemoryDataStorage
     protected ArrayAccess implGetTransposedArray(int mode, int startColumn, int columns, int rows)
         throws ApfloatRuntimeException
     {
-        throw new ApfloatRuntimeException("Method not implemented - would be sub-optimal; change the apfloat configuration settings");
+        throw new ApfloatInternalException("Method not implemented - would be sub-optimal; change the apfloat configuration settings");
     }
 
     private class ReadWriteIterator
