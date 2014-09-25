@@ -11,7 +11,7 @@ import org.apfloat.spi.FilenameGenerator;
 /**
  * Applet for calculating pi using four different algorithms.
  *
- * @version 1.6
+ * @version 1.6.2
  * @author Mikko Tommila
  */
 
@@ -108,15 +108,16 @@ public class PiApplet
         Package specificationPackage = Package.getPackage("org.apfloat"),
                 implementationPackage = builderFactory.getClass().getPackage();
 
-        return "Pi calculation applet\n" +
-               "Written by Mikko Tommila 2002 - 2010\n" +
-               "Specification-Title: "    + specificationPackage.getSpecificationTitle() + "\n" +
-               "Specification-Version: "  + specificationPackage.getSpecificationVersion() + "\n" +
-               "Specification-Vendor: "   + specificationPackage.getSpecificationVendor() + "\n" +
-               "Implementation-Title: "   + implementationPackage.getImplementationTitle() + "\n" +
-               "Implementation-Version: " + implementationPackage.getImplementationVersion() + "\n" +
-               "Implementation-Vendor: "  + implementationPackage.getImplementationVendor() + "\n" +
-               "Java version: "           + System.getProperty("java.version") + "\n" +
+        String lineSeparator = System.getProperty("line.separator");
+        return "Pi calculation applet" + lineSeparator +
+               "Written by Mikko Tommila 2002 - 2011" + lineSeparator +
+               "Specification-Title: "    + specificationPackage.getSpecificationTitle() + lineSeparator +
+               "Specification-Version: "  + specificationPackage.getSpecificationVersion() + lineSeparator +
+               "Specification-Vendor: "   + specificationPackage.getSpecificationVendor() + lineSeparator +
+               "Implementation-Title: "   + implementationPackage.getImplementationTitle() + lineSeparator +
+               "Implementation-Version: " + implementationPackage.getImplementationVersion() + lineSeparator +
+               "Implementation-Vendor: "  + implementationPackage.getImplementationVendor() + lineSeparator +
+               "Java version: "           + System.getProperty("java.version") + lineSeparator +
                "Java Virtual Machine: "   + System.getProperty("java.vm.name");
     }
 }

@@ -11,7 +11,7 @@ import org.apfloat.spi.FilenameGenerator;
 /**
  * Calculator applet.
  *
- * @version 1.6
+ * @version 1.6.2
  * @author Mikko Tommila
  */
 
@@ -87,9 +87,10 @@ public class CalculatorApplet
 
     public String getAppletInfo()
     {
-        return "Calculator applet\n" +
-               "Written by Mikko Tommila 2004\n" +
-               "Java version: "           + System.getProperty("java.version") + "\n" +
-               "Java Virtual Machine: "   + System.getProperty("java.vm.name");
+        String lineSeparator = System.getProperty("line.separator");
+        return "Calculator applet" + lineSeparator +
+               "Written by Mikko Tommila 2011" + lineSeparator +
+               "Java version: "         + System.getProperty("java.version") + lineSeparator +
+               "Java Virtual Machine: " + System.getProperty("java.vm.name");
     }
 }

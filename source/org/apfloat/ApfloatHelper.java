@@ -17,7 +17,7 @@ import static org.apfloat.spi.RadixConstants.*;
 /**
  * Various utility methods related to apfloats.
  *
- * @version 1.6
+ * @version 1.6.2
  * @author Mikko Tommila
  */
 
@@ -201,7 +201,7 @@ class ApfloatHelper
         }
         catch (IOException ioe)
         {
-            throw new ApfloatRuntimeException("Should not occur");
+            throw new ApfloatRuntimeException("Should not occur", ioe);
         }
         precision = (precision == Apfloat.DEFAULT ? Apfloat.INFINITE : precision);
         return a.toRadix(radix).getImpl(precision);
@@ -636,7 +636,7 @@ class ApfloatHelper
         }
         catch (IOException ioe)
         {
-            throw new ApfloatRuntimeException("Should not occur");
+            throw new ApfloatRuntimeException("Should not occur", ioe);
         }
 
         BigInteger b = new BigInteger(x.signum(), bytes);

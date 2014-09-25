@@ -17,6 +17,7 @@ import java.awt.event.ActionEvent;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Collections;
 import java.io.StringWriter;
 import java.io.PrintWriter;
 import javax.imageio.spi.ServiceRegistry;       // Silly that this is under javax.imageio
@@ -29,7 +30,7 @@ import org.apfloat.spi.BuilderFactory;
 /**
  * Graphical AWT elements for calculating pi using four different algorithms.
  *
- * @version 1.5
+ * @version 1.6.2
  * @author Mikko Tommila
  */
 
@@ -130,6 +131,11 @@ public class PiAWT
         this.builderFactories = new ArrayList<BuilderFactory>();
         String defaultBuilderFactoryClassName = ApfloatContext.getContext().getBuilderFactory().getClass().getName();
         Iterator<BuilderFactory> providers = ServiceRegistry.lookupProviders(org.apfloat.spi.BuilderFactory.class);
+        if (!providers.hasNext())
+        {
+            BuilderFactory builderFactory = ApfloatContext.getContext().getBuilderFactory();
+            providers = Collections.singleton(builderFactory).iterator();
+        }
         for (int i = 0; providers.hasNext(); i++)
         {
             BuilderFactory builderFactory = providers.next();
@@ -405,7 +411,10 @@ public class PiAWT
     {
         this.abortButton.setEnabled(false);
         this.goButton.setEnabled(true);
-        System.gc();                            // Garbage collection may not have run perfectly by this point
+
+        ApfloatContext ctx = ApfloatContext.getContext();
+        BuilderFactory builderFactory = ctx.getBuilderFactory();
+        builderFactory.gc();                    // Garbage collection may not have run perfectly by this point
     }
 
     private StatusIndicator statusIndicator;

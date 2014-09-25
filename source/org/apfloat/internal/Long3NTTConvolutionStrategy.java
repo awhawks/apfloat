@@ -19,7 +19,8 @@ import static org.apfloat.internal.LongModConstants.*;
  * convolution and the Chinese Remainder Theorem to get the final result.<p>
  *
  * After transforming the data, the in-place multiplication (or squaring)
- * of the data elements is done using a parallel algorithm.<p>
+ * of the data elements is done using a parallel algorithm, if the data
+ * fits in memory.<p>
  *
  * All access to this class must be externally synchronized.
  *

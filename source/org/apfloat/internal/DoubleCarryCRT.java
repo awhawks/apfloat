@@ -14,7 +14,9 @@ import static org.apfloat.internal.DoubleModConstants.*;
  * Number Theoretic Transform based convolution. Works for the
  * <code>double</code> type.<p>
  *
- * The algorithm is parallelized for multiprocessor computers.
+ * The algorithm is parallelized for multiprocessor computers,
+ * if the data fits in memory.<p>
+ *
  * The parallelization works so that the carry-CRT is done in
  * blocks in parallel. As a final step, a second pass is done
  * through the data set to propagate the carries from one block

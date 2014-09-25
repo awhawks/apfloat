@@ -4,12 +4,16 @@ import java.io.Serializable;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.io.IOException;
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.lang.ref.SoftReference;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
@@ -21,7 +25,7 @@ import org.apfloat.spi.FilenameGenerator;
  * Abstract base class for disk-based data storage, containing the common
  * functionality independent of the element type.
  *
- * @version 1.5.1
+ * @version 1.6.2
  * @author Mikko Tommila
  */
 
@@ -65,44 +69,23 @@ public abstract class DiskDataStorage
             }
 
             this.fileChannel = this.randomAccessFile.getChannel();
-        }
 
-        protected void finalize()
-        {
-            try
-            {
-                this.fileChannel.close();
-            }
-            catch (IOException ioe)
-            {
-                // Ignore
-            }
-
-            try
-            {
-                this.randomAccessFile.close();
-            }
-            catch (IOException ioe)
-            {
-                // Ignore
-            }
-
-            // If deletion fails now, at least deleteOnExit() has been called
-            this.file.delete();
+            referenceFileStorage(this);     // To put to reference queue after garbage collection
         }
 
         public void setSize(long size)
-            throws IOException
+            throws IOException, ApfloatRuntimeException
         {
             try
             {
-                this.randomAccessFile.setLength(size);
+                getRandomAccessFile().setLength(size);
             }
             catch (IOException ioe)
             {
-                // Run garbage collection to delete unused temporary files, then retry
+                // Probably out of disk space - run garbage collection and process reference queue to delete unused files, then retry
                 System.gc();
-                this.randomAccessFile.setLength(size);
+                forceFreeFileStorage();
+                getRandomAccessFile().setLength(size);
             }
         }
 
@@ -203,6 +186,16 @@ public abstract class DiskDataStorage
             return this.filename;
         }
 
+        public File getFile()
+        {
+            return this.file;
+        }
+
+        public RandomAccessFile getRandomAccessFile()
+        {
+            return this.randomAccessFile;
+        }
+
         public FileChannel getFileChannel()
         {
             return this.fileChannel;
@@ -244,6 +237,48 @@ public abstract class DiskDataStorage
         private transient FileChannel fileChannel;
     }
 
+    // A PhantomReference is used so it's only queued when the Apfloat can't become accessible in any way (e.g. if it's weakly referenced)
+    private static class FileStorageReference
+        extends PhantomReference<FileStorage>
+    {
+        public FileStorageReference(FileStorage fileStorage, ReferenceQueue<FileStorage> queue)
+        {
+            super(fileStorage, queue);
+
+            this.file = fileStorage.getFile();
+            this.randomAccessFile = fileStorage.getRandomAccessFile();
+            this.fileChannel = fileStorage.getFileChannel();
+        }
+
+        public void dispose()
+        {
+            try
+            {
+                this.fileChannel.close();
+            }
+            catch (IOException ioe)
+            {
+                // Ignore
+            }
+
+            try
+            {
+                this.randomAccessFile.close();
+            }
+            catch (IOException ioe)
+            {
+                // Ignore
+            }
+
+            // If deletion fails now, at least deleteOnExit() has been called
+            this.file.delete();
+        }
+
+        private File file;
+        private RandomAccessFile randomAccessFile;
+        private FileChannel fileChannel;
+    }
+
     /**
      * Default constructor.
      */
@@ -251,7 +286,7 @@ public abstract class DiskDataStorage
     protected DiskDataStorage()
         throws ApfloatRuntimeException
     {
-        this.fileStorage = new FileStorage();
+        this.fileStorage = createFileStorage();
     }
 
     /**
@@ -439,6 +474,25 @@ public abstract class DiskDataStorage
         return this.fileStorage.getFileChannel();
     }
 
+    static synchronized void cleanUp()
+        throws ApfloatRuntimeException
+    {
+        for (FileStorageReference reference : DiskDataStorage.references)
+        {
+            // Just remove everything that has been created
+            reference.dispose();
+            reference.clear();
+        }
+        DiskDataStorage.references.clear();
+        DiskDataStorage.cleanUp = true;
+    }
+
+    static synchronized void gc()
+        throws ApfloatRuntimeException
+    {
+        forceFreeFileStorage();
+    }
+
     private void pad(long position, long size)
         throws IOException, ApfloatRuntimeException
     {
@@ -462,6 +516,67 @@ public abstract class DiskDataStorage
         public void close() {}
         public boolean isOpen() { return true; }
     };
+
+    private static synchronized FileStorage createFileStorage()
+        throws ApfloatInternalException
+    {
+        if (DiskDataStorage.cleanUp)
+        {
+            throw new ApfloatInternalException("Shutdown has been initiated, clean-up is in progress");
+        }
+
+        freeFileStorage();                  // Before creating new files, delete the ones that have been garbage collected
+        FileStorage fileStorage = new FileStorage();
+
+        return fileStorage;
+    };
+
+    private static synchronized void referenceFileStorage(FileStorage fileStorage)
+        throws ApfloatInternalException
+    {
+        if (DiskDataStorage.cleanUp)
+        {
+            new FileStorageReference(fileStorage, null).dispose();      // Delete the file immediately; it skipped the clean-up procedure
+            throw new ApfloatInternalException("Shutdown has been initiated, clean-up is in progress");
+        }
+
+        // The reference might not really be needed for anything else than queuing in the reference queue,
+        // but we have to keep a hard reference to it to have it queued
+        FileStorageReference reference = new FileStorageReference(fileStorage, DiskDataStorage.referenceQueue);
+        DiskDataStorage.references.add(reference);
+    }
+
+    private static synchronized void freeFileStorage()
+    {
+        FileStorageReference reference;
+        // Just check if there's anything that can be cleaned up immediately
+        while ((reference = (FileStorageReference) DiskDataStorage.referenceQueue.poll()) != null)
+        {
+            reference.dispose();
+            reference.clear();
+            DiskDataStorage.references.remove(reference);
+        }
+    }
+
+    private static synchronized void forceFreeFileStorage()
+        throws ApfloatInternalException
+    {
+        try
+        {
+            FileStorageReference reference;
+            // Instead of poll(), wait for some time for GC to finish; we want to free as much disk as possible e.g. if we are out of disk space so waiting some time is not that bad
+            while ((reference = (FileStorageReference) DiskDataStorage.referenceQueue.remove(TIMEOUT)) != null)
+            {
+                reference.dispose();
+                reference.clear();
+                DiskDataStorage.references.remove(reference);
+            }
+        }
+        catch (InterruptedException ie)
+        {
+            throw new ApfloatInternalException("Reference queue polling was interrupted", ie);
+        }
+    }
 
     private static ByteBuffer getDirectByteBuffer()
     {
@@ -492,7 +607,12 @@ public abstract class DiskDataStorage
 
     private static final long serialVersionUID = 741984828408146034L;
 
+    private static final long TIMEOUT = 1000;   // Reference queue waiting timeout when forcing deleting garbage collected files
+
+    private static ReferenceQueue<FileStorage> referenceQueue = new ReferenceQueue<FileStorage>();
+    private static Set<FileStorageReference> references = new HashSet<FileStorageReference>();
     private static ThreadLocal<SoftReference<ByteBuffer>> threadLocal = new ThreadLocal<SoftReference<ByteBuffer>>();
+    private static boolean cleanUp = false;
 
     private FileStorage fileStorage;
 }

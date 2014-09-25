@@ -154,7 +154,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.5.1
+ * @version 1.6.2
  * @author Mikko Tommila
  */
 
@@ -260,7 +260,15 @@ public class ApfloatContext
             System.gc();
             System.gc();
             System.runFinalization();
+            this.builderFactory.shutdown();
         }
+
+        public void setBuilderFactory(BuilderFactory builderFactory)
+        {
+            this.builderFactory = builderFactory;
+        }
+
+        private BuilderFactory builderFactory;
     }
 
     /**
@@ -407,6 +415,12 @@ public class ApfloatContext
     {
         this.properties.setProperty(BUILDER_FACTORY, builderFactory.getClass().getName());
         this.builderFactory = builderFactory;
+
+        if (this.cleanupThread != null)
+        {
+            this.cleanupThread.setBuilderFactory(builderFactory);
+        }
+
     }
 
     /**
@@ -777,7 +791,12 @@ public class ApfloatContext
      *
      * Note that if this setting is ever set to <code>true</code> in any
      * <code>ApfloatContext</code> (and never set to <code>false</code>
-     * subsequently in that context), then clean-up will be performed.
+     * subsequently in that context), then clean-up will be performed.<p>
+     *
+     * Also note that having the shutdown hook set will prevent class garbage
+     * collection i.e. the apfloat classes can't be unloaded if the shutdown
+     * hook still references the ApfloatContext class. If class unloading is
+     * desired then the cleanupAtExit property should be set to false first.
      *
      * @param cleanupAtExit <code>true</code> if clean-up should be done at JVM exit, or <code>false</code> if not.
      */
@@ -789,6 +808,7 @@ public class ApfloatContext
         if (cleanupAtExit && this.cleanupThread == null)
         {
             this.cleanupThread = new CleanupThread();
+            this.cleanupThread.setBuilderFactory(this.builderFactory);
             Runtime.getRuntime().addShutdownHook(this.cleanupThread);
         }
         else if (!cleanupAtExit && this.cleanupThread != null)
@@ -1170,7 +1190,7 @@ public class ApfloatContext
     private volatile long sharedMemoryTreshold;
     private volatile int blockSize;
     private volatile int numberOfProcessors;
-    private volatile Thread cleanupThread;
+    private volatile CleanupThread cleanupThread;
     private volatile Properties properties;
     private volatile Object sharedMemoryLock = new Object();
     private volatile ExecutorService executorService = ApfloatContext.defaultExecutorService;

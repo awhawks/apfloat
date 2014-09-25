@@ -33,7 +33,7 @@ import static org.apfloat.internal.DoubleRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.6
+ * @version 1.6.2
  * @author Mikko Tommila
  */
 
@@ -118,7 +118,7 @@ public final class DoubleApfloatImpl
                 }
                 else
                 {
-                    throw new NumberFormatException("Invalid character: " + c);
+                    throw new NumberFormatException("Invalid character: " + c + " at position " + i);
                 }
             }
             else
@@ -179,7 +179,28 @@ public final class DoubleApfloatImpl
         int integerSize = (pointIndex >= 0 ? pointIndex : digitSize) - leadingZeros;
 
         // Read exponent as specified in string
-        this.exponent = (expIndex >= 0 ? Long.parseLong(value.substring(expIndex + 1)) : 0);
+        if (expIndex >= 0)
+        {
+            // Thanks to Charles Oliver Nutter for finding this bug
+            String expString = value.substring(expIndex + 1);
+            if (expString.startsWith("+"))
+            {
+                expString = expString.substring(1);
+            }
+
+            try
+            {
+                this.exponent = Long.parseLong(expString);
+            }
+            catch (NumberFormatException nfe)
+            {
+                throw new NumberFormatException("Invalid exponent: " + expString);
+            }
+        }
+        else
+        {
+            this.exponent = 0;
+        }
 
         // Do not allow the exponent to be too close to the limits (MIN_VALUE, MAX_VALUE), leave some slack
         int slack = BASE_DIGITS[radix];
@@ -603,10 +624,11 @@ public final class DoubleApfloatImpl
                             dataStorage.copyFrom(this.dataStorage, actualSize);
                             this.dataStorage = dataStorage;
                         }
+                        previousAllocatedSize = allocatedSize;
                         allocatedSize += getBlockSize();
                         this.dataStorage.setSize(allocatedSize);
+                        iterator.close();
                         iterator = this.dataStorage.iterator(DataStorage.WRITE, previousAllocatedSize, allocatedSize);
-                        previousAllocatedSize = allocatedSize;
                     }
 
                     if (++digitsInBase == BASE_DIGITS[radix])

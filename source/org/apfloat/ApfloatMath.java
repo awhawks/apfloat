@@ -19,7 +19,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApintMath
  *
- * @version 1.6.1
+ * @version 1.6.2
  * @author Mikko Tommila
  */
 
@@ -1962,15 +1962,17 @@ public class ApfloatMath
     // Clean up static maps at shutdown, to allow garbage collecting temporary files
     static void cleanUp()
     {
-        ApfloatMath.radixPi = null;
-        ApfloatMath.radixPiCalculator = null;
-        ApfloatMath.radixPiT = null;
-        ApfloatMath.radixPiQ = null;
-        ApfloatMath.radixPiP = null;
-        ApfloatMath.radixPiInverseRoot = null;
-        ApfloatMath.radixLog = null;
-        ApfloatMath.radixLogPi = null;
+        ApfloatMath.radixPi = SHUTDOWN_MAP;
+        ApfloatMath.radixPiT = SHUTDOWN_MAP;
+        ApfloatMath.radixPiQ = SHUTDOWN_MAP;
+        ApfloatMath.radixPiP = SHUTDOWN_MAP;
+        ApfloatMath.radixPiInverseRoot = SHUTDOWN_MAP;
+        ApfloatMath.radixLog = SHUTDOWN_MAP;
+        ApfloatMath.radixLogPi = SHUTDOWN_MAP;
     }
+
+    // Map that always throws ApfloatRuntimeException, to be used after clean-up has been initiated
+    private static final Map<Integer, Apfloat> SHUTDOWN_MAP = new ShutdownMap<Integer, Apfloat>();
 
     // Synchronization keys for pi calculation
     private static ConcurrentMap<Integer, Integer> radixPiKeys = new ConcurrentHashMap<Integer, Integer>();

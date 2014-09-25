@@ -1,5 +1,7 @@
 package org.apfloat.internal;
 
+import org.apfloat.ApfloatRuntimeException;
+
 import org.apfloat.spi.BuilderFactory;
 import org.apfloat.spi.ApfloatBuilder;
 import org.apfloat.spi.DataStorageBuilder;
@@ -10,7 +12,7 @@ import org.apfloat.spi.NTTBuilder;
  * Factory class for getting instances of the various builder classes needed
  * to build an <code>ApfloatImpl</code> with the <code>long</code> data element type.
  *
- * @version 1.0
+ * @version 1.6.2
  * @author Mikko Tommila
  */
 
@@ -43,6 +45,21 @@ public class LongBuilderFactory
     public NTTBuilder getNTTBuilder()
     {
         return LongBuilderFactory.nttBuilder;
+    }
+
+    public void shutdown()
+        throws ApfloatRuntimeException
+    {
+        DiskDataStorage.cleanUp();
+    }
+
+    public void gc()
+        throws ApfloatRuntimeException
+    {
+        System.gc();
+        System.gc();
+        System.runFinalization();
+        DiskDataStorage.gc();
     }
 
     private static ApfloatBuilder apfloatBuilder = new LongApfloatBuilder();
