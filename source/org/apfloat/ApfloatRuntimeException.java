@@ -13,7 +13,7 @@ package org.apfloat;
  *       value that could be returned as the result.</li>
  *   <li>Backing storage failure. For example, if a number is stored on disk,
  *       an <code>IOException</code> can be thrown in any of the disk operations,
- *       if e.g. a file can't be created, or written to if the disk is full.</li>
+ *       if e.g. a file can't be created, or if the disk is full.</li>
  *   <li>Operands of some operation have different radixes.</li>
  *   <li>Other internal limitation, e.g. the maximum transform length
  *       mathematically possible for the implementation, is exceeded.</li>

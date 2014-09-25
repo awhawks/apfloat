@@ -9,7 +9,7 @@ import org.apfloat.ApfloatContext;
 /**
  * Applet for calculating pi using three different algorithms.
  *
- * @version 1.3.1
+ * @version 1.4
  * @author Mikko Tommila
  */
 
@@ -28,6 +28,13 @@ public class PiApplet
         public Container getContents()
         {
             return new PiAWT(this);
+        }
+
+        private void resetExecutorService()
+        {
+            // Recreate the executor service in case the old thread group was destroyed by reloading the applet
+            ApfloatContext ctx = ApfloatContext.getContext();
+            ctx.setExecutorService(ApfloatContext.getDefaultExecutorService());
         }
     }
 
@@ -52,7 +59,7 @@ public class PiApplet
         else
         {
             add(getContents());
-            resetExecutorService();
+            new Handler().resetExecutorService();
         }
     }
 
@@ -98,12 +105,5 @@ public class PiApplet
                "Implementation-Vendor: "  + implementationPackage.getImplementationVendor() + "\n" +
                "Java version: "           + System.getProperty("java.version") + "\n" +
                "Java Virtual Machine: "   + System.getProperty("java.vm.name");
-    }
-
-    private void resetExecutorService()
-    {
-        // Recreate the executor service in case the old thread group was destroyed by reloading the applet
-        ApfloatContext ctx = ApfloatContext.getContext();
-        ctx.setExecutorService(ApfloatContext.getDefaultExecutorService());
     }
 }

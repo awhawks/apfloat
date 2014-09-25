@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision integers.
  *
- * @version 1.3
+ * @version 1.4
  * @author Mikko Tommila
  */
 
@@ -633,37 +633,37 @@ public class ApintMath
     /**
      * Product of numbers.
      * This method may perform significantly better
-     * than simply multiplying the numbers sequentially.
+     * than simply multiplying the numbers sequentially.<p>
+     *
+     * If there are no arguments, the return value is <code>1</code>.
      *
      * @param x The argument(s).
      *
      * @return The product of the given numbers.
      *
-     * @exception java.lang.IllegalArgumentException If there are no arguments.
-     *
      * @since 1.3
      */
 
     public static Apint product(Apint... x)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws ApfloatRuntimeException
     {
         return new Apint(ApfloatMath.product(x));
     }
 
     /**
-     * Sum of numbers.
+     * Sum of numbers.<p>
+     *
+     * If there are no arguments, the return value is <code>0</code>.
      *
      * @param x The argument(s).
      *
      * @return The sum of the given numbers.
      *
-     * @exception java.lang.IllegalArgumentException If there are no arguments.
-     *
      * @since 1.3
      */
 
     public static Apint sum(Apint... x)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws ApfloatRuntimeException
     {
         return new Apint(ApfloatMath.sum(x));
     }

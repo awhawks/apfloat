@@ -16,8 +16,9 @@ import org.apfloat.ApfloatRuntimeException;
  * Access to <code>DataStorage</code> objects is generally not internally
  * synchronized. Accessing multiple non-overlapping parts of
  * the storage concurrently with the {@link #getArray(int,long,int)}
- * or {@link #getTransposedArray(int,int,int,int)} method is permitted.
- * Invoking other methods must generally be externally synchronized.
+ * or {@link #getTransposedArray(int,int,int,int)} method and with
+ * iterators over non-overlapping parts is permitted. Invoking
+ * other methods must generally be externally synchronized.
  *
  * @version 1.1
  * @author Mikko Tommila

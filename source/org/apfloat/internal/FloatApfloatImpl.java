@@ -30,7 +30,7 @@ import static org.apfloat.internal.FloatRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.2
+ * @version 1.4
  * @author Mikko Tommila
  */
 
@@ -72,11 +72,11 @@ public final class FloatApfloatImpl
     public FloatApfloatImpl(String value, long precision, int radix, boolean isInteger)
         throws NumberFormatException, ApfloatRuntimeException
     {
-        super(radix);
+        super(checkRadix(radix));
 
         assert (precision == Apfloat.DEFAULT || precision > 0);
 
-        setRadix(radix);
+        this.radix = radix;
 
         // Default sign if not specified
         this.sign = 1;
@@ -280,11 +280,11 @@ public final class FloatApfloatImpl
     public FloatApfloatImpl(long value, long precision, int radix)
         throws NumberFormatException, ApfloatRuntimeException
     {
-        super(radix);
+        super(checkRadix(radix));
 
         assert (precision > 0);
 
-        setRadix(radix);
+        this.radix = radix;
 
         if (value > 0)
         {
@@ -364,14 +364,14 @@ public final class FloatApfloatImpl
     public FloatApfloatImpl(double value, long precision, int radix)
         throws NumberFormatException, ApfloatRuntimeException
     {
-        super(radix);
+        super(checkRadix(radix));
 
         if (Double.isInfinite(value) || Double.isNaN(value))
         {
             throw new ApfloatRuntimeException(value + " is not a valid number");
         }
 
-        setRadix(radix);
+        this.radix = radix;
 
         if (value > 0)
         {
@@ -500,11 +500,11 @@ public final class FloatApfloatImpl
     public FloatApfloatImpl(PushbackReader in, long precision, int radix, boolean isInteger)
         throws IOException, NumberFormatException, ApfloatRuntimeException
     {
-        super(radix);
+        super(checkRadix(radix));
 
         assert (precision == Apfloat.DEFAULT || precision > 0);
 
-        setRadix(radix);
+        this.radix = radix;
 
         // Default sign if not specified
         this.sign = 1;
@@ -2098,7 +2098,7 @@ public final class FloatApfloatImpl
                         this.dataStorage.getSize());
     }
 
-    private void setRadix(int radix)
+    private static int checkRadix(int radix)
         throws NumberFormatException
     {
         if (radix < Character.MIN_RADIX || radix > Character.MAX_RADIX)
@@ -2106,7 +2106,7 @@ public final class FloatApfloatImpl
             throw new NumberFormatException("Invalid radix " + radix + "; radix must be between " + Character.MIN_RADIX + " and " + Character.MAX_RADIX);
         }
 
-        this.radix = radix;
+        return radix;
     }
 
     // Get the most significant word of this number

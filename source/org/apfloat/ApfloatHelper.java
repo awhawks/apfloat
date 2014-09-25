@@ -422,6 +422,17 @@ class ApfloatHelper
     public static Apcomplex setPrecision(Apcomplex z, long precision)
         throws ApfloatRuntimeException
     {
+        if (z.real().signum() == 0)
+        {
+            return new Apcomplex(z.real(),
+                                 z.imag().precision(precision));
+        }
+        else if (z.imag().signum() == 0)
+        {
+            return new Apcomplex(z.real().precision(precision),
+                                 z.imag());
+        }
+
         long precisionChange = precision - z.precision(),
              realPrecision = z.real().precision(),
              imagPrecision = z.imag().precision(),
@@ -430,14 +441,20 @@ class ApfloatHelper
 
         if (precisionChange < 0)
         {
-            return new Apcomplex(realPrecision + precisionChange > 0 ? z.real().precision(newRealPrecision) : Apfloat.ZERO,
-                                 imagPrecision + precisionChange > 0 ? z.imag().precision(newImagPrecision) : Apfloat.ZERO);
+            if (realPrecision + precisionChange <= 0)
+            {
+                return new Apcomplex(Apfloat.ZERO,
+                                     z.imag().precision(precision));
+            }
+            else if (imagPrecision + precisionChange <= 0)
+            {
+                return new Apcomplex(z.real().precision(precision),
+                                     Apfloat.ZERO);
+            }
         }
-        else
-        {
-            return new Apcomplex(z.real().precision(newRealPrecision),
-                                 z.imag().precision(newImagPrecision));
-        }
+
+        return new Apcomplex(z.real().precision(newRealPrecision),
+                             z.imag().precision(newImagPrecision));
     }
 
     // Returns z with precision at most as specified

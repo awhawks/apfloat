@@ -41,15 +41,16 @@ package org.apfloat.internal;
  *
  * The basic approach is to get an approximation of <code>a * b / modulus</code>
  * (using floating-point operands, that is <code>double</code>s). The approximation
- * should be within +1 or -1 of the correct result. Then calculate
- * <code>a * b - approximateDivision * modulus</code> to get the remainder.
- * This calculation must use the lowest 64 bits and is done using <code>long</code>s.
+ * should be within +1 or -1 of the correct result. We first calculate
+ * <code>a * b - approximateDivision * modulus</code> to get the initial remainder.
+ * This calculation can use the lowest 64 bits only and is done using <code>long</code>s.
  * It is enough to use a <code>double</code> to do the approximate division, as it eliminates
  * at least 51 bits from the top of the 114-bit multiplication result, leaving at
- * most 63 bits in the remainder, and reducing it thus to the correct result &#177;modulus.
- * As the modulus is just less than 2<sup>62</sup> it is easy to detect the case
- * when the approximate division was off by one (and the remainder is <code>&#177;modulus</code>
- * off) as the final step of the algorithm.
+ * most 63 bits in the remainder. The calculation <code>result - approximateDivision * modulus</code>
+ * must then be done once more to reduce the remainder since the original multiplication operands
+ * are only 57-bit numbers. The second reduction reduces the results to the correct value &#177;modulus.
+ * It is then easy to detect the case when the approximate division was off by one (and the
+ * remainder is <code>&#177;modulus</code> off) as the final step of the algorithm.
  *
  * @version 1.0
  * @author Mikko Tommila

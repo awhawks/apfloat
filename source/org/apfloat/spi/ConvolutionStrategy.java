@@ -7,7 +7,7 @@ import org.apfloat.ApfloatRuntimeException;
  * an implementing class could use e.g.<p>
  *
  * <ul>
- *   <li>A simple "school-boy" convolution with O(n<sup>2</sup>) complexity</li>
+ *   <li>A simple long multiplication convolution with O(n<sup>2</sup>) complexity</li>
  *   <li>An O(n<sup>log2(3)</sup>) Karatsuba type algorithm, e.g. <a href="http://www.apfloat.org/log23.html" target="_blank">as desribed in Knuth's Seminumerical Algorithms</a></li>
  *   <li>Floating-point Fast Fourier Transform (FFT) based convolution</li>
  *   <li><a href="http://www.apfloat.org/ntt.html" target="_blank">Number-Theoretic Transform (NTT)</a> based convolution, with the <a href="http://www.apfloat.org/crt.html" target="_blank">Chinese Remainder Theorem</a> used</li>

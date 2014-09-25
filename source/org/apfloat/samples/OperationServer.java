@@ -12,8 +12,8 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.Set;
 import java.util.Iterator;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Server for executing {@link Operation}s from remote calls. The client
@@ -25,20 +25,21 @@ import java.util.concurrent.LinkedBlockingQueue;
  * occurs during the operation execution, nothing is returned and
  * the socket connection is closed.
  *
- * @version 1.2
+ * @version 1.4
  * @author Mikko Tommila
  */
 
 public class OperationServer
 {
     private static class Request
+        implements Runnable
     {
         public Request(SocketChannel channel)
         {
             this.channel = channel;
         }
 
-        public void process()
+        public void run()
         {
             try
             {
@@ -78,26 +79,6 @@ public class OperationServer
         }
 
         private SocketChannel channel;
-    }
-
-    private static class WorkerThread
-        extends Thread
-    {
-        public WorkerThread()
-        {
-        }
-
-        public void run()
-        {
-            info("Started");
-
-            // Process requests forever
-            while (true)
-            {
-                Request request = getRequest();
-                request.process();
-            }
-        }
     }
 
     private OperationServer()
@@ -178,10 +159,7 @@ public class OperationServer
         SelectionKey serverKey = serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
 
         // Create a pool of worker threads that will run independently
-        for (int i = 0; i < workerThreads; i++)
-        {
-            new WorkerThread().start();
-        }
+        Executor executor = Executors.newFixedThreadPool(workerThreads);
 
         info("Waiting for connections to port " + port);
 
@@ -212,38 +190,11 @@ public class OperationServer
                         info("New connection accepted");
 
                         // Put a new request to the queue so a worker thread can pick it up from there
-                        putRequest(new Request(clientSocketChannel));
+                        executor.execute(new Request(clientSocketChannel));
                     }
                 }
             }
         }
-    }
-
-    private static Request getRequest()
-    {
-        Request request;
-
-        try
-        {
-            // Get a request from the queue or wait until somebody puts one there
-            request = queue.take();
-        }
-        catch (InterruptedException ie)
-        {
-            // Exits thread
-            throw new RuntimeException(ie);
-        }
-
-        info("Request acquired from queue");
-
-        return request;
-    }
-
-    private static void putRequest(Request request)
-    {
-        queue.add(request);
-
-        info("Request put to queue");
     }
 
     private static void warning(String message, Exception e)
@@ -277,6 +228,5 @@ public class OperationServer
     private static final int INFO = 2;
     private static final int DEBUG = 3;
 
-    private static BlockingQueue<Request> queue = new LinkedBlockingQueue<Request>();
     private static int messageLevel = WARNING;
 }

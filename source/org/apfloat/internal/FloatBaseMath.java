@@ -10,7 +10,7 @@ import static org.apfloat.internal.FloatRadixConstants.*;
  * Mathematical operations on numbers in a base.
  * Implementation for the <code>float</code> type.
  *
- * @version 1.1
+ * @version 1.4
  * @author Mikko Tommila
  */
 
@@ -36,7 +36,7 @@ public class FloatBaseMath
      *
      * Essentially calculates <code>dst[i] = src1[i] + src2[i]</code>.
      *
-     * @param src1 First source data sequence.
+     * @param src1 First source data sequence. Can be <code>null</code>, in which case it's ignored.
      * @param src2 Second source data sequence. Can be <code>null</code>, in which case it's ignored.
      * @param carry Input carry bit. This is added to the first (rightmost) word in the accessed sequence.
      * @param dst Destination data sequence.
@@ -89,7 +89,7 @@ public class FloatBaseMath
      * Essentially calculates <code>dst[i] = src1[i] - src2[i]</code>.
      *
      * @param src1 First source data sequence. Can be <code>null</code>, in which case the input values are assumed to be zero.
-     * @param src2 Second source data sequence. Can be <code>null</code>, in which case it's ignored.
+     * @param src2 Second source data sequence. Can be <code>null</code>, in which case it's ignored, or can be the same as <code>dst</code>.
      * @param carry Input carry bit. This is subtracted from the first (rightmost) word in the accessed sequence.
      * @param dst Destination data sequence.
      * @param size Number of elements to process.
@@ -101,7 +101,6 @@ public class FloatBaseMath
         throws ApfloatRuntimeException
     {
         assert (src1 == null || src1 != src2);
-        assert (src1 != dst);
         assert (src2 != dst);
 
         float base = BASE[this.radix];
@@ -123,7 +122,7 @@ public class FloatBaseMath
 
             dst.setFloat(result);
 
-            if (src1 != null) src1.next();
+            if (src1 != null && src1 != dst) src1.next();
             if (src2 != null) src2.next();
             dst.next();
         }

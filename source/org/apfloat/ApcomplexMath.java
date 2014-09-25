@@ -8,7 +8,7 @@ import org.apfloat.spi.Util;
 /**
  * Various mathematical functions for arbitrary precision complex numbers.
  *
- * @version 1.3
+ * @version 1.4
  * @author Mikko Tommila
  */
 
@@ -667,37 +667,49 @@ public class ApcomplexMath
             // return ApfloatMath.exp(z.real().precision(1));
         }
 
-        Apfloat pi = ApfloatMath.pi(targetPrecision, radix),    // This is precalculated for initial check only
-                twoPi = pi.add(pi),
-                halfPi = pi.divide(new Apfloat(2, Apfloat.INFINITE, radix)),
-                resultReal;
-        Apcomplex resultImag;
         boolean negateResult = false;                           // If the final result is to be negated
+        Apfloat zImag;
 
-        // Scale z so that -pi < z.imag() <= pi
-        Apfloat zImag = ApfloatMath.fmod(z.imag(), twoPi);
-        if (zImag.compareTo(pi) > 0)
+        if (z.imag().scale() > 0)
         {
-            zImag = zImag.subtract(twoPi);
+            long piPrecision = Util.ifFinite(targetPrecision, targetPrecision + z.imag().scale());
+            Apfloat pi = ApfloatMath.pi(piPrecision, radix),    // This is precalculated for initial check only
+                    twoPi = pi.add(pi),
+                    halfPi = pi.divide(new Apfloat(2, targetPrecision, radix));
+
+            // Scale z so that -pi < z.imag() <= pi
+            zImag = ApfloatMath.fmod(z.imag(), twoPi);
+            if (zImag.compareTo(pi) > 0)
+            {
+                zImag = zImag.subtract(twoPi);
+            }
+            else if (zImag.compareTo(pi.negate()) <= 0)
+            {
+                zImag = zImag.add(twoPi);
+            }
+            // More, scale z so that -pi/2 < z.imag() <= pi/2 to avoid instability near z.imag() = +-pi
+            if (zImag.compareTo(halfPi) > 0)
+            {
+                // exp(z - i*pi) = exp(z)/exp(i*pi) = -exp(z)
+                zImag = zImag.subtract(pi);
+                negateResult = true;
+            }
+            else if (zImag.compareTo(halfPi.negate()) <= 0)
+            {
+                // exp(z + i*pi) = exp(z)*exp(i*pi) = -exp(z)
+                zImag = zImag.add(pi);
+                negateResult = true;
+            }
         }
-        else if (zImag.compareTo(pi.negate()) <= 0)
+        else
         {
-            zImag = zImag.add(twoPi);
-        }
-        // More, scale z so that -pi/2 < z.imag() <= pi/2 to avoid instability near z.imag() = +-pi
-        if (zImag.compareTo(halfPi) > 0)
-        {
-            // exp(z - i*pi) = exp(z)/exp(i*pi) = -exp(z)
-            zImag = zImag.subtract(pi);
-            negateResult = true;
-        }
-        else if (zImag.compareTo(halfPi.negate()) <= 0)
-        {
-            // exp(z + i*pi) = exp(z)*exp(i*pi) = -exp(z)
-            zImag = zImag.add(pi);
-            negateResult = true;
+            // No need to scale the imaginary part since it's small, -pi/2 < z.imag() <= pi/2
+            zImag = z.imag();
         }
         z = new Apcomplex(z.real(), zImag);
+
+        Apfloat resultReal;
+        Apcomplex resultImag;
 
         // First handle the real part
 
@@ -709,7 +721,8 @@ public class ApcomplexMath
         {
             // Taylor series: exp(x) = 1 + x + x^2/2 + ...
 
-            resultReal = one.precision(-2 * z.real().scale()).add(z.real());
+            long precision = Util.ifFinite(-z.real().scale(), -2 * z.real().scale());
+            resultReal = one.precision(precision).add(z.real());
         }
         else
         {
@@ -730,17 +743,23 @@ public class ApcomplexMath
 
         // Then handle the imaginary part
 
-        if (z.imag().scale() < -doublePrecision / 2)
+        if (zImag.signum() == 0)
+        {
+            // Imaginary part may have been reduced to zero e.g. if it was exactly pi
+            resultImag = one;
+        }
+        else if (zImag.scale() < -doublePrecision / 2)
         {
             // Taylor series: exp(z) = 1 + z + z^2/2 + ...
 
-            resultImag = new Apcomplex(one, z.imag());
+            long precision = Util.ifFinite(-zImag.scale(), -2 * zImag.scale());
+            resultImag = new Apcomplex(one.precision(precision), zImag.precision(-zImag.scale()));
         }
         else
         {
             // Approximate starting value for iteration
 
-            double doubleImag = z.imag().doubleValue();
+            double doubleImag = zImag.doubleValue();
             resultImag = new Apcomplex(new Apfloat(Math.cos(doubleImag), doublePrecision, radix),
                                        new Apfloat(Math.sin(doubleImag), doublePrecision, radix));
         }
@@ -1136,23 +1155,23 @@ public class ApcomplexMath
      * The precision used in the multiplications is only
      * what is needed for the end result. This method may
      * perform significantly better than simply multiplying
-     * the numbers sequentially.
+     * the numbers sequentially.<p>
+     *
+     * If there are no arguments, the return value is <code>1</code>.
      *
      * @param z The argument(s).
      *
      * @return The product of the given numbers.
      *
-     * @exception java.lang.IllegalArgumentException If there are no arguments.
-     *
      * @since 1.3
      */
 
     public static Apcomplex product(Apcomplex... z)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws ApfloatRuntimeException
     {
         if (z.length == 0)
         {
-            throw new IllegalArgumentException("No arguments given");
+            return Apcomplex.ONE;
         }
 
         // Determine working precision
@@ -1170,10 +1189,11 @@ public class ApcomplexMath
         Apcomplex[] tmp = new Apcomplex[z.length];
 
         // Add sqrt length digits for round-off errors
-        long extraPrec = (long) Math.sqrt((double) z.length);
+        long extraPrec = (long) Math.sqrt((double) z.length),
+             destPrec = ApfloatHelper.extendPrecision(maxPrec, extraPrec);
         for (int i = 0; i < z.length; i++)
         {
-            tmp[i] = ApfloatHelper.extendPrecision(z[i], extraPrec);
+            tmp[i] = z[i].precision(destPrec);
         }
         z = tmp;
 
@@ -1211,23 +1231,23 @@ public class ApcomplexMath
      * The precision used in the additions is only
      * what is needed for the end result. This method may
      * perform significantly better than simply adding
-     * the numbers sequentially.
+     * the numbers sequentially.<p>
+     *
+     * If there are no arguments, the return value is <code>0</code>.
      *
      * @param z The argument(s).
      *
      * @return The sum of the given numbers.
      *
-     * @exception java.lang.IllegalArgumentException If there are no arguments.
-     *
      * @since 1.3
      */
 
     public static Apcomplex sum(Apcomplex... z)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws ApfloatRuntimeException
     {
         if (z.length == 0)
         {
-            throw new IllegalArgumentException("No arguments given");
+            return Apcomplex.ZERO;
         }
 
         Apfloat[] x = new Apfloat[z.length],

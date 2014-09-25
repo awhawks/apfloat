@@ -14,7 +14,7 @@ import org.apfloat.spi.Util;
  * Due to different types of round-off errors that can occur in the implementation,
  * no guarantees about e.g. monotonicity are given for any of the methods.
  *
- * @version 1.3
+ * @version 1.4
  * @author Mikko Tommila
  */
 
@@ -1701,23 +1701,23 @@ public class ApfloatMath
      * The precision used in the multiplications is only
      * what is needed for the end result. This method may
      * perform significantly better than simply multiplying
-     * the numbers sequentially.
+     * the numbers sequentially.<p>
+     *
+     * If there are no arguments, the return value is <code>1</code>.
      *
      * @param x The argument(s).
      *
      * @return The product of the given numbers.
      *
-     * @exception java.lang.IllegalArgumentException If there are no arguments.
-     *
      * @since 1.3
      */
 
     public static Apfloat product(Apfloat... x)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws ApfloatRuntimeException
     {
         if (x.length == 0)
         {
-            throw new IllegalArgumentException("No arguments given");
+            return Apfloat.ONE;
         }
 
         // Determine working precision
@@ -1735,10 +1735,11 @@ public class ApfloatMath
         Apfloat[] tmp = new Apfloat[x.length];
 
         // Add sqrt length digits for round-off errors
-        long extraPrec = (long) Math.sqrt((double) x.length);
+        long extraPrec = (long) Math.sqrt((double) x.length),
+             destPrec = ApfloatHelper.extendPrecision(maxPrec, extraPrec);
         for (int i = 0; i < x.length; i++)
         {
-            tmp[i] = ApfloatHelper.extendPrecision(x[i], extraPrec);
+            tmp[i] = x[i].precision(destPrec);
         }
         x = tmp;
 
@@ -1776,23 +1777,23 @@ public class ApfloatMath
      * The precision used in the additions is only
      * what is needed for the end result. This method may
      * perform significantly better than simply adding
-     * the numbers sequentially.
+     * the numbers sequentially.<p>
+     *
+     * If there are no arguments, the return value is <code>0</code>.
      *
      * @param x The argument(s).
      *
      * @return The sum of the given numbers.
      *
-     * @exception java.lang.IllegalArgumentException If there are no arguments.
-     *
      * @since 1.3
      */
 
     public static Apfloat sum(Apfloat... x)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws ApfloatRuntimeException
     {
         if (x.length == 0)
         {
-            throw new IllegalArgumentException("No arguments given");
+            return Apfloat.ZERO;
         }
 
         // Determine working precision
@@ -1811,7 +1812,9 @@ public class ApfloatMath
                                Util.ifFinite(newPrec, newPrec + newScaleDiff));
         }
 
-        Apfloat s = Apfloat.ZERO;
+        // Do not use x.clone() as the array might be of some subclass type, resulting in ArrayStoreException later
+        Apfloat[] tmp = new Apfloat[x.length];
+
         for (int i = 0; i < x.length; i++)
         {
             long scale = x[i].scale(),
@@ -1820,8 +1823,31 @@ public class ApfloatMath
                  destPrec = (maxPrec - scaleDiff <= 0 ? 0 : Util.ifFinite(maxPrec, maxPrec - scaleDiff));
             if (destPrec > 0)
             {
-                s = s.add(x[i].precision(destPrec));
+                tmp[i] = x[i].precision(destPrec);
             }
+            else
+            {
+                tmp[i] = Apfloat.ZERO;
+            }
+        }
+        x = tmp;
+
+        // Sort by scale (might be mostly equal to size)
+        Arrays.sort(x, new Comparator<Apfloat>()
+        {
+            public int compare(Apfloat x, Apfloat y)
+            {
+                long xScale = x.scale(),
+                     yScale = y.scale();
+                return (xScale < yScale ? -1 : (xScale > yScale ? 1 : 0));
+            }
+        });
+
+        // Add
+        Apfloat s = Apfloat.ZERO;
+        for (int i = 0; i < x.length; i++)
+        {
+            s = s.add(x[i]);
         }
 
         return s;

@@ -15,7 +15,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see Apint
  *
- * @version 1.3
+ * @version 1.4
  * @author Mikko Tommila
  */
 
@@ -729,9 +729,7 @@ public class Aprational
     protected ApfloatImpl getImpl(long precision)
         throws ApfloatRuntimeException
     {
-        ensureApprox(precision);
-
-        return this.approx.getImpl(precision);
+        return ensureApprox(precision).getImpl(precision);
     }
 
     private void checkDenominator()
@@ -780,7 +778,7 @@ public class Aprational
         return this;
     }
 
-    private synchronized void ensureApprox(long precision)
+    private synchronized Apfloat ensureApprox(long precision)
         throws ApfloatRuntimeException
     {
         if (!hasApprox(precision))
@@ -804,6 +802,8 @@ public class Aprational
                 }
             }
         }
+
+        return this.approx;
     }
 
     private boolean hasApprox(long precision)

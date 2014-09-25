@@ -6,7 +6,7 @@ import java.util.Comparator;
 /**
  * Various mathematical functions for arbitrary precision rational numbers.
  *
- * @version 1.3
+ * @version 1.4
  * @author Mikko Tommila
  */
 
@@ -173,23 +173,23 @@ public class AprationalMath
     /**
      * Product of numbers.
      * This method may perform significantly better
-     * than simply multiplying the numbers sequentially.
+     * than simply multiplying the numbers sequentially.<p>
+     *
+     * If there are no arguments, the return value is <code>1</code>.
      *
      * @param x The argument(s).
      *
      * @return The product of the given numbers.
      *
-     * @exception java.lang.IllegalArgumentException If there are no arguments.
-     *
      * @since 1.3
      */
 
     public static Aprational product(Aprational... x)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws ApfloatRuntimeException
     {
         if (x.length == 0)
         {
-            throw new IllegalArgumentException("No arguments given");
+            return Aprational.ONE;
         }
 
         Apint[] n = new Apint[x.length],
@@ -209,23 +209,23 @@ public class AprationalMath
     /**
      * Sum of numbers.
      * This method may perform significantly better
-     * than simply adding the numbers sequentially.
+     * than simply adding the numbers sequentially.<p>
+     *
+     * If there are no arguments, the return value is <code>0</code>.
      *
      * @param x The argument(s).
      *
      * @return The sum of the given numbers.
      *
-     * @exception java.lang.IllegalArgumentException If there are no arguments.
-     *
      * @since 1.3
      */
 
     public static Aprational sum(Aprational... x)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws ApfloatRuntimeException
     {
         if (x.length == 0)
         {
-            throw new IllegalArgumentException("No arguments given");
+            return Aprational.ZERO;
         }
 
         // Sort by size
