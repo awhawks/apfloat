@@ -18,9 +18,12 @@ import static org.apfloat.internal.FloatModConstants.*;
  * This implementation uses three Number Theoretic Transforms to do the
  * convolution and the Chinese Remainder Theorem to get the final result.<p>
  *
+ * After transforming the data, the in-place multiplication (or squaring)
+ * of the data elements is done using a parallel algorithm.<p>
+ *
  * All access to this class must be externally synchronized.
  *
- * @version 1.6
+ * @version 1.6.1
  * @author Mikko Tommila
  */
 
@@ -32,57 +35,63 @@ public class Float3NTTConvolutionStrategy
     private class MultiplyInPlaceRunnable
         implements Runnable
     {
-        public MultiplyInPlaceRunnable(DataStorage sourceAndDestination, DataStorage source)
+        public MultiplyInPlaceRunnable(DataStorage sourceAndDestination, DataStorage source, long offset, long length)
         {
             this.sourceAndDestination = sourceAndDestination;
             this.source = source;
+            this.offset = offset;
+            this.length = length;
         }
 
         public void run()
         {
-            long size = this.sourceAndDestination.getSize();
-            DataStorage.Iterator dest = this.sourceAndDestination.iterator(DataStorage.READ_WRITE, 0, size),
-                                 src = this.source.iterator(DataStorage.READ, 0, size);
+            DataStorage.Iterator dest = this.sourceAndDestination.iterator(DataStorage.READ_WRITE, this.offset, this.offset + this.length),
+                                 src = this.source.iterator(DataStorage.READ, this.offset, this.offset + this.length);
 
-            while (size > 0)
+            while (this.length > 0)
             {
                 dest.setFloat(modMultiply(dest.getFloat(), src.getFloat()));
 
                 dest.next();
                 src.next();
-                size--;
+                this.length--;
             }
         }
 
         private DataStorage sourceAndDestination,
                             source;
+        private long offset,
+                     length;
     }
 
     // Runnable for squaring elements in place
     private class SquareInPlaceRunnable
         implements Runnable
     {
-        public SquareInPlaceRunnable(DataStorage sourceAndDestination)
+        public SquareInPlaceRunnable(DataStorage sourceAndDestination, long offset, long length)
         {
             this.sourceAndDestination = sourceAndDestination;
+            this.offset = offset;
+            this.length = length;
         }
 
         public void run()
         {
-            long size = this.sourceAndDestination.getSize();
-            DataStorage.Iterator iterator = this.sourceAndDestination.iterator(DataStorage.READ_WRITE, 0, size);
+            DataStorage.Iterator iterator = this.sourceAndDestination.iterator(DataStorage.READ_WRITE, this.offset, this.offset + this.length);
 
-            while (size > 0)
+            while (this.length > 0)
             {
                 float value = iterator.getFloat();
                 iterator.setFloat(modMultiply(value, value));
 
                 iterator.next();
-                size--;
+                this.length--;
             }
         }
 
         private DataStorage sourceAndDestination;
+        private long offset,
+                     length;
     }
 
     /**
@@ -227,9 +236,7 @@ public class Float3NTTConvolutionStrategy
 
                 public Runnable getRunnable(int offset, int length)
                 {
-                    DataStorage subSourceAndDestination = sourceAndDestination.subsequence(offset, length);
-                    DataStorage subSource = source.subsequence(offset, length);
-                    return new MultiplyInPlaceRunnable(subSourceAndDestination, subSource);
+                    return new MultiplyInPlaceRunnable(sourceAndDestination, source, offset, length);
                 }
             };
 
@@ -237,7 +244,7 @@ public class Float3NTTConvolutionStrategy
         }
         else
         {
-            new MultiplyInPlaceRunnable(sourceAndDestination, source).run();    // Just run in current thread without parallelization
+            new MultiplyInPlaceRunnable(sourceAndDestination, source, 0, size).run();   // Just run in current thread without parallelization
         }
     }
 
@@ -271,8 +278,7 @@ public class Float3NTTConvolutionStrategy
 
                 public Runnable getRunnable(int offset, int length)
                 {
-                    DataStorage subSourceAndDestination = sourceAndDestination.subsequence(offset, length);
-                    return new SquareInPlaceRunnable(subSourceAndDestination);
+                    return new SquareInPlaceRunnable(sourceAndDestination, offset, length);
                 }
             };
 
@@ -280,7 +286,7 @@ public class Float3NTTConvolutionStrategy
         }
         else
         {
-            new SquareInPlaceRunnable(sourceAndDestination).run();      // Just run in current thread without parallelization
+            new SquareInPlaceRunnable(sourceAndDestination, 0, size).run(); // Just run in current thread without parallelization
         }
     }
 

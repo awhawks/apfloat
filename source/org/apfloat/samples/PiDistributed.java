@@ -76,7 +76,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.5.2
+ * @version 1.6.1
  * @author Mikko Tommila
  */
 
@@ -722,15 +722,35 @@ public class PiDistributed
         private int radix;
     }
 
-    // RemoteOperationExecutor that actually implements the weight property
-    private static class Node
+    /**
+     * RemoteOperationExecutor that implements the weight property.
+     */
+
+    protected static class Node
         extends RemoteOperationExecutor
         implements Comparable<Node>
     {
+        /**
+         * Construct a Node with the specified parameters and one processor.
+         *
+         * @param host The remote host.
+         * @param port The remote port.
+         * @param weight The weight.
+         */
+
         public Node(String host, int port, int weight)
         {
             this(host, port, weight, 1);
         }
+
+        /**
+         * Construct a Node with the specified parameters.
+         *
+         * @param host The remote host.
+         * @param port The remote port.
+         * @param weight The weight.
+         * @param numberOfProcessors The number of processors.
+         */
 
         public Node(String host, int port, int weight, int numberOfProcessors)
         {
@@ -749,6 +769,12 @@ public class PiDistributed
             return super.executeBackground(new ThreadLimitedOperation<T>(operation, this.numberOfProcessors));
         }
 
+        /**
+         * Set the weight.
+         *
+         * @param weight The weight.
+         */
+
         public void setWeight(int weight)
         {
             this.weight = weight;
@@ -759,15 +785,35 @@ public class PiDistributed
             return this.weight;
         }
 
+        /**
+         * Set the number of processors.
+         *
+         * @param numberOfProcessors The number of processors.
+         */
+
         public void setNumberOfProcessors(int numberOfProcessors)
         {
             this.numberOfProcessors = numberOfProcessors;
         }
 
+        /**
+         * Get the number of processors.
+         *
+         * @return The number of processors.
+         */
+
         public int getNumberOfProcessors()
         {
             return this.numberOfProcessors;
         }
+
+        /**
+         * Compare this Node to another Node.
+         *
+         * @param that The other node to compare to.
+         *
+         * @return A number less than zero if this Node should be ordered before the other node, or gerater than zero for the reverse order. Should not return zero.
+         */
 
         public int compareTo(Node that)
         {
@@ -775,6 +821,12 @@ public class PiDistributed
             int weightDifference = this.weight - that.weight;
             return (weightDifference != 0 ? weightDifference : this.hashCode() - that.hashCode());      // This is not rock solid...
         }
+
+        /**
+         * Convert to String.
+         *
+         * @return The string representation.
+         */
 
         public String toString()
         {

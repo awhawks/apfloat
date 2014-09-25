@@ -19,7 +19,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApintMath
  *
- * @version 1.6
+ * @version 1.6.1
  * @author Mikko Tommila
  */
 
@@ -329,24 +329,33 @@ public class ApfloatMath
             }
         }
 
+        x = ApfloatHelper.extendPrecision(x);
+
         // Newton's iteration
         while (iterations-- > 0)
         {
             precision *= 2;
             result = result.precision(Math.min(precision, targetPrecision));
 
-            Apfloat t = one.subtract(x.multiply(pow(result, n)));
+            Apfloat t = pow(result, n);
+            t = lastIterationExtendPrecision(iterations, precisingIteration, t);
+            t = one.subtract(x.multiply(t));
             if (iterations < precisingIteration)
             {
                 t = t.precision(precision / 2);
             }
 
+            result = lastIterationExtendPrecision(iterations, precisingIteration, result);
             result = result.add(result.multiply(t).divide(divisor));
 
             // Precising iteration
             if (iterations == precisingIteration)
             {
-                result = result.add(result.multiply(one.subtract(x.multiply(pow(result, n)))).divide(divisor));
+                t = pow(result, n);
+                t = lastIterationExtendPrecision(iterations, -1, t);
+
+                result = lastIterationExtendPrecision(iterations, -1, result);
+                result = result.add(result.multiply(one.subtract(x.multiply(t))).divide(divisor));
             }
         }
 
@@ -1411,13 +1420,6 @@ public class ApfloatMath
         return result.precision(targetPrecision);
     }
 
-    // Extend the precision on last iteration
-    private static Apfloat lastIterationExtendPrecision(int iterations, int precisingIteration, Apfloat x)
-        throws ApfloatRuntimeException
-    {
-        return (iterations == 0 && precisingIteration != 0 ? ApfloatHelper.extendPrecision(x) : x);
-    }
-
     /**
      * Arbitrary power. Calculated using <code>log()</code> and <code>exp()</code>.<p>
      *
@@ -1880,6 +1882,13 @@ public class ApfloatMath
         }
 
         return s;
+    }
+
+    // Extend the precision on last iteration
+    private static Apfloat lastIterationExtendPrecision(int iterations, int precisingIteration, Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return (iterations == 0 && precisingIteration != 0 ? ApfloatHelper.extendPrecision(x) : x);
     }
 
     static Apfloat factorial(long n, long precision)

@@ -12,9 +12,15 @@ import static org.apfloat.internal.LongModConstants.*;
 /**
  * Class for performing the final step of a three-modulus
  * Number Theoretic Transform based convolution. Works for the
- * <code>long</code> type.
+ * <code>long</code> type.<p>
  *
- * @version 1.6
+ * The algorithm is parallelized for multiprocessor computers.
+ * The parallelization works so that the carry-CRT is done in
+ * blocks in parallel. As a final step, a second pass is done
+ * through the data set to propagate the carries from one block
+ * to the next.
+ *
+ * @version 1.6.1
  * @author Mikko Tommila
  */
 
@@ -25,7 +31,7 @@ public class LongCarryCRT
     private class CarryCRTRunnable
         implements Runnable
     {
-        public CarryCRTRunnable(DataStorage resultMod0, DataStorage resultMod1, DataStorage resultMod2, DataStorage dataStorage, long size, long resultSize, long offset, long skipSize, MessagePasser<Long, long[]> messagePasser)
+        public CarryCRTRunnable(DataStorage resultMod0, DataStorage resultMod1, DataStorage resultMod2, DataStorage dataStorage, long size, long resultSize, long offset, long length, MessagePasser<Long, long[]> messagePasser)
         {
             this.resultMod0 = resultMod0;
             this.resultMod1 = resultMod1;
@@ -34,23 +40,33 @@ public class LongCarryCRT
             this.size = size;
             this.resultSize = resultSize;
             this.offset = offset;
-            this.skipSize = skipSize;
+            this.length = length;
             this.messagePasser = messagePasser;
         }
 
         public void run()
         {
-            DataStorage.Iterator src0 = this.resultMod0.iterator(DataStorage.READ, this.size, 0),
-                                 src1 = this.resultMod1.iterator(DataStorage.READ, this.size, 0),
-                                 src2 = this.resultMod2.iterator(DataStorage.READ, this.size, 0),
-                                 dst = this.dataStorage.iterator(DataStorage.WRITE, this.resultSize, 0);
+            long skipSize = (this.offset == 0 ? this.size - this.resultSize + 1: 0);    // For the first block, ignore the first 1-3 elements
+            long lastSize = (this.offset + this.length == this.size ? 1: 0);            // For the last block, add 1 element
+            long nonLastSize = 1 - lastSize;                                            // For the other than last blocks, move 1 element
+            long subResultSize = this.length - skipSize + lastSize;
+
+            long subStart = this.size - this.offset,
+                 subEnd = subStart - this.length,
+                 subResultStart = this.size - this.offset - this.length + nonLastSize + subResultSize,
+                 subResultEnd = subResultStart - subResultSize;
+
+            DataStorage.Iterator src0 = this.resultMod0.iterator(DataStorage.READ, subStart, subEnd),
+                                 src1 = this.resultMod1.iterator(DataStorage.READ, subStart, subEnd),
+                                 src2 = this.resultMod2.iterator(DataStorage.READ, subStart, subEnd),
+                                 dst = this.dataStorage.iterator(DataStorage.WRITE, subResultStart, subResultEnd);
 
             long[] carryResult = new long[3],
                       sum = new long[3],
                       tmp = new long[3];
 
             // Preliminary carry-CRT calculation (happens in parallel in multiple blocks)
-            for (long i = 0; i < this.size; i++)
+            for (long i = 0; i < this.length; i++)
             {
                 long y0 = MATH_MOD_0.modMultiply(T0, src0.getLong()),
                         y1 = MATH_MOD_1.modMultiply(T1, src1.getLong()),
@@ -79,7 +95,7 @@ public class LongCarryCRT
 
                 // In the first block, ignore the first element (it's zero in full precision calculations)
                 // and possibly one or two more in limited precision calculations
-                if (i >= this.skipSize)
+                if (i >= skipSize)
                 {
                     dst.setLong(result);
                     dst.next();
@@ -98,7 +114,7 @@ public class LongCarryCRT
             assert (carryResult[1] == 0);
 
             // Last block has one extra element (corresponding to the one skipped in the first block)
-            if (this.resultSize == this.size - this.skipSize + 1)
+            if (subResultSize == this.length - skipSize + 1)
             {
                 dst.setLong(result0);
                 dst.close();
@@ -117,18 +133,18 @@ public class LongCarryCRT
                 // Get iterators for the previous block carries, and dst, padded with this block's carries
                 // Note that size could be 1 but carries size is 2
                 DataStorage.Iterator src = arrayIterator(previousResults);
-                dst = compositeIterator(this.dataStorage.iterator(DataStorage.READ_WRITE, this.resultSize, 0), this.resultSize, arrayIterator(results));
+                dst = compositeIterator(this.dataStorage.iterator(DataStorage.READ_WRITE, subResultStart, subResultEnd), subResultSize, arrayIterator(results));
 
                 // Propagate base addition through dst, and this block's carries
                 long carry = baseAdd(dst, src, 0, dst, previousResults.length);
-                carry = baseCarry(dst, carry, this.resultSize);
+                carry = baseCarry(dst, carry, subResultSize);
                 dst.close();                                                    // Iterator likely was not iterated to end
 
                 assert (carry == 0);
             }
 
             // Finally, send the carry to the next block
-            this.messagePasser.sendMessage(this.offset + this.size, results);
+            this.messagePasser.sendMessage(this.offset + this.length, results);
         }
 
         private long baseCarry(DataStorage.Iterator srcDst, long carry, long size)
@@ -141,14 +157,14 @@ public class LongCarryCRT
             return carry;
         }
 
-        private DataStorage resultMod0;
-        private DataStorage resultMod1;
-        private DataStorage resultMod2;
-        private DataStorage dataStorage;
-        private long size;
-        private long resultSize;
-        private long offset;
-        private long skipSize;
+        private DataStorage resultMod0,
+                            resultMod1,
+                            resultMod2,
+                            dataStorage;
+        private long size,
+                     resultSize,
+                     offset,
+                     length;
         private MessagePasser<Long, long[]> messagePasser;
     }
 
@@ -211,16 +227,7 @@ public class LongCarryCRT
 
                 public Runnable getRunnable(int offset, int length)
                 {
-                    DataStorage subResultMod0 = resultMod0.subsequence(size - offset - length, length);
-                    DataStorage subResultMod1 = resultMod1.subsequence(size - offset - length, length);
-                    DataStorage subResultMod2 = resultMod2.subsequence(size - offset - length, length);
-                    long skipSize = (offset == 0 ? size - resultSize + 1: 0);   // For the first block, ignore the first 1-3 elements
-                    long lastSize = (offset + length == size ? 1: 0);           // For the last block, add 1 element
-                    long nonLastSize = 1 - lastSize;                            // For the other than last blocks, move 1 element
-                    long subResultSize = length - skipSize + lastSize;
-
-                    DataStorage subDataStorage = dataStorage.subsequence(size - offset - length + nonLastSize, subResultSize);
-                    return new CarryCRTRunnable(subResultMod0, subResultMod1, subResultMod2, subDataStorage, length, subResultSize, offset, skipSize, messagePasser);
+                    return new CarryCRTRunnable(resultMod0, resultMod1, resultMod2, dataStorage, size, resultSize, offset, length, messagePasser);
                 }
             };
 
@@ -229,7 +236,7 @@ public class LongCarryCRT
         else
         {
             // Just run in current thread without parallelization
-            new CarryCRTRunnable(resultMod0, resultMod1, resultMod2, dataStorage, size, resultSize, 0, size - resultSize + 1, messagePasser).run();
+            new CarryCRTRunnable(resultMod0, resultMod1, resultMod2, dataStorage, size, resultSize, 0, size, messagePasser).run();
         }
 
         // Sanity check
@@ -320,7 +327,7 @@ public class LongCarryCRT
         };
     }
 
-    private static final long serialVersionUID = 3231044001557304611L;
+    private static final long serialVersionUID = -3954870352092656433L;
 
     private static final LongModMath MATH_MOD_0,
                                         MATH_MOD_1,

@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApfloatMath
  *
- * @version 1.6
+ * @version 1.6.1
  * @author Mikko Tommila
  */
 
@@ -522,25 +522,34 @@ public class ApcomplexMath
             }
         }
 
+        z = ApfloatHelper.extendPrecision(z);
+
         // Newton's iteration
         while (iterations-- > 0)
         {
             precision *= 2;
             result = ApfloatHelper.setPrecision(result, Math.min(precision, targetPrecision));
 
-            Apcomplex t = one.subtract(z.multiply(powAbs(result, n)));
+            Apcomplex t = powAbs(result, n);
+            t = lastIterationExtendPrecision(iterations, precisingIteration, t);
+            t = one.subtract(z.multiply(t));
             if (iterations < precisingIteration)
             {
                 t = new Apcomplex(t.real().precision(precision / 2),
                                   t.imag().precision(precision / 2));
             }
 
+            result = lastIterationExtendPrecision(iterations, precisingIteration, result);
             result = result.add(result.multiply(t).divide(divisor));
 
             // Precising iteration
             if (iterations == precisingIteration)
             {
-                result = result.add(result.multiply(one.subtract(z.multiply(powAbs(result, n)))).divide(divisor));
+                t = powAbs(result, n);
+                t = lastIterationExtendPrecision(iterations, -1, t);
+
+                result = lastIterationExtendPrecision(iterations, -1, result);
+                result = result.add(result.multiply(one.subtract(z.multiply(t))).divide(divisor));
             }
         }
 
@@ -1014,12 +1023,6 @@ public class ApcomplexMath
         return ApfloatHelper.setPrecision(negateResult ? result.negate() : result, targetPrecision);
     }
 
-    // Extend the precision on last iteration
-    private static Apcomplex lastIterationExtendPrecision(int iterations, int precisingIteration, Apcomplex z)
-    {
-        return (iterations == 0 && precisingIteration != 0 ? ApfloatHelper.extendPrecision(z) : z);
-    }
-
     /**
      * Arbitrary power. Calculated using <code>log()</code> and <code>exp()</code>.<p>
      *
@@ -1430,5 +1433,11 @@ public class ApcomplexMath
             y[i] = z[i].imag();
         }
         return new Apcomplex(ApfloatMath.sum(x), ApfloatMath.sum(y));
+    }
+
+    // Extend the precision on last iteration
+    private static Apcomplex lastIterationExtendPrecision(int iterations, int precisingIteration, Apcomplex z)
+    {
+        return (iterations == 0 && precisingIteration != 0 ? ApfloatHelper.extendPrecision(z) : z);
     }
 }

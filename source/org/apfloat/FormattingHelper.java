@@ -13,7 +13,7 @@ import java.util.Locale;
 /**
  * Helper class for formatting.
  *
- * @version 1.3
+ * @version 1.6.1
  * @author Mikko Tommila
  */
 
@@ -118,13 +118,18 @@ class FormattingHelper
             }
             if (this.isUpperCase)
             {
+                String s;
                 if (this.locale == null)
                 {
-                    super.write(Character.toUpperCase(c));
+                    s = String.valueOf((char) c).toUpperCase();
                 }
                 else
                 {
-                    super.write(String.valueOf((char) c).toUpperCase(this.locale));
+                    s = String.valueOf((char) c).toUpperCase(this.locale);
+                }
+                for (int i = 0; i < s.length(); i++)
+                {
+                    super.write(s.charAt(i));
                 }
             }
             else

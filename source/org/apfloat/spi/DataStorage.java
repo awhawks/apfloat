@@ -20,7 +20,7 @@ import org.apfloat.ApfloatRuntimeException;
  * iterators over non-overlapping parts is permitted. Invoking
  * other methods must generally be externally synchronized.
  *
- * @version 1.5.2
+ * @version 1.6.1
  * @author Mikko Tommila
  */
 
@@ -1019,7 +1019,12 @@ public abstract class DataStorage
     {
         if (!isSubsequenced())
         {
-            this.length = implGetSize();            // Size can't be changed after this
+            if (!isReadOnly())
+            {
+                this.length = implGetSize();        // Size can't be changed after this
+            }
+            // This may be called even after the DataStorage has been set to be read-only, but the mutation behaves
+            // consistently even if done from multiple threads at the same time
             this.isSubsequenced = true;             // Subsequences exist for this object
         }
     }

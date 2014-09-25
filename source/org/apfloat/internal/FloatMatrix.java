@@ -7,6 +7,46 @@ import org.apfloat.spi.Util;
 
 /**
  * Optimized matrix transposition methods for the <code>float</code> type.
+ * The matrix transposition algorithm isn't parallelized.<p>
+ *
+ * While the matrix transposition algorithm could easily be parallelized,
+ * on an SMP machine it does not make any sense. If the matrix doesn't fit
+ * in any processor specific cache then the memory (or higher level
+ * shared cache) bandwidth becomes a bottleneck in the algorithm. Matrix
+ * transposition is in principle a very simple algorithm - it doesn't do
+ * anything else than move data from one place to another. If shared memory
+ * is the bottleneck, then the algorithm isn't any faster if the data is being
+ * moved around by one thread or by multiple threads in parallel.<p>
+ *
+ * If the data fits in a processor specific cache, then the algorithm could
+ * theoretically be made faster with parallelization. To make the parallelization
+ * effective however, the data would have to be set up in some kind of a NUMA
+ * way. For example, each processor core would hold an equal section of
+ * the data in the processor cache. Then the algorithm could be made faster
+ * as each processor core could quickly transpose blocks of data that are in the
+ * processor cache, and then exchange blocks with other processor cores via the
+ * slower higher level shared cache or main memory.<p>
+ *
+ * This approach doesn't work well in practice however, at least not in a Java
+ * program. The reason is that there are no guarantees where the data is when
+ * the algorithm starts (in which processor core caches), and further there are
+ * no guarantees of any processor affinity for the threads that are executing
+ * in parallel. Different processor cores could be executing the transposition
+ * of different sections of the data at any moment, depending on how the
+ * operating system (and the JVM) schedule thread execution. And more often
+ * than not, the operating system isn't smart enough to apply any such processor
+ * affinity for the threads.<p>
+ *
+ * An additional problem for any NUMA based attempt is that the data array would
+ * have to be aligned on a cache line (e.g. 64 or 128 bytes), to prevent
+ * cache contention at the edges of each data section. But a JVM makes no such
+ * guarantees about memory alignment. And since pointers do not exist in Java,
+ * manually aligning memory addresses isn't possible.<p>
+ *
+ * Considering all of the above, the parallel algorithm doesn't in practice work
+ * any faster than the single-thread algorithm, as the algorithm is bound by the
+ * memory bandwidth (or shared cache bandwidth). In some cases parallelization
+ * can even make the execution slower due to increased cache contention.
  *
  * @version 1.0
  * @author Mikko Tommila
