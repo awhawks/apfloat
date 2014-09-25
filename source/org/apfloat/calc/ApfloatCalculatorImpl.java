@@ -1,7 +1,5 @@
 package org.apfloat.calc;
 
-import java.util.List;
-
 import org.apfloat.Apcomplex;
 import org.apfloat.ApcomplexMath;
 import org.apfloat.Apfloat;

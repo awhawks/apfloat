@@ -12,7 +12,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>double</code> element type.
  *
- * @version 1.1
+ * @version 1.4.2
  * @author Mikko Tommila
  */
 
@@ -331,6 +331,10 @@ public final class DoubleDiskDataStorage
     public Iterator iterator(int mode, long startPosition, long endPosition)
         throws IllegalArgumentException, IllegalStateException, ApfloatRuntimeException
     {
+        if ((mode & READ_WRITE) == 0)
+        {
+            throw new IllegalArgumentException("Illegal mode: " + mode);
+        }
         return new BlockIterator(mode, startPosition, endPosition);
     }
 

@@ -8,7 +8,7 @@ import org.apfloat.spi.Util;
 /**
  * Various mathematical functions for arbitrary precision complex numbers.
  *
- * @version 1.4
+ * @version 1.4.2
  * @author Mikko Tommila
  */
 
@@ -769,9 +769,6 @@ public class ApcomplexMath
 
         long precision = result.precision();    // Accuracy of initial guess
 
-        // Precalculate the needed values once to the required precision
-        ApfloatMath.logRadix(targetPrecision, radix);
-
         int iterations = 0;
 
         // Compute total number of iterations
@@ -789,6 +786,12 @@ public class ApcomplexMath
             {
                 break;
             }
+        }
+
+        if (iterations > 0)
+        {
+            // Precalculate the needed values once to the required precision
+            ApfloatMath.logRadix(targetPrecision, radix);
         }
 
         z = ApfloatHelper.extendPrecision(z);

@@ -88,7 +88,7 @@ public class IntCRTMath
     public final int add(int[] src, int[] srcDst)
     {
         int result = srcDst[2] + src[2],
-                carry = (result < 0 ? 1 : 0);
+            carry = (result < 0 ? 1 : 0);
         result = (result < 0 ? result - MAX_POWER_OF_TWO_BASE : result);
 
         srcDst[2] = result;
@@ -118,7 +118,7 @@ public class IntCRTMath
     public final void subtract(int[] src, int[] srcDst)
     {
         int result = srcDst[2] - src[2],
-                carry = (result < 0 ? 1 : 0);
+            carry = (result < 0 ? 1 : 0);
         result = (result < 0 ? result + MAX_POWER_OF_TWO_BASE : result);
 
         srcDst[2] = result;

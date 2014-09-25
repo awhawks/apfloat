@@ -1063,7 +1063,7 @@ public class ApfloatContext
     public void setProperties(Properties properties)
         throws ApfloatRuntimeException
     {
-        Enumeration keys = properties.propertyNames();
+        Enumeration<?> keys = properties.propertyNames();
         while (keys.hasMoreElements())
         {
             String key = (String) keys.nextElement();

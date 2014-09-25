@@ -10,7 +10,7 @@ import static org.apfloat.internal.IntRadixConstants.*;
  * Mathematical operations on numbers in a base.
  * Implementation for the <code>int</code> type.
  *
- * @version 1.4
+ * @version 1.4.2
  * @author Mikko Tommila
  */
 
@@ -59,7 +59,7 @@ public class IntBaseMath
             int result = (src1 == null ? 0 : src1.getInt()) + carry +
                          (src2 == null ? 0 : src2.getInt());
 
-            if (result >= base || result < 0)   // Detect overflow
+            if (result >= base | result < 0)    // Detect overflow (optimization: | is often faster than || here)
             {
                 result -= base;
                 carry = 1;

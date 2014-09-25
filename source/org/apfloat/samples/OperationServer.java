@@ -47,7 +47,7 @@ public class OperationServer
 
                 ObjectInputStream in = new ObjectInputStream(Channels.newInputStream(this.channel));
                 info("Ready to receive input data");
-                Operation operation = (Operation) in.readObject();
+                Operation<?> operation = (Operation<?>) in.readObject();
 
                 info("Executing operation");
                 Object result = operation.execute();

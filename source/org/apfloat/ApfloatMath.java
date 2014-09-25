@@ -3,7 +3,6 @@ package org.apfloat;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +15,7 @@ import org.apfloat.spi.Util;
  * Due to different types of round-off errors that can occur in the implementation,
  * no guarantees about e.g. monotonicity are given for any of the methods.
  *
- * @version 1.4.1
+ * @version 1.4.2
  * @author Mikko Tommila
  */
 
@@ -1300,9 +1299,6 @@ public class ApfloatMath
             precision = Math.max(1, doublePrecision - integerPartDigits);
         }
 
-        // Precalculate the needed values once to the required precision
-        logRadix(targetPrecision, radix);
-
         int iterations = 0;
 
         // Compute total number of iterations
@@ -1320,6 +1316,12 @@ public class ApfloatMath
             {
                 break;
             }
+        }
+
+        if (iterations > 0)
+        {
+            // Precalculate the needed values once to the required precision
+            logRadix(targetPrecision, radix);
         }
 
         x = ApfloatHelper.extendPrecision(x);
@@ -1816,7 +1818,6 @@ public class ApfloatMath
         for (int i = 0; i < x.length; i++)
         {
             long scale = x[i].scale(),
-                 prec = x[i].precision(),
                  scaleDiff = (maxScale - scale < 0 ? Apfloat.INFINITE : maxScale - scale),
                  destPrec = (maxPrec - scaleDiff <= 0 ? 0 : Util.ifFinite(maxPrec, maxPrec - scaleDiff));
             if (destPrec > 0)

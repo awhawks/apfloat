@@ -12,7 +12,7 @@ import org.apfloat.ApfloatRuntimeException;
 /**
  * Calculates pi using three different algorithms.
  *
- * @version 1.1
+ * @version 1.4.2
  * @author Mikko Tommila
  */
 
@@ -91,7 +91,7 @@ public class Pi
             {
                 Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix);
 
-                v = this.J.multiply(f).multiply(f).multiply(f);
+                v = this.J.multiply(f.multiply(f).multiply(f));
             }
 
             return v;

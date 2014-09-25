@@ -3,7 +3,6 @@ package org.apfloat.calc;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
-import java.awt.Container;
 import java.awt.Panel;
 import java.awt.Label;
 import java.awt.Checkbox;

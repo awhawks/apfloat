@@ -39,7 +39,7 @@ public class ParallelRunner
         ApfloatContext ctx = ApfloatContext.getContext();
         int numberOfProcessors = ctx.getNumberOfProcessors();
         ExecutorService executorService = ctx.getExecutorService();
-        Future[] futures = new Future[numberOfProcessors - 1];
+        Future<?>[] futures = new Future<?>[numberOfProcessors - 1];
         int length = parallelRunnable.getLength();
 
         // Split the whole length to the number of processors available and start threads (if any)
@@ -64,7 +64,7 @@ public class ParallelRunner
         // Wait for all execution threads to complete (if any)
         try
         {
-            for (Future future : futures)
+            for (Future<?> future : futures)
             {
                 future.get();
             }

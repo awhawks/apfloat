@@ -9,7 +9,7 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>float</code>
  * element type.
  *
- * @version 1.1
+ * @version 1.4.2
  * @author Mikko Tommila
  */
 
@@ -118,25 +118,118 @@ public final class FloatMemoryDataStorage
         throw new ApfloatRuntimeException("Method not implemented - would be sub-optimal; change the apfloat configuration settings");
     }
 
+    private class ReadWriteIterator
+        extends AbstractIterator
+    {
+        public ReadWriteIterator(long startPosition, long endPosition)
+            throws IllegalArgumentException, IllegalStateException, ApfloatRuntimeException
+        {
+            this(READ_WRITE, startPosition, endPosition);
+        }
+
+        protected ReadWriteIterator(int mode, long startPosition, long endPosition)
+            throws IllegalArgumentException, IllegalStateException, ApfloatRuntimeException
+        {
+            super(mode, startPosition, endPosition);
+
+            this.data = FloatMemoryDataStorage.this.data;
+
+            this.position = (int) getPosition() + (int) getOffset();
+            this.length = (int) getLength();
+        }
+
+        public boolean hasNext()
+        {
+            return (this.length > 0);
+        }
+
+        public void next()
+            throws IllegalStateException
+        {
+            checkLength();
+            this.position += getIncrement();
+            this.length--;
+        }
+
+        public float getFloat()
+            throws IllegalStateException
+        {
+            checkLength();
+            return this.data[this.position];
+        }
+
+        public void setFloat(float value)
+            throws IllegalStateException
+        {
+            checkLength();
+            this.data[this.position] = value;
+        }
+
+        protected void checkLength()
+            throws IllegalStateException
+        {
+            if (this.length == 0)
+            {
+                throw new IllegalStateException("At the end of iterator");
+            }
+        }
+
+        private float[] data;
+        private int position,
+                    length;
+    }
+
+    private class ReadOnlyIterator
+        extends ReadWriteIterator
+    {
+        public ReadOnlyIterator(long startPosition, long endPosition)
+            throws IllegalArgumentException, IllegalStateException, ApfloatRuntimeException
+        {
+            super(READ, startPosition, endPosition);
+        }
+
+        public void setFloat(float value)
+            throws IllegalStateException
+        {
+            throw new IllegalStateException("Not a writable iterator");
+        }
+    }
+
+    private class WriteOnlyIterator
+        extends ReadWriteIterator
+    {
+        public WriteOnlyIterator(long startPosition, long endPosition)
+            throws IllegalArgumentException, IllegalStateException, ApfloatRuntimeException
+        {
+            super(WRITE, startPosition, endPosition);
+        }
+
+        public float getFloat()
+            throws IllegalStateException
+        {
+            throw new IllegalStateException("Not a readable iterator");
+        }
+    }
+
     public Iterator iterator(int mode, long startPosition, long endPosition)
         throws IllegalArgumentException, IllegalStateException, ApfloatRuntimeException
     {
-        return new AbstractIterator(mode, startPosition, endPosition)
+        Iterator iterator;
+        switch (mode & READ_WRITE)
         {
-            public float getFloat()
-                throws IllegalStateException
-            {
-                checkGet();
-                return FloatMemoryDataStorage.this.data[(int) getOffset() + (int) getPosition()];
-            }
-
-            public void setFloat(float value)
-                throws IllegalStateException
-            {
-                checkSet();
-                FloatMemoryDataStorage.this.data[(int) getOffset() + (int) getPosition()] = value;
-            }
-        };
+            case READ:
+                iterator = new ReadOnlyIterator(startPosition, endPosition);
+                break;
+            case WRITE:
+                iterator = new WriteOnlyIterator(startPosition, endPosition);
+                break;
+            case READ_WRITE:
+                iterator = new ReadWriteIterator(startPosition, endPosition);
+                break;
+            default:
+                throw new IllegalArgumentException("Illegal mode: " + mode);
+        }
+        return iterator;
     }
 
     private static final long serialVersionUID = -862001153825924236L;
