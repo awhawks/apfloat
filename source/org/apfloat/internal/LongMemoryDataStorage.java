@@ -9,7 +9,7 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>long</code>
  * element type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -138,6 +138,8 @@ public final class LongMemoryDataStorage
             }
         };
     }
+
+    private static final long serialVersionUID = -6031760912313925045L;
 
     private long[] data;
 }

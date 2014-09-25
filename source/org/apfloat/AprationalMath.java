@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision rational numbers.
  *
- * @version 1.0.1
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -73,6 +73,8 @@ public class AprationalMath
     /**
      * Returns an aprational whose value is <code>-x</code>.
      *
+     * @deprecated Use {@link Aprational#negate()}.
+     *
      * @param x The argument.
      *
      * @return <code>-x</code>.
@@ -81,7 +83,7 @@ public class AprationalMath
     public static Aprational negate(Aprational x)
         throws ApfloatRuntimeException
     {
-        return new Aprational(ApintMath.negate(x.numerator()), x.denominator());
+        return x.negate();
     }
 
     /**
@@ -101,7 +103,35 @@ public class AprationalMath
         }
         else
         {
-            return negate(x);
+            return x.negate();
+        }
+    }
+
+    /**
+     * Copy sign from one argument to another.
+     *
+     * @param x The value whose sign is to be adjusted.
+     * @param y The value whose sign is to be used.
+     *
+     * @return <code>x</code> with its sign changed to match the sign of <code>y</code>.
+     *
+     * @since 1.1
+     */
+
+    public static Aprational copySign(Aprational x, Aprational y)
+        throws ApfloatRuntimeException
+    {
+        if (y.signum() == 0)
+        {
+            return y;
+        }
+        else if (x.signum() != y.signum())
+        {
+            return x.negate();
+        }
+        else
+        {
+            return x;
         }
     }
 

@@ -4,17 +4,18 @@ import java.io.Serializable;
 
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.DataStorage;
+import static org.apfloat.internal.LongRadixConstants.*;
 
 /**
  * Mathematical operations on numbers in a base.
  * Implementation for the <code>long</code> type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class LongBaseMath
-    implements LongRadixConstants, Serializable
+    implements Serializable
 {
     /**
      * Creates a base math using the specified radix.
@@ -272,6 +273,8 @@ public class LongBaseMath
 
         return carry;
     }
+
+    private static final long serialVersionUID = -6469225916787810664L;
 
     private int radix;
     private double inverseBase;

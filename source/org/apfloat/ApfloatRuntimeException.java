@@ -19,7 +19,7 @@ package org.apfloat;
  *       mathematically possible for the implementation, is exceeded.</li>
  * </ul>
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -56,4 +56,6 @@ public class ApfloatRuntimeException
     {
         super(message, cause);
     }
+
+    private static final long serialVersionUID = -7022924635011038776L;
 }

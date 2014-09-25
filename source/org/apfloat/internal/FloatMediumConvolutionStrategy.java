@@ -5,18 +5,19 @@ import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
+import static org.apfloat.internal.FloatRadixConstants.*;
 
 /**
  * Medium-length convolution strategy.
  * Performs a simple O(n<sup>2</sup>) multiplication when the size of one operand is relatively short.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class FloatMediumConvolutionStrategy
     extends FloatBaseMath
-    implements ConvolutionStrategy, FloatRadixConstants
+    implements ConvolutionStrategy
 {
     /**
      * Creates a convolution strategy using the specified radix.
@@ -114,4 +115,6 @@ public class FloatMediumConvolutionStrategy
 
         return resultStorage;
     }
+
+    private static final long serialVersionUID = -6697305140738370764L;
 }

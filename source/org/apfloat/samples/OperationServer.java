@@ -25,7 +25,7 @@ import java.util.LinkedList;
  * occurs during the operation execution, nothing is returned and
  * the socket connection is closed.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -191,12 +191,12 @@ public class OperationServer
             selector.select();
 
             // Get a java.util.Set containing the SelectionKey objects for all channels that are ready for I/O
-            Set keys = selector.selectedKeys();
+            Set<SelectionKey> keys = selector.selectedKeys();
 
             // Use a java.util.Iterator to loop through the selected keys
-            for (Iterator i = keys.iterator(); i.hasNext(); )
+            for (Iterator<SelectionKey> i = keys.iterator(); i.hasNext(); )
             {
-                SelectionKey key = (SelectionKey) i.next();
+                SelectionKey key = i.next();
                 i.remove();             // Remove the key from the set of selected keys
 
                 // Check whether this key is the SelectionKey we got when we registered the ServerSocketChannel
@@ -240,7 +240,7 @@ public class OperationServer
                 }
             }
 
-            request = (Request) queue.removeFirst();
+            request = queue.removeFirst();
 
             info("Request acquired from queue, queue size now " + queue.size());
         }
@@ -296,6 +296,6 @@ public class OperationServer
     private static final int INFO = 2;
     private static final int DEBUG = 3;
 
-    private static LinkedList queue = new LinkedList();
+    private static LinkedList<Request> queue = new LinkedList<Request>();
     private static int messageLevel = WARNING;
 }

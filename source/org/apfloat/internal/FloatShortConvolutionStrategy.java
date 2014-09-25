@@ -6,18 +6,19 @@ import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.ArrayAccess;
+import static org.apfloat.internal.FloatRadixConstants.*;
 
 /**
  * Short convolution strategy.
  * Performs a simple multiplication when the size of one operand is 1.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class FloatShortConvolutionStrategy
     extends FloatBaseMath
-    implements ConvolutionStrategy, FloatRadixConstants
+    implements ConvolutionStrategy
 {
     /**
      * Creates a convolution strategy using the specified radix.
@@ -68,4 +69,6 @@ public class FloatShortConvolutionStrategy
 
         return resultStorage;
     }
+
+    private static final long serialVersionUID = 3839614758362699756L;
 }

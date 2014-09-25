@@ -16,7 +16,7 @@ import java.io.IOException;
  *
  * @see Apfloat
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -245,7 +245,7 @@ public class Apcomplex
     public Apcomplex conj()
         throws ApfloatRuntimeException
     {
-        return new Apcomplex(real(), ApfloatMath.negate(imag()));
+        return new Apcomplex(real(), imag().negate());
     }
 
     /**
@@ -283,6 +283,20 @@ public class Apcomplex
         throws ApfloatRuntimeException
     {
         return Math.max(real().scale(), imag().scale());
+    }
+
+    /**
+     * Negative value.
+     *
+     * @return <code>-this</code>.
+     *
+     * @since 1.1
+     */
+
+    public Apcomplex negate()
+        throws ApfloatRuntimeException
+    {
+        return new Apcomplex(real().negate(), imag().negate());
     }
 
     /**
@@ -354,9 +368,9 @@ public class Apcomplex
         // Multiply both numbers by i if z is pure imaginary
         if (z.real().signum() == 0)
         {
-            z = new Apcomplex(z.imag(), ApfloatMath.negate(z.real()));
+            z = new Apcomplex(z.imag(), z.real().negate());
             tmpReal = imag();
-            tmpImag = ApfloatMath.negate(real());
+            tmpImag = real().negate();
         }
         else
         {
@@ -654,6 +668,8 @@ public class Apcomplex
             out.write(')');
         }
     }
+
+    private static final long serialVersionUID = 3642932980384250551L;
 
     private Apfloat real;
     private Apfloat imag;

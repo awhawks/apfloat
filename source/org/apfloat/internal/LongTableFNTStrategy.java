@@ -5,6 +5,7 @@ import org.apfloat.spi.NTTStrategy;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.ArrayAccess;
 import org.apfloat.spi.Util;
+import static org.apfloat.internal.LongModConstants.*;
 
 /**
  * Fast Number Theoretic Transform that uses lookup tables
@@ -12,14 +13,13 @@ import org.apfloat.spi.Util;
  *
  * All access to this class must be externally synchronized.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class LongTableFNTStrategy
     extends LongModMath
-    implements NTTStrategy,
-               LongModConstants
+    implements NTTStrategy
 {
     /**
      * Default constructor.

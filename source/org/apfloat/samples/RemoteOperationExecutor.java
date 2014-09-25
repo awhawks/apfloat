@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * Class to call an {@link OperationServer} to execute {@link Operation}s remotely.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -43,10 +43,10 @@ public class RemoteOperationExecutor
      * @exception RuntimeException In case of network error or if the return value class is unknown.
      */
 
-    public Object execute(Operation operation)
+    public <T> T execute(Operation<T> operation)
     {
         SocketChannel channel = null;
-        Object result;
+        T result;
 
         try
         {
@@ -57,7 +57,7 @@ public class RemoteOperationExecutor
             out.flush();
 
             ObjectInputStream in = new ObjectInputStream(Channels.newInputStream(channel));
-            result = in.readObject();
+            result = (T) in.readObject();
         }
         catch (IOException ioe)
         {
@@ -92,11 +92,11 @@ public class RemoteOperationExecutor
      * @return A {@link BackgroundOperation} for retrieving the result of the operation later.
      */
 
-    public BackgroundOperation executeBackground(final Operation operation)
+    public <T> BackgroundOperation<T> executeBackground(final Operation<T> operation)
     {
-        return new BackgroundOperation(new Operation()
+        return new BackgroundOperation<T>(new Operation<T>()
         {
-            public Object execute()
+            public T execute()
             {
                 return RemoteOperationExecutor.this.execute(operation);
             }

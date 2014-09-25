@@ -19,7 +19,7 @@ import org.apfloat.ApfloatRuntimeException;
  * or {@link #getTransposedArray(int,int,int,int)} method is permitted.
  * Invoking other methods must generally be externally synchronized.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -715,6 +715,7 @@ public abstract class DataStorage
      */
 
     public final void setReadOnly()
+        throws ApfloatRuntimeException
     {
         if (isReadOnly())
         {
@@ -1007,6 +1008,7 @@ public abstract class DataStorage
     }
 
     private void setSubsequenced()
+        throws ApfloatRuntimeException
     {
         if (!isSubsequenced())
         {
@@ -1014,6 +1016,8 @@ public abstract class DataStorage
             this.isSubsequenced = true;             // Subsequences exist for this object
         }
     }
+
+    private static final long serialVersionUID = 1862028601696578467L;
 
     private long offset;
     private long length;

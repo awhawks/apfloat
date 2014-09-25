@@ -22,13 +22,15 @@ import java.io.PrintWriter;
 import java.io.IOException;
 import javax.imageio.spi.ServiceRegistry;       // Silly that this is under javax.imageio
 
+import org.apfloat.Apfloat;
 import org.apfloat.ApfloatContext;
+import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.BuilderFactory;
 
 /**
  * Graphical AWT elements for calculating pi using three different algorithms.
  *
- * @version 1.0.3
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -103,11 +105,11 @@ public class PiAWT
         add(this.implementationLabel, constraints);
 
         this.implementationChoice = new Choice();
-        this.builderFactories = new ArrayList();
-        Iterator providers = ServiceRegistry.lookupProviders(org.apfloat.spi.BuilderFactory.class);
+        this.builderFactories = new ArrayList<BuilderFactory>();
+        Iterator<BuilderFactory> providers = ServiceRegistry.lookupProviders(org.apfloat.spi.BuilderFactory.class);
         while (providers.hasNext())
         {
-            Object builderFactory = providers.next();
+            BuilderFactory builderFactory = providers.next();
             this.builderFactories.add(builderFactory);
             this.implementationChoice.add(builderFactory.getClass().getName());
         }
@@ -298,7 +300,8 @@ public class PiAWT
      * @return The calculation operation to execute.
      */
 
-    protected Operation getOperation(long precision, int radix)
+    protected Operation<Apfloat> getOperation(long precision, int radix)
+        throws ApfloatRuntimeException
     {
         if (this.chudnovsky.getState())
         {
@@ -324,7 +327,7 @@ public class PiAWT
 
         // Set the selected builder factory
         ApfloatContext ctx = ApfloatContext.getContext();
-        BuilderFactory builderFactory = (BuilderFactory) this.builderFactories.get(this.implementationChoice.getSelectedIndex());
+        BuilderFactory builderFactory = this.builderFactories.get(this.implementationChoice.getSelectedIndex());
         ctx.setBuilderFactory(builderFactory);
 
         // Thread for calculating pi and showing the result
@@ -334,7 +337,7 @@ public class PiAWT
             {
                 long precision = Long.parseLong(PiAWT.this.precisionField.getText());
                 int radix = Integer.parseInt(PiAWT.this.radixChoice.getSelectedItem());
-                Operation operation = getOperation(precision, radix);
+                Operation<Apfloat> operation = getOperation(precision, radix);
 
                 try
                 {
@@ -406,6 +409,6 @@ public class PiAWT
     private Label resultLabel;
     private TextArea resultArea;
 
-    private List builderFactories;
+    private List<BuilderFactory> builderFactories;
     private Thread calculatorThread;
 }

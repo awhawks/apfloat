@@ -1,15 +1,17 @@
 package org.apfloat.internal;
 
+import static org.apfloat.internal.IntModConstants.*;
+import static org.apfloat.internal.IntRadixConstants.*;
+
 /**
  * Basic arithmetic for calculating the Chinese Remainder
  * Theorem. Works for the <code>int</code> type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class IntCRTMath
-    implements IntModConstants, IntRadixConstants
 {
     /**
      * Creates a carry-CRT math using the specified radix.

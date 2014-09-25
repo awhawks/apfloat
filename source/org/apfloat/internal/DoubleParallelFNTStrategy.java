@@ -15,18 +15,18 @@ import org.apfloat.spi.ArrayAccess;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.0.1
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public abstract class DoubleParallelFNTStrategy
     extends DoubleTableFNTStrategy
 {
-    // Thread for calculating the row transforms in parallel
-    private class TableFNTThread
-        extends Thread
+    // Runnable for calculating the row transforms in parallel
+    private class TableFNTRunnable
+        implements Runnable
     {
-        public TableFNTThread(int length, boolean isInverse, ArrayAccess arrayAccess, double[] wTable, int[] permutationTable)
+        public TableFNTRunnable(int length, boolean isInverse, ArrayAccess arrayAccess, double[] wTable, int[] permutationTable)
         {
             this.length = length;               // Transform length
             this.isInverse = isInverse;
@@ -59,6 +59,48 @@ public abstract class DoubleParallelFNTStrategy
         private ArrayAccess arrayAccess;
         private double[] wTable;
         private int[] permutationTable;
+    }
+
+    // Runnable for multiplying elements in the matrix
+    private class MultiplyRunnable
+        implements Runnable
+    {
+        public MultiplyRunnable(ArrayAccess arrayAccess, int startRow, int rows, int columns, double w, double scaleFactor)
+        {
+            this.arrayAccess = arrayAccess;
+            this.startRow = startRow;
+            this.rows = rows;
+            this.columns = columns;
+            this.w = w;
+            this.scaleFactor = scaleFactor;
+        }
+
+        public void run()
+        {
+            double[] data = this.arrayAccess.getDoubleData();
+            int position = this.arrayAccess.getOffset();
+            double tmp = modPow(this.w, (double) this.startRow);
+
+            for (int i = 0; i < this.rows; i++)
+            {
+                double tmp2 = this.scaleFactor;
+
+                for (int j = 0; j < this.columns; j++, position++)
+                {
+                    data[position] = modMultiply(data[position], tmp2);
+                    tmp2 = modMultiply(tmp2, tmp);
+                }
+
+                tmp = modMultiply(tmp, this.w);
+            }
+        }
+
+        private ArrayAccess arrayAccess;
+        private int startRow;
+        private int rows;
+        private int columns;
+        private double w;
+        private double scaleFactor;
     }
 
     /**
@@ -112,25 +154,24 @@ public abstract class DoubleParallelFNTStrategy
      * @param scaleFactor An extra factor by which all elements are multiplied.
      */
 
-    protected void multiplyElements(ArrayAccess arrayAccess, int startRow, int rows, int columns, double w, double scaleFactor)
+    protected void multiplyElements(final ArrayAccess arrayAccess, final int startRow, final int rows, final int columns, final double w, final double scaleFactor)
         throws ApfloatRuntimeException
     {
-        double[] data = arrayAccess.getDoubleData();
-        int position = arrayAccess.getOffset();
-        double tmp = modPow(w, (double) startRow);
-
-        for (int i = 0; i < rows; i++)
+        ParallelRunnable parallelRunnable = new ParallelRunnable()
         {
-            double tmp2 = scaleFactor;
-
-            for (int j = 0; j < columns; j++, position++)
+            public int getLength()
             {
-                data[position] = modMultiply(data[position], tmp2);
-                tmp2 = modMultiply(tmp2, tmp);
+                return rows;
             }
 
-            tmp = modMultiply(tmp, w);
-        }
+            public Runnable getRunnable(int strideStartRow, int strideRows)
+            {
+                ArrayAccess subArrayAccess = arrayAccess.subsequence(strideStartRow * columns, strideRows * columns);
+                return new MultiplyRunnable(subArrayAccess, startRow + strideStartRow, strideRows, columns, w, scaleFactor);
+            }
+        };
+
+        ParallelRunner.runParallel(parallelRunnable);
     }
 
     /**
@@ -148,66 +189,23 @@ public abstract class DoubleParallelFNTStrategy
      * @param permutationTable Table of permutation indexes, or <code>null</code> if no permutation should be done.
      */
 
-    protected void transformRows(int length, int count, boolean isInverse, ArrayAccess arrayAccess, double[] wTable, int[] permutationTable)
+    protected void transformRows(final int length, final int count, final boolean isInverse, final ArrayAccess arrayAccess, final double[] wTable, final int[] permutationTable)
         throws ApfloatRuntimeException
     {
-        ApfloatContext ctx = ApfloatContext.getContext();
-        int numberOfProcessors = ctx.getNumberOfProcessors();
-
-        if (numberOfProcessors == 1)
+        ParallelRunnable parallelRunnable = new ParallelRunnable()
         {
-            // Everything is done in this thread
-
-            for (int i = 0; i < count; i++)
+            public int getLength()
             {
-                ArrayAccess subArrayAccess = arrayAccess.subsequence(i * length, length);
-
-                if (isInverse)
-                {
-                    inverseTableFNT(subArrayAccess, wTable, permutationTable);
-                }
-                else
-                {
-                    tableFNT(subArrayAccess, wTable, permutationTable);
-                }
+                return count;
             }
-        }
-        else
-        {
-            // Dispatch multiple threads in parallel to calculate row transforms
-            runThreads(numberOfProcessors, length, count, isInverse, arrayAccess, wTable, permutationTable);
-        }
-    }
 
-    // Run the row transforms in parallel using multiple threads
-    private void runThreads(int numberOfThreads, int length, int count, boolean isInverse, ArrayAccess arrayAccess, double[] wTable, int[] permutationTable)
-        throws ApfloatRuntimeException
-    {
-        Thread[] threads = new Thread[numberOfThreads];
-
-        // Split the whole range of rows to the number of processors available and start threads
-        for (int i = 0; i < numberOfThreads; i++)
-        {
-            int startIndex = count * i / numberOfThreads,
-                endIndex   = count * (i + 1) / numberOfThreads;
-
-            ArrayAccess subArrayAccess = arrayAccess.subsequence(startIndex * length, (endIndex - startIndex) * length);
-
-            threads[i] = new TableFNTThread(length, isInverse, subArrayAccess, wTable, permutationTable);
-            threads[i].start();
-        }
-
-        // Wait for all started threads to complete
-        try
-        {
-            for (int i = 0; i < numberOfThreads; i++)
+            public Runnable getRunnable(int startIndex, int strideCount)
             {
-                threads[i].join();
+                ArrayAccess subArrayAccess = arrayAccess.subsequence(startIndex * length, strideCount * length);
+                return new TableFNTRunnable(length, isInverse, subArrayAccess, wTable, permutationTable);
             }
-        }
-        catch (InterruptedException ie)
-        {
-            throw new ApfloatRuntimeException("Waiting for dispatched threads to complete was interrupted", ie);
-        }
+        };
+
+        ParallelRunner.runParallel(parallelRunnable);
     }
 }

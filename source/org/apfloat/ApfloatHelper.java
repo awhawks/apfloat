@@ -13,7 +13,7 @@ import org.apfloat.spi.Util;
 /**
  * Various utility methods related to apfloats.
  *
- * @version 1.0.1
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -381,12 +381,14 @@ class ApfloatHelper
 
     // Returns x with precision at most as specified
     public static Apfloat limitPrecision(Apfloat x, long precision)
+        throws ApfloatRuntimeException
     {
         return x.precision(Math.min(x.precision(), precision));
     }
 
     // Returns x with precision at least as specified
     public static Apfloat ensurePrecision(Apfloat x, long precision)
+        throws ApfloatRuntimeException
     {
         return x.precision(Math.max(x.precision(), precision));
     }
@@ -405,18 +407,21 @@ class ApfloatHelper
 
     // Returns x with precision extended by Apfloat.EXTRA_PRECISION
     public static Apfloat extendPrecision(Apfloat x)
+        throws ApfloatRuntimeException
     {
         return x.precision(extendPrecision(x.precision()));
     }
 
     // Returns x with precision extended by specified amount
     public static Apfloat extendPrecision(Apfloat x, long extraPrecision)
+        throws ApfloatRuntimeException
     {
         return x.precision(extendPrecision(x.precision(), extraPrecision));
     }
 
     // Returns z with precision as specified
     public static Apcomplex setPrecision(Apcomplex z, long precision)
+        throws ApfloatRuntimeException
     {
         long precisionChange = precision - z.precision(),
              realPrecision = z.real().precision(),
@@ -438,6 +443,7 @@ class ApfloatHelper
 
     // Returns z with precision at most as specified
     public static Apcomplex limitPrecision(Apcomplex z, long precision)
+        throws ApfloatRuntimeException
     {
         return new Apcomplex(z.real().precision(Math.min(z.real().precision(), precision)),
                              z.imag().precision(Math.min(z.imag().precision(), precision)));
@@ -445,6 +451,7 @@ class ApfloatHelper
 
     // Returns z with precision at least as specified
     public static Apcomplex ensurePrecision(Apcomplex z, long precision)
+        throws ApfloatRuntimeException
     {
         return new Apcomplex(z.real().precision(Math.max(z.real().precision(), precision)),
                              z.imag().precision(Math.max(z.imag().precision(), precision)));
@@ -452,6 +459,7 @@ class ApfloatHelper
 
     // Returns z with precision extended by Apfloat.EXTRA_PRECISION
     public static Apcomplex extendPrecision(Apcomplex z)
+        throws ApfloatRuntimeException
     {
         return new Apcomplex(z.real().precision(extendPrecision(z.real().precision())),
                              z.imag().precision(extendPrecision(z.imag().precision())));
@@ -459,6 +467,7 @@ class ApfloatHelper
 
     // Returns z with precision extended by specified precision
     public static Apcomplex extendPrecision(Apcomplex z, long extraPrecision)
+        throws ApfloatRuntimeException
     {
         return new Apcomplex(z.real().precision(extendPrecision(z.real().precision(), extraPrecision)),
                              z.imag().precision(extendPrecision(z.imag().precision(), extraPrecision)));

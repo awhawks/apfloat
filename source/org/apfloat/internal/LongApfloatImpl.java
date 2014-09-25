@@ -9,13 +9,14 @@ import org.apfloat.Apfloat;
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.ApfloatImpl;
-import org.apfloat.spi.RadixConstants;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.ArrayAccess;
 import org.apfloat.spi.ConvolutionBuilder;
 import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.Util;
+import static org.apfloat.spi.RadixConstants.*;
+import static org.apfloat.internal.LongRadixConstants.*;
 
 /**
  * Immutable apfloat implementation class for the
@@ -29,13 +30,13 @@ import org.apfloat.spi.Util;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.0.2
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public final class LongApfloatImpl
     extends LongBaseMath
-    implements ApfloatImpl, RadixConstants, LongRadixConstants
+    implements ApfloatImpl
 {
     private LongApfloatImpl(int sign, long precision, long exponent, DataStorage dataStorage, int radix)
     {
@@ -453,7 +454,7 @@ public final class LongApfloatImpl
     private static long readExponent(PushbackReader in)
         throws IOException, NumberFormatException
     {
-        StringBuffer buffer = new StringBuffer(20);
+        StringBuilder buffer = new StringBuilder(20);
         int input;
 
         for (long i = 0; (input = in.read()) != -1; i++)
@@ -1694,6 +1695,7 @@ public final class LongApfloatImpl
         return new DataStorage.Iterator()
         {
             public long getLong()
+                throws ApfloatRuntimeException
             {
                 long value;
 
@@ -1714,6 +1716,7 @@ public final class LongApfloatImpl
             }
 
             public void next()
+                throws ApfloatRuntimeException
             {
                 if (this.index < end)
                 {
@@ -1723,6 +1726,7 @@ public final class LongApfloatImpl
             }
 
             public void close()
+                throws ApfloatRuntimeException
             {
                 iterator.close();
             }
@@ -2196,6 +2200,8 @@ public final class LongApfloatImpl
         public long getLong() { return 0; }
         public void next() { }
     };
+
+    private static final long serialVersionUID = -2151344673641680085L;
 
     private static final int UNDEFINED = 0x80000000;
     private static final int MAX_LONG_SIZE = 4;

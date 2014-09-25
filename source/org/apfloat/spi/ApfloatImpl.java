@@ -13,7 +13,7 @@ import org.apfloat.ApfloatRuntimeException;
  * A class implementing <code>ApfloatImpl</code> is not required to accept any other <code>ApfloatImpl</code>
  * class as the argument than the same implementing class.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -182,7 +182,8 @@ public interface ApfloatImpl
      * @return <code>true</code> if this number is equal to one, otherwise <code>false</code>.
      */
 
-    public boolean isOne();
+    public boolean isOne()
+        throws ApfloatRuntimeException;
 
     /**
      * The number of equal digits in this <code>ApfloatImpl</code> and another number.

@@ -6,6 +6,7 @@ import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.NTTStrategy;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
+import static org.apfloat.internal.DoubleModConstants.*;
 
 /**
  * Convolution methods in the transform domain for the <code>double</code> type.
@@ -15,14 +16,13 @@ import org.apfloat.spi.DataStorage;
  * This implementation uses three Number Theoretic Transforms to do the
  * convolution and the Chinese Remainder Theorem to get the final result.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class Double3NTTConvolutionStrategy
     extends DoubleModMath
-    implements ConvolutionStrategy,
-               DoubleModConstants
+    implements ConvolutionStrategy
 {
     /**
      * Creates a new convoluter that uses the specified

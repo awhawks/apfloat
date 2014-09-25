@@ -4,7 +4,7 @@ package org.apfloat.samples;
  * Interface for implementing objects that can execute {@link Operation}s.
  * An operation can e.g. be executed locally or remotely.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -18,7 +18,7 @@ public interface OperationExecutor
      * @return Return value of the operation.
      */
 
-    public Object execute(Operation operation);
+    public <T> T execute(Operation<T> operation);
 
     /**
      * Starts executing some code in the background.
@@ -28,7 +28,7 @@ public interface OperationExecutor
      * @return An object for retrieving the result of the operation later.
      */
 
-    public BackgroundOperation executeBackground(Operation operation);
+    public <T> BackgroundOperation<T> executeBackground(Operation<T> operation);
 
     /**
      * Returns the relative weight of this executor.

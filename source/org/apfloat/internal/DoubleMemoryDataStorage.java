@@ -9,7 +9,7 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>double</code>
  * element type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -138,6 +138,8 @@ public final class DoubleMemoryDataStorage
             }
         };
     }
+
+    private static final long serialVersionUID = 5093781604796636929L;
 
     private double[] data;
 }

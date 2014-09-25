@@ -6,19 +6,19 @@ import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
+import static org.apfloat.internal.DoubleModConstants.*;
 
 /**
  * Class for performing the final step of a three-modulus
  * Number Theoretic Transform based convolution. Works for the
  * <code>double</code> type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class DoubleCarryCRT
     extends DoubleCRTMath
-    implements DoubleModConstants
 {
     /**
      * Creates a carry-CRT object using the specified radix.

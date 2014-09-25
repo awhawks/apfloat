@@ -56,9 +56,8 @@ import org.apfloat.ApfloatRuntimeException;
  *       million digits. Remember to specify the correct number of
  *       CPUs on each machine.</li>
  *   <li>Different JVMs can have different performance. For example,
- *       Sun's Java 1.4.2 client VM achieves roughly 70% of the
- *       performance of the server VM when running this application
- *       on a Pentium III.</li>
+ *       Sun's Java client VM achieves roughly two thirds of the
+ *       performance of the server VM when running this application.</li>
  *   <li>When running {@link OperationServer} on the cluster nodes,
  *       specify the number of worker threads for each server to be
  *       the same as the number of CPUs of the machine.</li>
@@ -75,7 +74,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -121,9 +120,9 @@ public class PiDistributed
 
                 if (DEBUG) Pi.err.println("PiDistributed.r(" + n1 + ", " + n2 + ") transferring to server side node " + nodes[0]);
 
-                ApfloatHolder[] TQPF = (ApfloatHolder[]) nodes[0].execute(new Operation()
+                ApfloatHolder[] TQPF = nodes[0].execute(new Operation<ApfloatHolder[]>()
                 {
-                    public Object execute()
+                    public ApfloatHolder[] execute()
                     {
                         // Now get all threads available local on the server
                         OperationExecutor[] threads = DistributedPiCalculator.super.getNodes();
@@ -175,15 +174,15 @@ public class PiDistributed
             }
 
             Node[] nodes = null;
-            List list = new ArrayList();
+            List<Node> list = new ArrayList<Node>();
             long totalWeight = 0;
             int weightedNodes = 0;
 
             // Loop through all properties in the file
-            Enumeration keys = resourceBundle.getKeys();
+            Enumeration<String> keys = resourceBundle.getKeys();
             while (keys.hasMoreElements())
             {
-                String key = (String) keys.nextElement();
+                String key = keys.nextElement();
                 // Only process the server properties
                 if (key.startsWith("server"))
                 {
@@ -253,7 +252,7 @@ public class PiDistributed
                 System.exit(1);
             }
 
-            nodes = (Node[]) list.toArray(new Node[list.size()]);
+            nodes = list.toArray(new Node[list.size()]);
 
             // If no weights were specified at all, all nodes have same weight
             int averageWeight = (weightedNodes == 0 ? 1 : (int) (totalWeight / weightedNodes));
@@ -273,15 +272,15 @@ public class PiDistributed
             // Get the available number of threads for each node
             for (int i = 0; i < nodes.length; i++)
             {
-                Integer numberOfProcessors = (Integer) nodes[i].execute(new Operation()
+                Integer numberOfProcessors = nodes[i].execute(new Operation<Integer>()
                 {
-                    public Object execute()
+                    public Integer execute()
                     {
-                        return new Integer(ApfloatContext.getGlobalContext().getNumberOfProcessors());
+                        return ApfloatContext.getGlobalContext().getNumberOfProcessors();
                     }
                 });
 
-                nodes[i].setNumberOfProcessors(numberOfProcessors.intValue());
+                nodes[i].setNumberOfProcessors(numberOfProcessors);
             }
 
             if (DEBUG) Pi.err.println("PiDistributed.getNodes " + formatArray(nodes));
@@ -311,8 +310,8 @@ public class PiDistributed
             {
                 // Split RemoteOperationExecutors to executors that don't use all threads available on the server
 
-                SortedSet allNodes = new TreeSet(),
-                          splittableNodes = new TreeSet();
+                SortedSet<Node> allNodes = new TreeSet<Node>(),
+                                splittableNodes = new TreeSet<Node>();
                 for (int i = 0; i < nodes.length; i++)
                 {
                     Node node = (Node) nodes[i];
@@ -323,7 +322,7 @@ public class PiDistributed
                 while (splittableNodes.size() > 0 && allNodes.size() + splittableNodes.size() < numberNeeded)
                 {
                     // Get heaviest splittable node
-                    Node node = (Node) splittableNodes.last();
+                    Node node = splittableNodes.last();
                     int numberOfProcessors = node.getNumberOfProcessors(),
                         numberOfProcessors1 = numberOfProcessors / 2,
                         numberOfProcessors2 = (numberOfProcessors + 1) / 2;
@@ -342,7 +341,7 @@ public class PiDistributed
 
                 allNodes.addAll(splittableNodes);
 
-                Node[] newNodes = (Node[]) allNodes.toArray(new Node[allNodes.size()]);
+                Node[] newNodes = allNodes.toArray(new Node[allNodes.size()]);
 
                 if (DEBUG) Pi.err.println("PiDistributed.recombineNodes recombined " + formatArray(nodes) + " to " + formatArray(newNodes) + " (requested " + numberNeeded + ")");
 
@@ -354,7 +353,7 @@ public class PiDistributed
     // RemoteOperationExecutor that actually implements the weight property
     private static class Node
         extends RemoteOperationExecutor
-        implements Comparable
+        implements Comparable<Node>
     {
         public Node(String host, int port, int weight)
         {
@@ -368,14 +367,14 @@ public class PiDistributed
             this.numberOfProcessors = numberOfProcessors;
         }
 
-        public Object execute(Operation operation)
+        public <T> T execute(Operation<T> operation)
         {
-            return super.execute(new ThreadLimitedOperation(operation, this.numberOfProcessors));
+            return super.execute(new ThreadLimitedOperation<T>(operation, this.numberOfProcessors));
         }
 
-        public BackgroundOperation executeBackground(Operation operation)
+        public <T> BackgroundOperation<T> executeBackground(Operation<T> operation)
         {
-            return super.executeBackground(new ThreadLimitedOperation(operation, this.numberOfProcessors));
+            return super.executeBackground(new ThreadLimitedOperation<T>(operation, this.numberOfProcessors));
         }
 
         public void setWeight(int weight)
@@ -398,10 +397,9 @@ public class PiDistributed
             return this.numberOfProcessors;
         }
 
-        public int compareTo(Object obj)
+        public int compareTo(Node that)
         {
             // Must differentiate objects with same weight but that are not the same
-            Node that = ((Node) obj);
             int weightDifference = this.weight - that.weight;
             return (weightDifference != 0 ? weightDifference : this.hashCode() - that.hashCode());      // This is not rock solid...
         }
@@ -439,7 +437,7 @@ public class PiDistributed
         long precision = getPrecision(args[0]);
         int radix = (args.length > 2 ? getRadix(args[1]) : ApfloatContext.getContext().getDefaultRadix());
 
-        Operation operation = new DistributedPiCalculator(precision, radix);
+        Operation<Apfloat> operation = new DistributedPiCalculator(precision, radix);
 
         setOut(new PrintWriter(System.out, true));
         setErr(new PrintWriter(System.err, true));
@@ -449,7 +447,7 @@ public class PiDistributed
 
     private static String formatArray(Object[] array)
     {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         buffer.append("{ ");
         for (int i = 0; i < array.length; i++)
         {

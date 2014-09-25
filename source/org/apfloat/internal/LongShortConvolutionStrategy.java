@@ -6,18 +6,19 @@ import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.ArrayAccess;
+import static org.apfloat.internal.LongRadixConstants.*;
 
 /**
  * Short convolution strategy.
  * Performs a simple multiplication when the size of one operand is 1.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class LongShortConvolutionStrategy
     extends LongBaseMath
-    implements ConvolutionStrategy, LongRadixConstants
+    implements ConvolutionStrategy
 {
     /**
      * Creates a convolution strategy using the specified radix.
@@ -68,4 +69,6 @@ public class LongShortConvolutionStrategy
 
         return resultStorage;
     }
+
+    private static final long serialVersionUID = 1971685561366493327L;
 }

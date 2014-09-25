@@ -4,17 +4,18 @@ import java.io.Serializable;
 
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.DataStorage;
+import static org.apfloat.internal.FloatRadixConstants.*;
 
 /**
  * Mathematical operations on numbers in a base.
  * Implementation for the <code>float</code> type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class FloatBaseMath
-    implements FloatRadixConstants, Serializable
+    implements Serializable
 {
     /**
      * Creates a base math using the specified radix.
@@ -220,6 +221,8 @@ public class FloatBaseMath
 
         return carry;
     }
+
+    private static final long serialVersionUID = -2321698097908304307L;
 
     private int radix;
 }

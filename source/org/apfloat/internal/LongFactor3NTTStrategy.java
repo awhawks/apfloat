@@ -4,20 +4,20 @@ import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.NTTStrategy;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.Util;
+import static org.apfloat.internal.LongModConstants.*;
 
 /**
  * A transform that implements a 3-point transform on
  * top of another Number Theoretic Transform that does
  * transforms of length 2<sup>n</sup>.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class LongFactor3NTTStrategy
     extends LongModMath
-    implements NTTStrategy,
-               LongModConstants
+    implements NTTStrategy
 {
     /**
      * Creates a new factor-3 transform strategy on top of an existing transform.

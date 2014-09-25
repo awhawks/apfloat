@@ -4,17 +4,18 @@ import java.io.Serializable;
 
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.DataStorage;
+import static org.apfloat.internal.DoubleRadixConstants.*;
 
 /**
  * Mathematical operations on numbers in a base.
  * Implementation for the <code>double</code> type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class DoubleBaseMath
-    implements DoubleRadixConstants, Serializable
+    implements Serializable
 {
     /**
      * Creates a base math using the specified radix.
@@ -244,6 +245,8 @@ public class DoubleBaseMath
 
         return carry;
     }
+
+    private static final long serialVersionUID = 4560898425815362356L;
 
     private int radix;
     private double inverseBase;

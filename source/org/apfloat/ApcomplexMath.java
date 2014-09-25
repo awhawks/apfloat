@@ -5,7 +5,7 @@ import org.apfloat.spi.Util;
 /**
  * Various mathematical functions for arbitrary precision complex numbers.
  *
- * @version 1.0.2
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -18,14 +18,17 @@ public class ApcomplexMath
     /**
      * Negative value.
      *
+     * @deprecated Use {@link Apcomplex#negate()}.
+     *
      * @param z The argument.
      *
      * @return <code>-z</code>.
      */
 
     public static Apcomplex negate(Apcomplex z)
+        throws ApfloatRuntimeException
     {
-        return new Apcomplex(ApfloatMath.negate(z.real()), ApfloatMath.negate(z.imag()));
+        return z.negate();
     }
 
     /**
@@ -37,6 +40,7 @@ public class ApcomplexMath
      */
 
     public static Apfloat abs(Apcomplex z)
+        throws ApfloatRuntimeException
     {
         if (z.real().signum() == 0)
         {
@@ -61,6 +65,7 @@ public class ApcomplexMath
      */
 
     public static Apfloat norm(Apcomplex z)
+        throws ApfloatRuntimeException
     {
         return ApfloatMath.multiplyAdd(z.real(), z.real(), z.imag(), z.imag());
     }
@@ -74,6 +79,7 @@ public class ApcomplexMath
      */
 
     public static Apfloat arg(Apcomplex z)
+        throws ApfloatRuntimeException
     {
         return ApfloatMath.atan2(z.imag(), z.real());
     }
@@ -539,10 +545,10 @@ public class ApcomplexMath
             }
             else
             {
-                imagBias = ApfloatMath.negate(pi);
+                imagBias = pi.negate();
             }
 
-            z = negate(z);
+            z = z.negate();
         }
         else
         {
@@ -665,7 +671,7 @@ public class ApcomplexMath
         {
             zImag = zImag.subtract(twoPi);
         }
-        else if (zImag.compareTo(ApfloatMath.negate(pi)) <= 0)
+        else if (zImag.compareTo(pi.negate()) <= 0)
         {
             zImag = zImag.add(twoPi);
         }
@@ -676,7 +682,7 @@ public class ApcomplexMath
             zImag = zImag.subtract(pi);
             negateResult = true;
         }
-        else if (zImag.compareTo(ApfloatMath.negate(halfPi)) <= 0)
+        else if (zImag.compareTo(halfPi.negate()) <= 0)
         {
             // exp(z + i*pi) = exp(z)*exp(i*pi) = -exp(z)
             zImag = zImag.add(pi);
@@ -789,7 +795,7 @@ public class ApcomplexMath
             }
         }
 
-        return ApfloatHelper.setPrecision(negateResult ? negate(result) : result, targetPrecision);
+        return ApfloatHelper.setPrecision(negateResult ? result.negate() : result, targetPrecision);
     }
 
     // Extend the precision on last iteration
@@ -810,6 +816,7 @@ public class ApcomplexMath
      */
 
     public static Apcomplex pow(Apcomplex z, Apcomplex w)
+        throws ApfloatRuntimeException
     {
         if (w.real().signum() == 0 && w.imag().signum() == 0)
         {
@@ -852,7 +859,7 @@ public class ApcomplexMath
 
         if (z.real().signum() * z.imag().signum() >= 0)
         {
-            return negate(w);
+            return w.negate();
         }
         else
         {
@@ -903,7 +910,7 @@ public class ApcomplexMath
         }
         else
         {
-            return negate(i.multiply(log(i.multiply(z).add(sqrt(one.subtract(z.multiply(z)))))));
+            return i.multiply(log(i.multiply(z).add(sqrt(one.subtract(z.multiply(z)))))).negate();
         }
     }
 
@@ -926,7 +933,7 @@ public class ApcomplexMath
         }
         else
         {
-            return negate(log(sqrt(z.multiply(z).add(one)).subtract(z)));
+            return log(sqrt(z.multiply(z).add(one)).subtract(z)).negate();
         }
     }
 
@@ -1057,7 +1064,7 @@ public class ApcomplexMath
         throws ApfloatRuntimeException
     {
         boolean negate = z.imag().signum() > 0;
-        z = (negate ? negate(z) : z);
+        z = (negate ? z.negate() : z);
 
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix()),
                 two = new Apfloat(2, Apfloat.INFINITE, z.radix());
@@ -1066,7 +1073,7 @@ public class ApcomplexMath
 
         w = i.multiply(one.subtract(w)).divide(one.add(w));
 
-        return (negate ? negate(w) : w);
+        return (negate ? w.negate() : w);
     }
 
     /**
@@ -1083,7 +1090,7 @@ public class ApcomplexMath
         throws ApfloatRuntimeException
     {
         boolean negate = z.real().signum() < 0;
-        z = (negate ? negate(z) : z);
+        z = (negate ? z.negate() : z);
 
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix()),
                 two = new Apfloat(2, Apfloat.INFINITE, z.radix());
@@ -1091,6 +1098,6 @@ public class ApcomplexMath
 
         w = w.subtract(one).divide(w.add(one));
 
-        return (negate ? negate(w) : w);
+        return (negate ? w.negate() : w);
     }
 }

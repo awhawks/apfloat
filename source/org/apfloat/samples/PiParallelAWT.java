@@ -4,12 +4,14 @@ import java.awt.Container;
 import java.awt.Label;
 import java.awt.TextField;
 
+import org.apfloat.Apfloat;
 import org.apfloat.ApfloatContext;
+import org.apfloat.ApfloatRuntimeException;
 
 /**
  * Graphical AWT elements for calculating pi using multiple threads in parallel.
  *
- * @version 1.0.2
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -72,7 +74,8 @@ public class PiParallelAWT
         }
     }
 
-    protected Operation getOperation(long precision, int radix)
+    protected Operation<Apfloat> getOperation(long precision, int radix)
+        throws ApfloatRuntimeException
     {
         ApfloatContext ctx = ApfloatContext.getContext();
         int numberOfProcessors = Integer.parseInt(this.threadsField.getText());

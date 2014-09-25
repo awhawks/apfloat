@@ -20,7 +20,7 @@ import org.apfloat.spi.FilenameGenerator;
  * Abstract base class for disk-based data storage, containing the common
  * functionality independent of the element type.
  *
- * @version 1.0.3
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -179,6 +179,8 @@ public abstract class DiskDataStorage
 
             in.defaultReadObject();
         }
+
+        private static final long serialVersionUID = 2062430603153403341L;
 
         // These fields are not serialized automatically
         private transient String filename;
@@ -405,6 +407,8 @@ public abstract class DiskDataStorage
         public void close() {}
         public boolean isOpen() { return true; }
     };
+
+    private static final long serialVersionUID = 741984828408146034L;
 
     private FileStorage fileStorage;
 }

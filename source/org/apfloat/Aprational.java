@@ -13,12 +13,13 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see Apint
  *
- * @version 1.0.3
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class Aprational
     extends Apfloat
+    implements Comparable
 {
     /**
      * Default constructor. To be used only by subclasses that
@@ -308,6 +309,20 @@ public class Aprational
     }
 
     /**
+     * Negative value.
+     *
+     * @return <code>-this</code>.
+     *
+     * @since 1.1
+     */
+
+    public Aprational negate()
+        throws ApfloatRuntimeException
+    {
+        return new Aprational(numerator().negate(), denominator());
+    }
+
+    /**
      * Adds two aprational numbers.
      *
      * @param x The number to be added to this number.
@@ -469,7 +484,6 @@ public class Aprational
      */
 
     public int compareTo(Aprational x)
-        throws ApfloatRuntimeException
     {
         Apint a = numerator().multiply(x.denominator()),
               b = x.numerator().multiply(denominator());
@@ -486,7 +500,6 @@ public class Aprational
      */
 
     public int compareTo(Apfloat x)
-        throws ApfloatRuntimeException
     {
         if (x instanceof Aprational)
         {
@@ -697,7 +710,7 @@ public class Aprational
 
             if (sign != numerator.signum())
             {
-                this.numerator = ApintMath.negate(this.numerator);
+                this.numerator = this.numerator.negate();
             }
         }
 
@@ -735,6 +748,8 @@ public class Aprational
     {
         return (this.approx != null && this.approx.precision() >= precision);
     }
+
+    private static final long serialVersionUID = -224128535732558313L;
 
     private static final long UNDEFINED = 0x8000000000000000L;
 

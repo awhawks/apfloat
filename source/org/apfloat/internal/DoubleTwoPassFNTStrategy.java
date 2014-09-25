@@ -6,6 +6,7 @@ import org.apfloat.spi.NTTStrategy;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.ArrayAccess;
 import org.apfloat.spi.Util;
+import static org.apfloat.internal.DoubleModConstants.*;
 
 /**
  * Fast Number Theoretic Transform that uses a "two-pass"
@@ -61,14 +62,13 @@ import org.apfloat.spi.Util;
  *
  * @see DataStorage#getTransposedArray(int,int,int,int)
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class DoubleTwoPassFNTStrategy
     extends DoubleParallelFNTStrategy
-    implements NTTStrategy,
-               DoubleModConstants
+    implements NTTStrategy
 {
     /**
      * Default constructor.

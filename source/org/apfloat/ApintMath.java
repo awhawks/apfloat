@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision integers.
  *
- * @version 1.0.2
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -189,6 +189,7 @@ public class ApintMath
     }
 
     private static Apint powXMinus1(Apint pow, Apint x, long n)
+        throws ApfloatRuntimeException
     {
         Apint one = new Apint(1, x.radix());
 
@@ -211,6 +212,7 @@ public class ApintMath
     }
 
     private static Apint powXPlus1(Apint pow, Apint x, long n)
+        throws ApfloatRuntimeException
     {
         Apint one = new Apint(1, x.radix());
 
@@ -235,6 +237,8 @@ public class ApintMath
     /**
      * Returns an apint whose value is <code>-x</code>.
      *
+     * @deprecated Use {@link Apint#negate()}.
+     *
      * @param x The argument.
      *
      * @return <code>-x</code>.
@@ -243,7 +247,7 @@ public class ApintMath
     public static Apint negate(Apint x)
         throws ApfloatRuntimeException
     {
-        return Apint.ZERO.subtract(x);
+        return x.negate();
     }
 
     /**
@@ -263,7 +267,7 @@ public class ApintMath
         }
         else
         {
-            return negate(x);
+            return x.negate();
         }
     }
 
@@ -271,12 +275,14 @@ public class ApintMath
      * Copy sign from one argument to another.
      *
      * @param x The value whose sign is to be adjusted.
-     * @param x The value whose sign is to be used.
+     * @param y The value whose sign is to be used.
      *
      * @return <code>x</code> with its sign changed to match the sign of <code>y</code>.
+     *
+     * @since 1.1
      */
 
-    private static Apint copySign(Apint x, Apint y)
+    public static Apint copySign(Apint x, Apint y)
         throws ApfloatRuntimeException
     {
         if (y.signum() == 0)
@@ -285,7 +291,7 @@ public class ApintMath
         }
         else if (x.signum() != y.signum())
         {
-            return negate(x);
+            return x.negate();
         }
         else
         {
@@ -540,5 +546,70 @@ public class ApintMath
         }
 
         return r;
+    }
+
+    /**
+     * Factorial function. Uses the default radix.
+     *
+     * @param n The number whose factorial is to be calculated. Should be non-negative.
+     *
+     * @return <code>n!</code>
+     *
+     * @exception java.lang.ArithmeticException If <code>n</code> is negative.
+     * @exception java.lang.NumberFormatException If the default radix is not valid.
+     *
+     * @since 1.1
+     */
+
+    public static Apint factorial(long n)
+        throws ArithmeticException, NumberFormatException, ApfloatRuntimeException               
+    {
+        ApfloatContext ctx = ApfloatContext.getContext();
+        int radix = ctx.getDefaultRadix();
+
+        return factorial(n, radix);
+    }
+
+    /**
+     * Factorial function. Returns a number in the specified radix.
+     *
+     * @param n The number whose factorial is to be calculated. Should be non-negative.
+     * @param radix The radix to use.
+     *
+     * @return <code>n!</code>
+     *
+     * @exception java.lang.ArithmeticException If <code>n</code> is negative.
+     * @exception java.lang.NumberFormatException If the radix is not valid.
+     *
+     * @since 1.1
+     */
+
+    public static Apint factorial(long n, int radix)
+        throws ArithmeticException, NumberFormatException, ApfloatRuntimeException               
+    {
+        if (n < 0)
+        {
+            throw new ArithmeticException("Factorial of negative number");
+        }
+        else if (n == 0)
+        {
+            return new Apint(1, radix);
+        }
+
+        return factorial(1, n, radix);
+    }
+
+    private static Apint factorial(long n, long m, int radix)
+        throws ApfloatRuntimeException
+    {
+        if (n == m)
+        {
+            return new Apint(n, radix);
+        }
+        else
+        {
+            long k = (n + m) >>> 1;
+            return factorial(n, k, radix).multiply(factorial(k + 1, m, radix));
+        }
     }
 }

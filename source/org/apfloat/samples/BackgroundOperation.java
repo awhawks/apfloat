@@ -1,39 +1,43 @@
 package org.apfloat.samples;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+
+import org.apfloat.ApfloatContext;
+
 /**
  * Class for running an {@link Operation} in the background in a separate thread.
+ * The operation is executed using the ExecutorService retrieved from
+ * {@link ApfloatContext#getExecutorService()}.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
-public class BackgroundOperation
+public class BackgroundOperation<T>
 {
     /**
      * Runs an operation in the background in a separate thread.
-     * The thread is started immediately.
+     * The execution is started immediately.
      *
      * @param operation The operation to execute.
      */
 
-    public BackgroundOperation(final Operation operation)
+    public BackgroundOperation(final Operation<T> operation)
     {
-        this.thread = new Thread()
+        ApfloatContext ctx = ApfloatContext.getContext();
+        ExecutorService executorService = ctx.getExecutorService();
+        Callable<T> callable = new Callable<T>()
         {
-            public void run()
+            public T call()
             {
-                try
-                {
-                    BackgroundOperation.this.result = operation.execute();
-                }
-                catch (RuntimeException re)
-                {
-                    BackgroundOperation.this.exception = re;
-                }
+                return operation.execute();
             }
         };
 
-        this.thread.start();
+        this.future = executorService.submit(callable);
     }
 
     /**
@@ -44,7 +48,7 @@ public class BackgroundOperation
 
     public boolean isFinished()
     {
-        return !this.thread.isAlive();
+        return this.future.isDone();
     }
 
     /**
@@ -53,35 +57,24 @@ public class BackgroundOperation
      *
      * @return Result of the operation.
      *
-     * @exception RuntimeException If a RuntimeException was thrown by the executed operation, it's thrown by this method.
+     * @exception RuntimeException If an exception was thrown by the executed operation.
      */
 
-    public Object getResult()
+    public T getResult()
     {
-        while (!isFinished())
+        try
         {
-            try
-            {
-                this.thread.join();
-            }
-            catch (InterruptedException ie)
-            {
-                // Propagate to exit thread
-                throw new RuntimeException(ie);
-            }
+            return this.future.get();
         }
-
-        if (this.exception != null)
+        catch (InterruptedException ie)
         {
-            throw this.exception;
+            throw new RuntimeException(ie);
         }
-        else
+        catch (ExecutionException ee)
         {
-            return this.result;
+            throw new RuntimeException(ee);
         }
     }
 
-    private Thread thread;
-    private Object result;
-    private RuntimeException exception;
+    private Future<T> future;
 }

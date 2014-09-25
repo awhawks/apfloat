@@ -15,12 +15,13 @@ import org.apfloat.spi.ApfloatImpl;
  * numbers to an integer value: {@link Apfloat#floor() }, {@link Apfloat#ceil() },
  * and {@link Apfloat#truncate() }.
  *
- * @version 1.0.2
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class Apint
     extends Aprational
+    implements Comparable
 {
     /**
      * Default constructor. To be used only by subclasses that
@@ -231,6 +232,20 @@ public class Apint
     }
 
     /**
+     * Negative value.
+     *
+     * @return <code>-this</code>.
+     *
+     * @since 1.1
+     */
+
+    public Apint negate()
+        throws ApfloatRuntimeException
+    {
+        return new Apint(this.value.negate());
+    }
+
+    /**
      * Adds two apints.
      *
      * @param x The number to be added to this number.
@@ -397,7 +412,6 @@ public class Apint
      */
 
     public int compareTo(Apint x)
-        throws ApfloatRuntimeException
     {
         return this.value.compareTo(x.value);
     }
@@ -411,7 +425,6 @@ public class Apint
      */
 
     public int compareTo(Aprational x)
-        throws ApfloatRuntimeException
     {
         if (x instanceof Apint)
         {
@@ -432,7 +445,6 @@ public class Apint
      */
 
     public int compareTo(Apfloat x)
-        throws ApfloatRuntimeException
     {
         if (x instanceof Aprational)
         {
@@ -455,7 +467,7 @@ public class Apint
      */
 
     public int compareTo(Object obj)
-        throws ClassCastException, ApfloatRuntimeException
+        throws ClassCastException
     {
         if (obj instanceof Apint)
         {
@@ -480,7 +492,6 @@ public class Apint
      */
 
     public boolean equals(Object obj)
-        throws ApfloatRuntimeException
     {
         if (obj == this)
         {
@@ -555,6 +566,8 @@ public class Apint
     {
         return this.value.getImpl(precision);
     }
+
+    private static final long serialVersionUID = 5409721945040465491L;
 
     private Apfloat value;
 }

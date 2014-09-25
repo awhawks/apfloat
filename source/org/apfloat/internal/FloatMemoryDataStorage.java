@@ -9,7 +9,7 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>float</code>
  * element type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -138,6 +138,8 @@ public final class FloatMemoryDataStorage
             }
         };
     }
+
+    private static final long serialVersionUID = -862001153825924236L;
 
     private float[] data;
 }

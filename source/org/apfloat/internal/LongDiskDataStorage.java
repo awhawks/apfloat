@@ -12,7 +12,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>long</code> element type.
  *
- * @version 1.0.1
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -338,4 +338,6 @@ public final class LongDiskDataStorage
     {
         return 8;
     }
+
+    private static final long serialVersionUID = 4741507089425158620L;
 }

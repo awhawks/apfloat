@@ -1,15 +1,17 @@
 package org.apfloat.internal;
 
+import static org.apfloat.internal.FloatModConstants.*;
+import static org.apfloat.internal.FloatRadixConstants.*;
+
 /**
  * Basic arithmetic for calculating the Chinese Remainder
  * Theorem. Works for the <code>float</code> type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class FloatCRTMath
-    implements FloatModConstants, FloatRadixConstants
 {
     /**
      * Creates a carry-CRT math using the specified radix.

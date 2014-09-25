@@ -12,7 +12,7 @@ import org.apfloat.ApfloatRuntimeException;
 /**
  * Calculates pi using three different algorithms.
  *
- * @version 1.0.2
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -24,7 +24,7 @@ public class Pi
 
     public static class ChudnovskyPiCalculator
         implements Serializable,
-                   Operation
+                   Operation<Apfloat>
     {
         /**
          * Construct a pi calculator with the specified precision and radix.
@@ -34,6 +34,7 @@ public class Pi
          */
 
         public ChudnovskyPiCalculator(long precision, int radix)
+            throws ApfloatRuntimeException
         {
             this.A = new Apfloat(13591409, precision, radix);
             this.B = new Apfloat(545140134, precision, radix);
@@ -52,7 +53,7 @@ public class Pi
             Apfloat s = new Apfloat(n, Apfloat.INFINITE, this.radix),
                     v = this.A.add(this.B.multiply(s));
 
-            v = ((n & 1) == 0 ? v : ApfloatMath.negate(v));
+            v = ((n & 1) == 0 ? v : v.negate());
 
             return v;
         }
@@ -197,7 +198,7 @@ public class Pi
          * Calculate pi using the Chudnovskys' binary splitting algorithm.
          */
 
-        public Object execute()
+        public Apfloat execute()
         {
             Pi.err.println("Using the Chudnovsky brothers' binary splitting algorithm");
 
@@ -323,7 +324,7 @@ public class Pi
      */
 
     public static class GaussLegendrePiCalculator
-        implements Operation
+        implements Operation<Apfloat>
     {
         /**
          * Construct a pi calculator with the specified precision and radix.
@@ -348,7 +349,7 @@ public class Pi
          * Calculate pi using the Gauss-Legendre iteration.
          */
 
-        public Object execute()
+        public Apfloat execute()
         {
             Pi.err.println("Using the Gauss-Legendre iteration");
 
@@ -423,7 +424,7 @@ public class Pi
      */
 
     public static class BorweinPiCalculator
-        implements Operation
+        implements Operation<Apfloat>
     {
         /**
          * Construct a pi calculator with the specified precision and radix.
@@ -448,7 +449,7 @@ public class Pi
          * Calculate pi using the Borweins' quartic iteration.
          */
 
-        public Object execute()
+        public Apfloat execute()
         {
             Pi.err.println("Using the Borweins' quartic iteration");
 
@@ -621,14 +622,14 @@ public class Pi
      * @exception IOException In case writing the output fails.
      */
 
-    public static void run(long precision, int radix, Operation operation)
+    public static void run(long precision, int radix, Operation<Apfloat> operation)
         throws IOException, ApfloatRuntimeException
     {
         dump();
         Pi.err.println("Calculating pi to " + precision + " radix-" + radix + " digits");
 
         long time = System.currentTimeMillis();
-        Apfloat pi = (Apfloat) operation.execute();
+        Apfloat pi = operation.execute();
         time = System.currentTimeMillis() - time;
 
         pi.writeTo(Pi.out, true);
@@ -722,7 +723,7 @@ public class Pi
         int method = (args.length > 1 ? getInt(args[1], "method", 0, 2) : 0),
             radix = (args.length > 2 ? getRadix(args[2]) : ApfloatContext.getContext().getDefaultRadix());
 
-        Operation operation;
+        Operation<Apfloat> operation;
 
         switch (method)
         {

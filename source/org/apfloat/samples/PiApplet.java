@@ -10,14 +10,28 @@ import org.apfloat.spi.BuilderFactory;
 /**
  * Applet for calculating pi using three different algorithms.
  *
- * @version 1.0.3
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class PiApplet
     extends Applet
-    implements PiAWT.StatusIndicator
 {
+    // Workaround to make this applet run with Microsoft VM and Java 1.4 VMs
+    class Handler
+        implements PiAWT.StatusIndicator
+    {
+        public void showStatus(String status)
+        {
+            PiApplet.this.showStatus(status);
+        }
+
+        public Container getContents()
+        {
+            return new PiAWT(this);
+        }
+    }
+
     /**
      * Default constructor.
      */
@@ -32,9 +46,9 @@ public class PiApplet
 
     public void init()
     {
-        if (System.getProperty("java.version").compareTo("1.4") < 0)
+        if (System.getProperty("java.version").compareTo("1.5") < 0)
         {
-            add(new Label("This applet requires Java 1.4 or later. Download it from http://www.java.com"));
+            add(new Label("This applet requires Java 5.0 or later. Download it from http://www.java.com"));
         }
         else
         {
@@ -50,7 +64,7 @@ public class PiApplet
 
     protected Container getContents()
     {
-        return new PiAWT(this);
+        return new Handler().getContents();
     }
 
     /**

@@ -1,15 +1,17 @@
 package org.apfloat.internal;
 
+import static org.apfloat.internal.DoubleModConstants.*;
+import static org.apfloat.internal.DoubleRadixConstants.*;
+
 /**
  * Basic arithmetic for calculating the Chinese Remainder
  * Theorem. Works for the <code>double</code> type.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
 public class DoubleCRTMath
-    implements DoubleModConstants, DoubleRadixConstants
 {
     /**
      * Creates a carry-CRT math using the specified radix.

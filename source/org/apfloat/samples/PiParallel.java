@@ -20,7 +20,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -44,6 +44,7 @@ public class PiParallel
          */
 
         public ParallelPiCalculator(long precision, int radix)
+            throws ApfloatRuntimeException
         {
             super(precision, radix);
         }
@@ -81,9 +82,9 @@ public class PiParallel
 
                 if (DEBUG) Pi.err.println("PiParallel.r(" + n1 + ", " + n2 + ") executing all on node " + nodes[0]);
 
-                ApfloatHolder[] TQP = (ApfloatHolder[]) nodes[0].execute(new Operation()
+                ApfloatHolder[] TQP = nodes[0].execute(new Operation<ApfloatHolder[]>()
                 {
-                    public Object execute()
+                    public ApfloatHolder[] execute()
                     {
                         r(n1, n2, T, Q, P, progressIndicator);
 
@@ -114,10 +115,10 @@ public class PiParallel
 
                 if (DEBUG) Pi.err.println("PiParallel.r(" + n1 + ", " + n2 + ") splitting " + formatArray(nodes) + " to r(" + n1 + ", " + nMiddle + ") " + formatArray(nodes1) + ", r(" + nMiddle + ", " + n2 + ") " + formatArray(nodes2));
 
-                BackgroundOperation operation;
+                BackgroundOperation<Object> operation;
 
                 // Call recursively this r() method to further split the term calculation
-                operation = new BackgroundOperation(new Operation()
+                operation = new BackgroundOperation<Object>(new Operation<Object>()
                 {
                     public Object execute()
                     {
@@ -136,57 +137,58 @@ public class PiParallel
                 int numberNeeded = (P != null || F != null ? 1 : 0) + 3;
                 nodes = recombineNodes(nodes, numberNeeded);
 
-                final Operation sqrtOperation = new Operation()
+                final Operation<Apfloat> sqrtOperation = new Operation<Apfloat>()
                 {
-                    public Object execute()
+                    public Apfloat execute()
                     {
                         return ApfloatMath.inverseRoot(new Apfloat(640320, ParallelPiCalculator.this.precision, ParallelPiCalculator.this.radix), 2);
                     }
-                }, T1operation = new Operation()
+                }, T1operation = new Operation<Apfloat>()
                 {
-                    public Object execute()
+                    public Apfloat execute()
                     {
                         return Q.getApfloat().multiply(LT.getApfloat());
                     }
-                }, T2operation = new Operation()
+                }, T2operation = new Operation<Apfloat>()
                 {
-                    public Object execute()
+                    public Apfloat execute()
                     {
                         return LP.getApfloat().multiply(T.getApfloat());
                     }
-                }, Toperation = new Operation()
+                }, Toperation = new Operation<Apfloat>()
                 {
-                    public Object execute()
+                    public Apfloat execute()
                     {
-                        return ((Apfloat) T1operation.execute()).add((Apfloat) T2operation.execute());
+                        return T1operation.execute().add(T2operation.execute());
                     }
-                }, Qoperation = new Operation()
+                }, Qoperation = new Operation<Apfloat>()
                 {
-                    public Object execute()
+                    public Apfloat execute()
                     {
                         return LQ.getApfloat().multiply(Q.getApfloat());
                     }
-                }, Poperation = new Operation()
+                }, Poperation = new Operation<Apfloat>()
                 {
-                    public Object execute()
+                    public Apfloat execute()
                     {
                         return LP.getApfloat().multiply(P.getApfloat());
                     }
-                }, QPoperation = new Operation()
+                };
+                final Operation<Apfloat[]> QPoperation = new Operation<Apfloat[]>()
                 {
-                    public Object execute()
+                    public Apfloat[] execute()
                     {
-                        return new Apfloat[] { (Apfloat) Qoperation.execute(),
-                                               P == null ? null : (Apfloat) Poperation.execute() };
+                        return new Apfloat[] { Qoperation.execute(),
+                                               P == null ? null : Poperation.execute() };
                     }
                 };
 
                 int availableNodes = nodes.length;
 
-                BackgroundOperation sqrtBackgroundOperation = null,
-                                    operation1,
-                                    operation2,
-                                    operation3 = null;
+                BackgroundOperation<Apfloat> sqrtBackgroundOperation = null,
+                                             operation1,
+                                             operation2,
+                                             operation3 = null;
                 if (F != null && availableNodes > 1)
                 {
                     if (DEBUG) Pi.err.println("PiParallel.r(" + n1 + ", " + n2 + ") calculating isqrt on node " + nodes[availableNodes - 1]);
@@ -203,30 +205,31 @@ public class PiParallel
                 {
                     case 1:
                     {
-                        t = (Apfloat) nodes[0].execute(Toperation);
-                        q = (Apfloat) nodes[0].execute(Qoperation);
-                        if (P != null) p = (Apfloat) nodes[0].execute(Poperation);
+                        t = nodes[0].execute(Toperation);
+                        q = nodes[0].execute(Qoperation);
+                        if (P != null) p = nodes[0].execute(Poperation);
                         break;
                     }
                     case 2:
                     {
                         operation1 = nodes[1].executeBackground(T1operation);
-                        Apfloat tmp1 = (Apfloat) nodes[0].execute(T2operation),
-                                tmp2 = (Apfloat) operation1.getResult();
+                        Apfloat tmp1 = nodes[0].execute(T2operation),
+                                tmp2 = operation1.getResult();
                         operation1 = nodes[1].executeBackground(Qoperation);
                         t = executeAdd(nodes[0], tmp1, tmp2);
-                        if (P != null) p = (Apfloat) nodes[0].execute(Poperation);
+                        if (P != null) p = nodes[0].execute(Poperation);
                         q = (Apfloat) operation1.getResult();
                         break;
                     }
                     case 3:
                     {
-                        operation1 = nodes[2].executeBackground(QPoperation);
+                        BackgroundOperation<Apfloat[]> operation1a;
+                        operation1a = nodes[2].executeBackground(QPoperation);
                         operation2 = nodes[1].executeBackground(T1operation);
-                        Apfloat tmp1 = (Apfloat) nodes[0].execute(T2operation),
-                                tmp2 = (Apfloat) operation2.getResult();
+                        Apfloat tmp1 = nodes[0].execute(T2operation),
+                                tmp2 = operation2.getResult();
                         t = executeAdd(nodes[1], tmp1, tmp2);
-                        Apfloat[] QP = (Apfloat[]) operation1.getResult();
+                        Apfloat[] QP = operation1a.getResult();
                         q = QP[0];
                         if (P != null) p = QP[1];
                         break;
@@ -236,11 +239,11 @@ public class PiParallel
                         operation1 = nodes[availableNodes - 1].executeBackground(T1operation);
                         operation2 = nodes[availableNodes - 3].executeBackground(Qoperation);
                         if (P != null) operation3 = nodes[availableNodes - 4].executeBackground(Poperation);
-                        Apfloat tmp1 = (Apfloat) nodes[availableNodes - 2].execute(T2operation),
-                                tmp2 = (Apfloat) operation1.getResult();
+                        Apfloat tmp1 = nodes[availableNodes - 2].execute(T2operation),
+                                tmp2 = operation1.getResult();
                         t = executeAdd(nodes[availableNodes - 1], tmp1, tmp2);
-                        q = (Apfloat) operation2.getResult();
-                        if (P != null) p = (Apfloat) operation3.getResult();
+                        q = operation2.getResult();
+                        if (P != null) p = operation3.getResult();
                         break;
                     }
                 }
@@ -264,8 +267,8 @@ public class PiParallel
         // Split nodes to two sets that have roughly the same total weights
         private Object[] splitNodes(OperationExecutor[] nodes)
         {
-            List list1 = new LinkedList(),
-                 list2 = new LinkedList();
+            List<OperationExecutor> list1 = new LinkedList<OperationExecutor>(),
+                                    list2 = new LinkedList<OperationExecutor>();
             long weight1 = 0,
                  weight2 = 0;
 
@@ -284,15 +287,15 @@ public class PiParallel
                 }
             }
 
-            return new Object[] { list1.toArray(new OperationExecutor[list1.size()]), new Long(weight1),
-                                  list2.toArray(new OperationExecutor[list2.size()]), new Long(weight2) };
+            return new Object[] { list1.toArray(new OperationExecutor[list1.size()]), weight1,
+                                  list2.toArray(new OperationExecutor[list2.size()]), weight2 };
         }
 
         private Apfloat executeAdd(OperationExecutor node, final Apfloat x, final Apfloat y)
         {
-            return (Apfloat) node.execute(new Operation()
+            return node.execute(new Operation<Apfloat>()
             {
-                public Object execute()
+                public Apfloat execute()
                 {
                     return x.add(y);
                 }
@@ -369,7 +372,7 @@ public class PiParallel
          * Calculate pi using the Chudnovskys' binary splitting algorithm.
          */
 
-        public Object execute()
+        public Apfloat execute()
         {
             Pi.err.println("Using the Chudnovsky brothers' binary splitting algorithm");
 
@@ -399,9 +402,9 @@ public class PiParallel
             nodes = recombineNodes(nodes, 1);
 
             time = System.currentTimeMillis();
-            Apfloat pi = (Apfloat) nodes[nodes.length - 1].execute(new Operation()
+            Apfloat pi = nodes[nodes.length - 1].execute(new Operation<Apfloat>()
             {
-                public Object execute()
+                public Apfloat execute()
                 {
                     Apfloat t = T.getApfloat(),
                             q = Q.getApfloat(),
@@ -443,8 +446,8 @@ public class PiParallel
      * to some value.
      */
 
-    protected static class ThreadLimitedOperation
-        implements Operation
+    protected static class ThreadLimitedOperation<T>
+        implements Operation<T>
     {
         /**
          * Wrap an existing operation to a thread limited context.
@@ -453,7 +456,7 @@ public class PiParallel
          * @param numberOfProcessors The maximum number of threads that can be used in the execution.
          */
 
-        public ThreadLimitedOperation(Operation operation, int numberOfProcessors)
+        public ThreadLimitedOperation(Operation<T> operation, int numberOfProcessors)
         {
             this.operation = operation;
             this.numberOfProcessors = numberOfProcessors;
@@ -465,7 +468,7 @@ public class PiParallel
          * @return Result of the operation.
          */
 
-        public Object execute()
+        public T execute()
         {
             checkAlive();
 
@@ -473,14 +476,14 @@ public class PiParallel
             ctx.setNumberOfProcessors(this.numberOfProcessors);
             ApfloatContext.setThreadContext(ctx);
 
-            Object result = this.operation.execute();
+            T result = this.operation.execute();
 
             ApfloatContext.removeThreadContext();
 
             return result;
         }
 
-        private Operation operation;
+        private Operation<T> operation;
         private int numberOfProcessors;
     }
 
@@ -492,14 +495,14 @@ public class PiParallel
             this.numberOfProcessors = numberOfProcessors;
         }
 
-        public Object execute(Operation operation)
+        public <T> T execute(Operation<T> operation)
         {
-            return super.execute(new ThreadLimitedOperation(operation, this.numberOfProcessors));
+            return super.execute(new ThreadLimitedOperation<T>(operation, this.numberOfProcessors));
         }
 
-        public BackgroundOperation executeBackground(Operation operation)
+        public <T> BackgroundOperation<T> executeBackground(Operation<T> operation)
         {
-            return super.executeBackground(new ThreadLimitedOperation(operation, this.numberOfProcessors));
+            return super.executeBackground(new ThreadLimitedOperation<T>(operation, this.numberOfProcessors));
         }
 
         public int getWeight()
@@ -542,7 +545,7 @@ public class PiParallel
 
         ApfloatContext.getContext().setNumberOfProcessors(numberOfProcessors);
 
-        Operation operation = new ParallelPiCalculator(precision, radix);
+        Operation<Apfloat> operation = new ParallelPiCalculator(precision, radix);
 
         setOut(new PrintWriter(System.out, true));
         setErr(new PrintWriter(System.err, true));
@@ -552,7 +555,7 @@ public class PiParallel
 
     private static String formatArray(Object[] array)
     {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         buffer.append("{ ");
         for (int i = 0; i < array.length; i++)
         {

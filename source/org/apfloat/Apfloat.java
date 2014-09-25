@@ -23,7 +23,7 @@ import org.apfloat.spi.ApfloatImpl;
  * digits (in radix 10). In fact, the resulting number will be something like
  * <code>0.30000001192092896</code>...
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -560,6 +560,20 @@ public class Apfloat
     }
 
     /**
+     * Negative value.
+     *
+     * @return <code>-this</code>.
+     *
+     * @since 1.1
+     */
+
+    public Apfloat negate()
+        throws ApfloatRuntimeException
+    {
+        return new Apfloat(this.impl.negate());
+    }
+
+    /**
      * Adds two apfloats.
      *
      * @param x The number to be added to this number.
@@ -927,7 +941,6 @@ public class Apfloat
      */
 
     public int compareTo(Apfloat x)
-        throws ApfloatRuntimeException
     {
         if (x instanceof Aprational)
         {
@@ -1068,6 +1081,8 @@ public class Apfloat
         long precision = precision();
         return getImpl(precision);
     }
+
+    private static final long serialVersionUID = -36707433458144439L;
 
     private ApfloatImpl impl;
 }

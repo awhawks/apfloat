@@ -1,5 +1,8 @@
 package org.apfloat;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.util.Enumeration;
 import java.util.Collections;
 import java.util.Map;
@@ -8,6 +11,9 @@ import java.util.Properties;
 import java.util.WeakHashMap;
 import java.util.ResourceBundle;
 import java.util.MissingResourceException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 
 import org.apfloat.spi.BuilderFactory;
 import org.apfloat.spi.FilenameGenerator;
@@ -78,13 +84,7 @@ import org.apfloat.spi.Util;
  *
  * The total memory size and the number of processors are detected automatically,
  * as reported by the Java runtime, if they are not specified in the configuration
- * bundle. Note that with Sun's JVM, the total memory reported by the runtime at
- * application startup is the <i>initial</i> heap size and not the <i>maximum</i>
- * heap size. To detect the total maximum available memory correctly, you should
- * specify the initial heap size to be equal to the maximum heap size. For example,
- * provide the command-line parameters<p>
- *
- * <code>-Xms64M -Xmx64M</code><p>
+ * bundle.<p>
  *
  * If you need to create a complex multithreaded application that performs
  * apfloat calculations in parallel using multiple threads, you may need to
@@ -150,7 +150,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.0.2
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -329,7 +329,7 @@ public class ApfloatContext
 
     public static ApfloatContext getThreadContext(Thread thread)
     {
-        return (ApfloatContext) ApfloatContext.threadContexts.get(thread);
+        return ApfloatContext.threadContexts.get(thread);
     }
 
     /**
@@ -898,6 +898,42 @@ public class ApfloatContext
     }
 
     /**
+     * Get the ExecutorService.
+     * It can be used for executing operations in parallel.<p>
+     *
+     * By default the executor service is a thread pool that is
+     * shared by all the ApfloatContexts. The threads in the pool
+     * are daemon threads so the thread pool requires no clean-up
+     * at shutdown time.
+     *
+     * @return The ExecutorService.
+     *
+     * @since 1.1
+     */
+
+    public ExecutorService getExecutorService()
+    {
+        return this.executorService;
+    }
+
+    /**
+     * Set the ExecutorService.<p>
+     *
+     * Note that if a custom ExecutorService is used, e.g. a thread pool,
+     * it is the caller's responsibility to clean up the ExecutorService
+     * at shutdown.
+     *
+     * @param executorService The ExecutorService.
+     *
+     * @since 1.1
+     */
+
+    public void setExecutorService(ExecutorService executorService)
+    {
+        this.executorService = executorService;
+    }
+
+    /**
      * Get an arbitrary object as an attribute for this ApfloatContext.
      *
      * @param name Name of the attribute.
@@ -943,7 +979,7 @@ public class ApfloatContext
      * @return Names of all attributes as strings.
      */
 
-    public Enumeration getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         return this.attributes.keys();
     }
@@ -975,10 +1011,10 @@ public class ApfloatContext
         {
             ResourceBundle resourceBundle = ResourceBundle.getBundle("apfloat");
 
-            Enumeration keys = resourceBundle.getKeys();
+            Enumeration<String> keys = resourceBundle.getKeys();
             while (keys.hasMoreElements())
             {
-                String key = (String) keys.nextElement();
+                String key = keys.nextElement();
                 properties.setProperty(key, resourceBundle.getString(key));
             }
         }
@@ -1012,7 +1048,8 @@ public class ApfloatContext
      * Creates a copy of this object.<p>
      *
      * The clone has the same BuilderFactory and FilenameGenerator members
-     * and the same shared memory lock as the original ApfloatContext.<p>
+     * and the same shared memory lock and ExecutorService as the original
+     * ApfloatContext.<p>
      *
      * A shallow copy of the property set and the attribute set is created.
      * Thus setting a property or attribute on the clone will not set it
@@ -1029,7 +1066,7 @@ public class ApfloatContext
         {
             ApfloatContext ctx = (ApfloatContext) super.clone();    // Copy all attributes by reference
             ctx.properties = (Properties) ctx.properties.clone();   // Create shallow copies
-            ctx.attributes = (Hashtable) ctx.attributes.clone();
+            ctx.attributes = (Hashtable<String, Object>) ctx.attributes.clone();
 
             return ctx;
         }
@@ -1041,8 +1078,9 @@ public class ApfloatContext
     }
 
     private static ApfloatContext globalContext;
-    private static Map threadContexts = Collections.synchronizedMap(new WeakHashMap()); // Use WeakHashMap to automatically remove completed threads
+    private static Map<Thread, ApfloatContext> threadContexts = Collections.synchronizedMap(new WeakHashMap<Thread, ApfloatContext>()); // Use WeakHashMap to automatically remove completed threads
     private static Properties defaultProperties;
+    private static ExecutorService defaultExecutorService;
 
     private volatile BuilderFactory builderFactory;
     private volatile FilenameGenerator filenameGenerator;
@@ -1057,14 +1095,18 @@ public class ApfloatContext
     private volatile Thread cleanupThread;
     private volatile Properties properties;
     private volatile Object sharedMemoryLock = new Object();
-    private volatile Hashtable attributes = new Hashtable();
+    private volatile ExecutorService executorService = ApfloatContext.defaultExecutorService;
+    private volatile Hashtable<String, Object> attributes = new Hashtable<String, Object>();
 
     static
     {
         ApfloatContext.defaultProperties = new Properties();
 
         // Try to use up to 80% of total memory and all processors
-        long maxMemoryBlockSize = Util.round23down(Runtime.getRuntime().totalMemory() / 5 * 4);
+        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+        MemoryUsage memoryUsage = memoryBean.getHeapMemoryUsage();
+        long totalMemory = Math.max(memoryUsage.getCommitted(), memoryUsage.getMax());
+        long maxMemoryBlockSize = Util.round23down(totalMemory / 5 * 4);
         int numberOfProcessors = Runtime.getRuntime().availableProcessors();
 
         ApfloatContext.defaultProperties.setProperty(BUILDER_FACTORY, "org.apfloat.internal.IntBuilderFactory");
@@ -1080,6 +1122,21 @@ public class ApfloatContext
         ApfloatContext.defaultProperties.setProperty(FILE_INITIAL_VALUE, "0");
         ApfloatContext.defaultProperties.setProperty(FILE_SUFFIX, ".ap");
         ApfloatContext.defaultProperties.setProperty(CLEANUP_AT_EXIT, "true");
+
+        // Default executor service with all daemon threads, to avoid clean-up
+        ThreadFactory threadFactory = new ThreadFactory()
+        {
+            public Thread newThread(Runnable runnable)
+            {
+                Thread thread = this.defaultThreadFactory.newThread(runnable);
+                thread.setDaemon(true);
+
+                return thread;
+            }
+
+            private ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
+        };
+        ApfloatContext.defaultExecutorService = Executors.newCachedThreadPool(threadFactory);
 
         // Set combination of default properties and properties specified in the resource bundle
         ApfloatContext.globalContext = new ApfloatContext(loadProperties());

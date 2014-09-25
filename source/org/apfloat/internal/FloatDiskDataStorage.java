@@ -12,7 +12,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>float</code> element type.
  *
- * @version 1.0.1
+ * @version 1.1
  * @author Mikko Tommila
  */
 
@@ -338,4 +338,6 @@ public final class FloatDiskDataStorage
     {
         return 4;
     }
+
+    private static final long serialVersionUID = 1045290368963828503L;
 }

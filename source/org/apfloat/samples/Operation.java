@@ -5,11 +5,11 @@ import java.io.Serializable;
 /**
  * Interface for implementing arbitrary operations to be executed.
  *
- * @version 1.0
+ * @version 1.1
  * @author Mikko Tommila
  */
 
-public interface Operation
+public interface Operation<T>
     extends Serializable
 {
     /**
@@ -18,5 +18,5 @@ public interface Operation
      * @return Return value of the operation.
      */
 
-    public Object execute();
+    public T execute();
 }
