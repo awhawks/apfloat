@@ -25,7 +25,7 @@ import org.apfloat.spi.DataStorage;
  * @see CarryCRTStepStrategy
  *
  * @since 1.7.0
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -129,11 +129,6 @@ public class StepCarryCRTStrategy
         return doCarryCRT(elementArrayType, resultMod0, resultMod1, resultMod2, resultSize);
     }
 
-    public void setParallelRunner(ParallelRunner parallelRunner)
-    {
-        this.parallelRunner = parallelRunner;
-    }
-
     private <T> DataStorage doCarryCRT(Class<T> elementArrayType, DataStorage resultMod0, DataStorage resultMod1, DataStorage resultMod2, long resultSize)
         throws ApfloatRuntimeException
     {
@@ -147,13 +142,13 @@ public class StepCarryCRTStrategy
 
         ParallelRunnable parallelRunnable = createCarryCRTParallelRunnable(elementArrayType, resultMod0, resultMod1, resultMod2, dataStorage, size, resultSize);
 
-        if (size <= Integer.MAX_VALUE && this.parallelRunner != null &&     // Only if the size fits in an integer, but with memory arrays it should
+        if (size <= Integer.MAX_VALUE &&                                    // Only if the size fits in an integer, but with memory arrays it should
             resultMod0.isCached() &&                                        // Only if the data storage supports efficient parallel random access
             resultMod1.isCached() &&
             resultMod2.isCached() &&
             dataStorage.isCached())
         {
-            this.parallelRunner.runParallel(parallelRunnable);
+            ParallelRunner.runParallel(parallelRunnable);
         }
         else
         {
@@ -185,14 +180,8 @@ public class StepCarryCRTStrategy
         final MessagePasser<Long, T> messagePasser = new MessagePasser<Long, T>();
         final CarryCRTStepStrategy<T> stepStrategy = builderFactory.getCarryCRTBuilder(elementArrayType).createCarryCRTSteps(this.radix);
 
-        ParallelRunnable parallelRunnable = new ParallelRunnable()
+        ParallelRunnable parallelRunnable = new ParallelRunnable(size)
         {
-            public int getLength()
-            {
-                assert (size <= Integer.MAX_VALUE);
-                return (int) size;
-            }
-
             public Runnable getRunnable(long offset, long length)
             {
                 return new CarryCRTRunnable<T>(resultMod0, resultMod1, resultMod2, dataStorage, size, resultSize, offset, length, messagePasser, stepStrategy);
@@ -202,5 +191,4 @@ public class StepCarryCRTStrategy
     }
 
     private int radix;
-    private ParallelRunner parallelRunner;
 }

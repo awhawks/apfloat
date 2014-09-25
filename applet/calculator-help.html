@@ -1,6 +1,6 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
@@ -105,6 +105,8 @@ values. Displaying such numbers in the fixed-point format may be impractical.
 <tr><td><code>scale(x, y)</code></td><td>Equivalent to <code>x * 10<sup>y</sup></code>. Parameter <code>y</code> must be an integer.</td></tr>
 <tr><td><code>sqrt(x)</code></td><td>Square root of <code>x</code>.</td></tr>
 <tr><td><code>truncate(x)</code></td><td>Nearest integer rounded towards zero of <code>x</code>. Parameter <code>x</code> must be real.</td></tr>
+<tr><td><code>toDegrees(x)</code></td><td>Convert radians to degrees. Parameter <code>x</code> must be real.</td></tr>
+<tr><td><code>toRadians(x)</code></td><td>Convert degrees to radians. Parameter <code>x</code> must be real.</td></tr>
 </table>
 
 <h3>Trigonometric:</h3>
@@ -141,6 +143,8 @@ values. Displaying such numbers in the fixed-point format may be impractical.
 
 <table>
 <tr><td><code>agm(x, y)</code></td><td>Arithmetic-geometric mean of <code>x</code> and <code>y</code>.</td></tr>
+<tr><td><code>w(x)</code></td><td>Lambert W function, i.e. solution to the equation <code>W e<sup>W</sup> = x</code>.</td></tr>
+<tr><td><code>w(x, k)</code></td><td>Lambert W function, branch <code>k</code>. Parameter <code>k</code> must be an integer.</td></tr>
 <tr><td><code>gcd(x, y)</code></td><td>Greatest common divisor of <code>x</code> and <code>y</code>. Both <code>x</code> and <code>y</code> must be integers.</td></tr>
 <tr><td><code>lcm(x, y)</code></td><td>Least common multiple of <code>x</code> and <code>y</code>. Both <code>x</code> and <code>y</code> must be integers.</td></tr>
 <tr><td><code>pi(x)</code></td><td>&pi; calculated to <code>x</code> digits of precision. Parameter <code>x</code> must be an integer.</td></tr>
@@ -242,7 +246,7 @@ the calculation the calculator may appear unresponsive. For example, calculating
 
 <p>Bug reports, questions and comments should be sent to <a href="mailto:Mikko.Tommila@apfloat.org">the author</a>.</p>
 
-<p>Last updated: October 14th, 2012</p>
+<p>Last updated: November 24th, 2013</p>
 
 </div>
 

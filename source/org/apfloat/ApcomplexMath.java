@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApfloatMath
  *
- * @version 1.7.1
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -1345,6 +1345,46 @@ public class ApcomplexMath
     }
 
     /**
+     * Lambert W function. The W function gives the solution to the equation
+     * <code>W e<sup>W</sup> = z</code>. Also known as the product logarithm.<p>
+     *
+     * This function gives the solution to the principal branch, W<sub>0</sub>.
+     *
+     * @param z The argument.
+     *
+     * @return <code>W<sub>0</sub>(z)</code>.
+     *
+     * @since 1.8.0
+     */
+
+    public static Apcomplex w(Apcomplex z)
+        throws ApfloatRuntimeException
+    {
+        return LambertWHelper.w(z);
+    }
+
+    /**
+     * Lambert W function for the specified branch.<p>
+     *
+     * @param z The argument.
+     * @param k The branch.
+     *
+     * @return <code>W<sub>k</sub>(z)</code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>z</code> is zero and <code>k</code> is not zero.
+     *
+     * @see #w(Apcomplex)
+     *
+     * @since 1.8.0
+     */
+
+    public static Apcomplex w(Apcomplex z, long k)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        return LambertWHelper.w(z, k);
+    }
+
+    /**
      * Product of numbers.
      * The precision used in the multiplications is only
      * what is needed for the end result. This method may
@@ -1401,17 +1441,19 @@ public class ApcomplexMath
                 return (zSize < wSize ? -1 : (zSize > wSize ? 1 : 0));
             }
         });
-        heap.addAll(Arrays.asList(z));
 
-        // Multiply two smallest elements in the heap and put the product back to the heap, until only one element remains
-        // Thanks to Peter Luschny and Spiro Trikaliotis for the improved algorithm!
-        while (heap.size() > 1)
+        // Perform the multiplications in parallel
+        ParallelHelper.ProductKernel<Apcomplex> kernel = new ParallelHelper.ProductKernel<Apcomplex>()
         {
-            Apcomplex a = heap.remove();
-            Apcomplex b = heap.remove();
-            Apcomplex c = a.multiply(b);
-            heap.add(c);
-        }
+            public void run(Queue<Apcomplex> heap)
+            {
+                Apcomplex a = heap.remove();
+                Apcomplex b = heap.remove();
+                Apcomplex c = a.multiply(b);
+                heap.add(c);
+            }
+        };
+        ParallelHelper.parallelProduct(z, heap, kernel);
 
         return ApfloatHelper.setPrecision(heap.remove(), maxPrec);
     }

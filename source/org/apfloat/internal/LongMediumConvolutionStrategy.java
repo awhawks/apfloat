@@ -10,7 +10,7 @@ import org.apfloat.spi.DataStorage;
  * Medium-length convolution strategy.
  * Performs a simple O(n<sup>2</sup>) multiplication when the size of one operand is relatively short.
  *
- * @version 1.1
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -84,6 +84,8 @@ public class LongMediumConvolutionStrategy
                                  {
                                      this.buffer[this.position] = value;
                                  }
+
+                                 private static final long serialVersionUID = 1L;
 
                                  private long[] buffer = new long[bufferSize];
                                  private int position = 0;

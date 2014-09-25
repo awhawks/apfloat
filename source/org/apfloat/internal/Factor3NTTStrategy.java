@@ -15,7 +15,7 @@ import org.apfloat.spi.Util;
  * @see Factor3NTTStepStrategy
  *
  * @since 1.7.0
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -112,18 +112,6 @@ public class Factor3NTTStrategy
         // Calculates the needed transform length, that is
         // a power of two, or three times a power of two
         return Util.round23up(size);
-    }
-
-    public void setParallelRunner(ParallelRunner parallelRunner)
-    {
-        if (this.factor2Strategy instanceof Parallelizable)
-        {
-            ((Parallelizable) this.factor2Strategy).setParallelRunner(parallelRunner);
-        }
-        if (this.stepStrategy instanceof Parallelizable)
-        {
-            ((Parallelizable) this.stepStrategy).setParallelRunner(parallelRunner);
-        }
     }
 
     private NTTStrategy factor2Strategy;

@@ -15,7 +15,7 @@ import static org.apfloat.internal.FloatModConstants.*;
  * All access to this class must be externally synchronized.
  *
  * @since 1.7.0
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -183,6 +183,8 @@ public class FloatCarryCRTStepStrategy
                 data[this.position] = value;
             }
 
+            private static final long serialVersionUID = 1L;
+
             private int position = data.length - 1;
         };
     }
@@ -221,6 +223,8 @@ public class FloatCarryCRTStepStrategy
             {
                 (this.position < size ? iterator1 : iterator2).close();
             }
+
+            private static final long serialVersionUID = 1L;
 
             private long position;
         };

@@ -12,7 +12,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>int</code> element type.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -163,7 +163,7 @@ public class IntDiskDataStorage
             super.close();
         }
 
-        private static final long serialVersionUID = 7690849230285450035L;;
+        private static final long serialVersionUID = 7690849230285450035L;
 
         private int mode,
                     startColumn,
@@ -253,7 +253,7 @@ public class IntDiskDataStorage
         {
             if (!(type.equals(Integer.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Integer");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is int");
             }
             @SuppressWarnings("unchecked")
             T value = (T) (Integer) getInt();
@@ -265,7 +265,7 @@ public class IntDiskDataStorage
         {
             if (!(type.equals(Integer.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Integer");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is int");
             }
             if (!(value instanceof Integer))
             {
@@ -305,6 +305,8 @@ public class IntDiskDataStorage
                 this.remaining = length;
             }
         }
+
+        private static final long serialVersionUID = 4187202582650284101L;
 
         private ArrayAccess arrayAccess;
         private int[] data;

@@ -13,7 +13,7 @@ import static org.apfloat.internal.IntModConstants.*;
  * All access to this class must be externally synchronized.
  *
  * @since 1.7.0
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -122,27 +122,22 @@ public class IntFactor3NTTStepStrategy
 
         ParallelRunnable parallelRunnable = createColumnTransformParallelRunnable(dataStorage0, dataStorage1, dataStorage2, startColumn, columns, power2length, length, isInverse, modulus);
 
-        if (columns <= Integer.MAX_VALUE && this.parallelRunner != null &&      // Only if the size fits in an integer, but with memory arrays it should
+        if (columns <= Integer.MAX_VALUE &&                                     // Only if the size fits in an integer, but with memory arrays it should
             dataStorage0.isCached() &&                                          // Only if the data storage supports efficient parallel random access
             dataStorage1.isCached() &&
             dataStorage2.isCached())
         {
-            this.parallelRunner.runParallel(parallelRunnable);
+            ParallelRunner.runParallel(parallelRunnable);
         }
         else
         {
-            parallelRunnable.getRunnable(startColumn, columns).run();           // Just run in current thread without parallelization
+            parallelRunnable.run();                                             // Just run in current thread without parallelization
         }
     }
 
     public long getMaxTransformLength()
     {
         return MAX_TRANSFORM_LENGTH;
-    }
-
-    public void setParallelRunner(ParallelRunner parallelRunner)
-    {
-        this.parallelRunner = parallelRunner;
     }
 
     /**
@@ -173,14 +168,8 @@ public class IntFactor3NTTStepStrategy
                       w1 = negate(modDivide((int) 3, (int) 2)),
                       w2 = modAdd(w3, modDivide((int) 1, (int) 2));
 
-        ParallelRunnable parallelRunnable = new ParallelRunnable()
+        ParallelRunnable parallelRunnable = new ParallelRunnable(columns)
         {
-            public int getLength()
-            {
-                assert (columns <= Integer.MAX_VALUE);
-                return (int) columns;
-            }
-
             public Runnable getRunnable(long strideStartColumn, long strideColumns)
             {
                 return new ColumnTransformRunnable(dataStorage0, dataStorage1, dataStorage2, startColumn + strideStartColumn, strideColumns, w, ww, w1, w2, isInverse);
@@ -188,6 +177,4 @@ public class IntFactor3NTTStepStrategy
         };
         return parallelRunnable;
     }
-
-    private ParallelRunner parallelRunner;
 }

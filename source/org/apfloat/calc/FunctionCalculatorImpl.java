@@ -10,7 +10,7 @@ import java.util.Map;
  * Calculator implementation with function support.
  * Provides a mapping mechanism for functions.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -160,8 +160,12 @@ public abstract class FunctionCalculatorImpl
         public Number tan(Number x);
         public Number tanh(Number x);
         public Number truncate(Number x);
+        public Number toDegrees(Number x);
+        public Number toRadians(Number x);
 
         public Number agm(Number x, Number y);
+        public Number w(Number x);
+        public Number w(Number x, Number y);
         public Number atan2(Number x, Number y);
         public Number copySign(Number x, Number y);
         public Number fmod(Number x, Number y);
@@ -216,6 +220,8 @@ public abstract class FunctionCalculatorImpl
         setFunction("tan", new FixedFunction("tan", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.tan(arguments.get(0)); } });
         setFunction("tanh", new FixedFunction("tanh", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.tanh(arguments.get(0)); } });
         setFunction("truncate", new FixedFunction("truncate", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.truncate(arguments.get(0)); } });
+        setFunction("toDegrees", new FixedFunction("toDegrees", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.toDegrees(arguments.get(0)); } });
+        setFunction("toRadians", new FixedFunction("toRadians", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.toRadians(arguments.get(0)); } });
 
         setFunction("arg", new FixedFunction("arg", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.arg(arguments.get(0)); } });
         setFunction("conj", new FixedFunction("conj", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.conj(arguments.get(0)); } });
@@ -223,6 +229,7 @@ public abstract class FunctionCalculatorImpl
         setFunction("real", new FixedFunction("real", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.real(arguments.get(0)); } });
 
         setFunction("agm", new FixedFunction("agm", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.agm(arguments.get(0), arguments.get(1)); } });
+        setFunction("w", new FixedFunction("w", 1, 2) { protected Number call(Functions functions, List<Number> arguments) { return (arguments.size() == 1 ? functions.w(arguments.get(0)) : functions.w(arguments.get(0), arguments.get(1))); } });
         setFunction("atan2", new FixedFunction("atan2", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.atan2(arguments.get(0), arguments.get(1)); } });
         setFunction("copySign", new FixedFunction("copySign", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.copySign(arguments.get(0), arguments.get(1)); } });
         setFunction("fmod", new FixedFunction("fmod", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.fmod(arguments.get(0), arguments.get(1)); } });

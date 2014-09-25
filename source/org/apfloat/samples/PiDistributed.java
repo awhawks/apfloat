@@ -76,7 +76,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.6.1
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -600,8 +600,7 @@ public class PiDistributed
             time = System.currentTimeMillis() - time;
 
             Pi.err.println("Series terms calculation complete, elapsed time " + time / 1000.0 + " seconds");
-            Pi.err.print("Final value ");
-            Pi.err.flush();
+            Pi.err.printf("Final value ");
 
             nodes = this.calculator.recombineNodes(nodes, 1);
 
@@ -688,8 +687,7 @@ public class PiDistributed
             time = System.currentTimeMillis() - time;
 
             Pi.err.println("Series terms calculation complete, elapsed time " + time / 1000.0 + " seconds");
-            Pi.err.print("Final value ");
-            Pi.err.flush();
+            Pi.err.printf("Final value ");
 
             nodes = this.calculator.recombineNodes(nodes, 1);
 

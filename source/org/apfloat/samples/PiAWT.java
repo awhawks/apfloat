@@ -30,7 +30,7 @@ import org.apfloat.spi.BuilderFactory;
 /**
  * Graphical AWT elements for calculating pi using four different algorithms.
  *
- * @version 1.6.2
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -185,6 +185,8 @@ public class PiAWT
             {
                 if (isInputValid())
                 {
+                    PiAWT.this.statusArea.getText();    // FIXME: workaround for Java bug 9008097, to be removed
+                    PiAWT.this.resultArea.getText();    // FIXME: workaround for Java bug 9008097, to be removed
                     PiAWT.this.statusArea.setText(null);
                     PiAWT.this.resultArea.setText(null);
                     PiAWT.this.goButton.setEnabled(false);
@@ -344,10 +346,10 @@ public class PiAWT
     private void startThread()
     {
         // Writer for writing standard output to the result area
-        Pi.setOut(new PrintWriter(new FlushStringWriter(PiAWT.this.resultArea), true));
+        Pi.setOut(new PrintWriter(new FlushStringWriter(this.resultArea), true));
 
         // Writer for writing standard error output to the status area
-        Pi.setErr(new PrintWriter(new FlushStringWriter(PiAWT.this.statusArea), true));
+        Pi.setErr(new PrintWriter(new FlushStringWriter(this.statusArea), true));
 
         // Set the selected builder factory
         ApfloatContext ctx = ApfloatContext.getContext();

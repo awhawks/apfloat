@@ -9,7 +9,7 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>double</code>
  * element type.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -187,7 +187,7 @@ public class DoubleMemoryDataStorage
         {
             if (!(type.equals(Double.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Double");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is double");
             }
             @SuppressWarnings("unchecked")
             T value = (T) (Double) getDouble();
@@ -199,7 +199,7 @@ public class DoubleMemoryDataStorage
         {
             if (!(type.equals(Double.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Double");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is double");
             }
             if (!(value instanceof Double))
             {
@@ -216,6 +216,8 @@ public class DoubleMemoryDataStorage
                 throw new IllegalStateException("At the end of iterator");
             }
         }
+
+        private static final long serialVersionUID = -9012199261873349608L;
 
         private double[] data;
         private int position,
@@ -236,6 +238,8 @@ public class DoubleMemoryDataStorage
         {
             throw new IllegalStateException("Not a writable iterator");
         }
+
+        private static final long serialVersionUID = 5449985546703735328L;
     }
 
     private class WriteOnlyIterator
@@ -252,6 +256,8 @@ public class DoubleMemoryDataStorage
         {
             throw new IllegalStateException("Not a readable iterator");
         }
+
+        private static final long serialVersionUID = 3758519654059499404L;
     }
 
     public Iterator iterator(int mode, long startPosition, long endPosition)

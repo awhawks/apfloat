@@ -13,12 +13,14 @@ import org.apfloat.ApfloatRuntimeException;
 /**
  * Calculates pi using four different algorithms.
  *
- * @version 1.5.2
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
 public class Pi
 {
+    // Implementation note: we use printf() for printing, because it flushes the output (print() does not)
+
     /**
      * Terms for the binary splitting series.
      */
@@ -283,79 +285,30 @@ public class Pi
         {
             checkAlive();
 
-            int length = (int) Math.min(n2 - n1, Integer.MAX_VALUE);
+            assert (n1 != n2);
+            long length = n2 - n1;
 
-            switch (length)             // Java can't switch on a long...
+            if (length == 1)
             {
-                case 0:
-                {
-                    assert (n1 != n2);
+                Apfloat p0 = p(n1);
 
-                    break;
-                }
-                case 1:
-                {
-                    Apfloat p0 = p(n1);
+                T.setApfloat(a(n1).multiply(p0));
+                Q.setApfloat(q(n1));
+                if (P != null) P.setApfloat(p0);
+            }
+            else
+            {
+                long nMiddle = n1 + n2 >> 1;
+                ApfloatHolder LT = new ApfloatHolder(),
+                              LQ = new ApfloatHolder(),
+                              LP = new ApfloatHolder();
 
-                    T.setApfloat(a(n1).multiply(p0));
-                    Q.setApfloat(q(n1));
-                    if (P != null) P.setApfloat(p0);
+                r(n1, nMiddle, LT, LQ, LP, progressIndicator);
+                r(nMiddle, n2, T, Q, P, progressIndicator);
 
-                    break;
-                }
-                case 2:
-                {
-                    Apfloat p0 = p(n1), p01 = p0.multiply(p(n1 + 1)),
-                            q1 = q(n1 + 1);
-
-                    T.setApfloat(q1.multiply(a(n1)).multiply(p0).add(
-                                 a(n1 + 1).multiply(p01)));
-                    Q.setApfloat(q(n1).multiply(q1));
-                    if (P != null) P.setApfloat(p01);
-
-                    break;
-                }
-                case 3:
-                {
-                    Apfloat p0 = p(n1), p01 = p0.multiply(p(n1 + 1)), p012 = p01.multiply(p(n1 + 2)),
-                            q2 = q(n1 + 2), q12 = q(n1 + 1).multiply(q2);
-
-                    T.setApfloat(q12.multiply(a(n1)).multiply(p0).add(
-                         q2.multiply(a(n1 + 1)).multiply(p01)).add(
-                         a(n1 + 2).multiply(p012)));
-                    Q.setApfloat(q(n1).multiply(q12));
-                    if (P != null) P.setApfloat(p012);
-
-                    break;
-                }
-                case 4:
-                {
-                    Apfloat p0 = p(n1), p01 = p0.multiply(p(n1 + 1)), p012 = p01.multiply(p(n1 + 2)), p0123 = p012.multiply(p(n1 + 3)),
-                            q3 = q(n1 + 3), q23 = q(n1 + 2).multiply(q3), q123 = q(n1 + 1).multiply(q23);
-
-                    T.setApfloat(q123.multiply(a(n1)).multiply(p0).add(
-                         q23.multiply(a(n1 + 1)).multiply(p01)).add(
-                         q3.multiply(a(n1 + 2)).multiply(p012)).add(
-                         a(n1 + 3).multiply(p0123)));
-                    Q.setApfloat(q(n1).multiply(q123));
-                    if (P != null) P.setApfloat(p0123);
-
-                    break;
-                }
-                default:
-                {
-                    long nMiddle = (n1 + n2) / 2;
-                    ApfloatHolder LT = new ApfloatHolder(),
-                                  LQ = new ApfloatHolder(),
-                                  LP = new ApfloatHolder();
-
-                    r(n1, nMiddle, LT, LQ, LP, progressIndicator);
-                    r(nMiddle, n2, T, Q, P, progressIndicator);
-
-                    T.setApfloat(Q.getApfloat().multiply(LT.getApfloat()).add(LP.getApfloat().multiply(T.getApfloat())));
-                    Q.setApfloat(LQ.getApfloat().multiply(Q.getApfloat()));
-                    if (P != null) P.setApfloat(LP.getApfloat().multiply(P.getApfloat()));
-                }
+                T.setApfloat(Q.getApfloat().multiply(LT.getApfloat()).add(LP.getApfloat().multiply(T.getApfloat())));
+                Q.setApfloat(LQ.getApfloat().multiply(Q.getApfloat()));
+                if (P != null) P.setApfloat(LP.getApfloat().multiply(P.getApfloat()));
             }
 
             if (progressIndicator != null)
@@ -441,8 +394,7 @@ public class Pi
             time = System.currentTimeMillis() - time;
 
             Pi.err.println("100% complete, elapsed time " + time / 1000.0 + " seconds");
-            Pi.err.print("Final value ");
-            Pi.err.flush();
+            Pi.err.printf("Final value ");
 
             time = System.currentTimeMillis();
             Apfloat t = T.getApfloat(),
@@ -519,8 +471,7 @@ public class Pi
             time = System.currentTimeMillis() - time;
 
             Pi.err.println("100% complete, elapsed time " + time / 1000.0 + " seconds");
-            Pi.err.print("Final value ");
-            Pi.err.flush();
+            Pi.err.printf("Final value ");
 
             time = System.currentTimeMillis();
             Apfloat t = T.getApfloat(),
@@ -574,25 +525,23 @@ public class Pi
 
         public void progress(long n1, long n2)
         {
-            int length = (int) Math.min(n2 - n1, Integer.MAX_VALUE);
+            long length = n2 - n1;
+            // For small ranges the amount of progress is advanced in one chunk, including the progress of all the recursive steps
             long addedElements;
-
-            switch (length)             // Java can't switch on a long...
+            if (length < PROGRESS_RECURSION_THRESHOLD >> 1)
             {
-                case 1:
-                    addedElements = 1;
-                    break;
-                case 2:
-                    addedElements = 4;
-                    break;
-                case 3:
-                    addedElements = 8;
-                    break;
-                case 4:
-                    addedElements = 12;
-                    break;
-                default:
-                    addedElements = n2 - n1;
+                // Sub-range of a small range, was progressed already
+                return;
+            }
+            else if (length < PROGRESS_RECURSION_THRESHOLD)
+            {
+                // Small range, calculate the recursive progress
+                addedElements = recursiveLength(length);
+            }
+            else
+            {
+                // Large range, calculate just this step
+                addedElements = length;
             }
 
             long oldElements = this.currentElements.getAndAdd(addedElements);
@@ -603,10 +552,31 @@ public class Pi
 
             if (percentComplete != oldPercentComplete)
             {
-                Pi.err.print(percentComplete + "% complete\r");
-                Pi.err.flush();
+                Pi.err.printf(percentComplete + "%% complete\r");
             }
         }
+
+        private long recursiveLength(long length)
+        {
+            long recursiveLength;
+            if (length == 1)
+            {
+                recursiveLength = 1;
+            }
+            else if (length == PROGRESS_RECURSION_THRESHOLD - 1)
+            {
+                // Borderline case, half of this will be calculated separately
+                recursiveLength = recursiveLength(length >> 1) + length;
+            }
+            else
+            {
+                long halfLength = length >> 1;
+                recursiveLength = recursiveLength(halfLength) + recursiveLength(length - halfLength) + length;
+            }
+            return recursiveLength;
+        }
+
+        private static final long PROGRESS_RECURSION_THRESHOLD = 32;
 
         private long totalElements;
         private AtomicLong currentElements;
@@ -649,8 +619,7 @@ public class Pi
 
             Pi.err.println("Total " + iterations + " iterations");
 
-            Pi.err.print("Initial values ");
-            Pi.err.flush();
+            Pi.err.printf("Initial values ");
 
             long time = System.currentTimeMillis();
             Apfloat two = new Apfloat(2, this.precision, this.radix),
@@ -666,8 +635,7 @@ public class Pi
             {
                 checkAlive();
 
-                Pi.err.print("Iteration " + (i + 1) + " ");
-                Pi.err.flush();
+                Pi.err.printf("Iteration " + (i + 1) + " ");
 
                 time = System.currentTimeMillis();
 
@@ -688,8 +656,7 @@ public class Pi
 
             checkAlive();
 
-            Pi.err.print("Final value ");
-            Pi.err.flush();
+            Pi.err.printf("Final value ");
 
             time = System.currentTimeMillis();
             a = a.add(b);
@@ -749,8 +716,7 @@ public class Pi
 
             Pi.err.println("Total " + iterations + " iterations");
 
-            Pi.err.print("Initial values ");
-            Pi.err.flush();
+            Pi.err.printf("Initial values ");
 
             long time = System.currentTimeMillis();
             Apfloat one = new Apfloat(1, this.precision, this.radix),
@@ -766,8 +732,7 @@ public class Pi
             {
                 checkAlive();
 
-                Pi.err.print("Iteration " + (i + 1) + " ");
-                Pi.err.flush();
+                Pi.err.printf("Iteration " + (i + 1) + " ");
 
                 time = System.currentTimeMillis();
 
@@ -793,8 +758,7 @@ public class Pi
 
             checkAlive();
 
-            Pi.err.print("Final value ");
-            Pi.err.flush();
+            Pi.err.printf("Final value ");
 
             time = System.currentTimeMillis();
             Apfloat pi = one.divide(a);
@@ -899,7 +863,7 @@ public class Pi
         Pi.err.println("cacheL1Size = " + ctx.getCacheL1Size());
         Pi.err.println("cacheL2Size = " + ctx.getCacheL2Size());
         Pi.err.println("cacheBurst = " + ctx.getCacheBurst());
-        Pi.err.println("memoryTreshold = " + ctx.getMemoryTreshold());
+        Pi.err.println("memoryThreshold = " + ctx.getMemoryThreshold());
         Pi.err.println("sharedMemoryTreshold = " + ctx.getSharedMemoryTreshold());
         Pi.err.println("blockSize = " + ctx.getBlockSize());
         Pi.err.println("numberOfProcessors = " + ctx.getNumberOfProcessors());
@@ -928,7 +892,6 @@ public class Pi
 
         pi.writeTo(Pi.out, true);
         Pi.out.println();
-        Pi.out.flush();
 
         Pi.err.println("Total elapsed time " + time / 1000.0 + " seconds");
     }

@@ -12,7 +12,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>float</code> element type.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -163,7 +163,7 @@ public class FloatDiskDataStorage
             super.close();
         }
 
-        private static final long serialVersionUID = -3536582909010606907L;;
+        private static final long serialVersionUID = -3536582909010606907L;
 
         private int mode,
                     startColumn,
@@ -253,7 +253,7 @@ public class FloatDiskDataStorage
         {
             if (!(type.equals(Float.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Float");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is float");
             }
             @SuppressWarnings("unchecked")
             T value = (T) (Float) getFloat();
@@ -265,7 +265,7 @@ public class FloatDiskDataStorage
         {
             if (!(type.equals(Float.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Float");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is float");
             }
             if (!(value instanceof Float))
             {
@@ -305,6 +305,8 @@ public class FloatDiskDataStorage
                 this.remaining = length;
             }
         }
+
+        private static final long serialVersionUID = 8503701548995236882L;
 
         private ArrayAccess arrayAccess;
         private float[] data;

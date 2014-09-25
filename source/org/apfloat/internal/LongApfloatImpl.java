@@ -35,7 +35,7 @@ import static org.apfloat.internal.LongRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -564,7 +564,7 @@ public class LongApfloatImpl
 
         // Allocate a maximum memory block, since we don't know how much data to expect
         ApfloatContext ctx = ApfloatContext.getContext();
-        long initialSize = ctx.getMemoryTreshold() / 8,
+        long initialSize = ctx.getMemoryThreshold() / 8,
              previousAllocatedSize = 0,
              allocatedSize = initialSize;
         this.dataStorage = createDataStorage(initialSize);
@@ -1321,6 +1321,7 @@ public class LongApfloatImpl
                 {
                     public void setLong(long value) {}
                     public void next() {}
+                    private static final long serialVersionUID = 1L;
                 };
                 long sequenceSize;
                 for (sequenceSize = 0; carry != 0; sequenceSize++)
@@ -1525,7 +1526,13 @@ public class LongApfloatImpl
     {
         assert (this.dataStorage != null);
 
-        return getInitialDigits() + (getSize() - 1) * BASE_DIGITS[this.radix] - getLeastZeros();
+        if (this.size == 0)
+        {
+            // Writes and reads of volatile long values are always atomic so multiple threads can read and write this at the same time
+            this.size = getInitialDigits() + (getSize() - 1) * BASE_DIGITS[this.radix] - getLeastZeros();
+        }
+
+        return this.size;
     }
 
     // Get number of trailing zeros
@@ -1536,6 +1543,7 @@ public class LongApfloatImpl
         {
             // Cache the value
             // NOTE: This is not synchronized; it's OK if multiple threads set this at the same time
+            // Writes and reads of volatile long values are always atomic so multiple threads can read and write this at the same time
             long index = getSize() - 1;
             long word = getWord(index);
             word = getLeastSignificantWord(index, word);
@@ -1695,17 +1703,17 @@ public class LongApfloatImpl
 
         LongApfloatImpl that = (LongApfloatImpl) x;
 
-        if (this.radix != that.radix)
-        {
-            throw new RadixMismatchException("Cannot compare values with different radixes: " + this.radix + " and " + that.radix);
-        }
-        else if (this.sign == 0 && that.sign == 0)      // Both are zero
+        if (this.sign == 0 && that.sign == 0)           // Both are zero
         {
             return Apfloat.INFINITE;
         }
         else if (this.sign != that.sign)                // No match
         {
             return 0;
+        }
+        else if (this.radix != that.radix)
+        {
+            throw new RadixMismatchException("Cannot compare values with different radixes: " + this.radix + " and " + that.radix);
         }
 
         long thisScale = scale(),
@@ -1919,6 +1927,8 @@ public class LongApfloatImpl
             {
                 iterator.close();
             }
+
+            private static final long serialVersionUID = 1L;
 
             private long index = start;
         };
@@ -2402,6 +2412,7 @@ public class LongApfloatImpl
     {
         public long getLong() { return 0; }
         public void next() { }
+        private static final long serialVersionUID = 1L;
     };
 
     private static final long serialVersionUID = -2151344673641680085L;
@@ -2417,5 +2428,6 @@ public class LongApfloatImpl
     private int radix;
     private int hashCode = 0;
     private int initialDigits = UNDEFINED;
-    private long leastZeros = UNDEFINED;
+    private volatile long leastZeros = UNDEFINED;
+    private volatile long size = 0;
 }

@@ -13,7 +13,7 @@ import java.util.Locale;
 /**
  * Helper class for formatting.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -231,6 +231,7 @@ class FormattingHelper
         return new LocalizeWriter(out, formatter.locale(), radix <= 10, isUpperCase);
     }
 
+    @SuppressWarnings("resource")
     public static Writer wrapPadWriter(Writer out, boolean isLeftJustify)
     {
         if (isLeftJustify)

@@ -18,7 +18,7 @@ import static org.apfloat.spi.RadixConstants.*;
  * @see Apint
  * @see AprationalMath
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -261,7 +261,7 @@ public class Aprational
      * @see Apfloat#scale()
      */
 
-    public synchronized long scale()
+    public long scale()
         throws ApfloatRuntimeException
     {
         if (signum() == 0)
@@ -282,7 +282,7 @@ public class Aprational
                 scale = AprationalMath.scale(this, 1 - scale).truncate().scale() + scale - 1;
             }
 
-            // Stores of longs are not guaranteed to be atomic, so this method must be synchronized
+            // Writes and reads of volatile long values are always atomic so multiple threads can read and write this at the same time
             this.scale = scale;
         }
 
@@ -306,39 +306,50 @@ public class Aprational
     public long size()
         throws ApfloatRuntimeException
     {
-        long size;
-
-        // Check that the factorization of the divisor consists entirely of factors of the base
-        // E.g. if base is 10=2*5 then the divisor should be 2^n*5^m
-        Apint dividend = denominator();
-        for (int i = 0; i < RADIX_FACTORS[radix()].length; i++)
+        if (signum() == 0)
         {
-            Apint factor = new Apint(RADIX_FACTORS[radix()][i], radix());
-            Apint[] quotientAndRemainder;
+            return 0;
+        }
 
-            // Keep dividing by factor as long as dividend % factor == 0
-            // that is remove factors of the base from the divisor
-            while ((quotientAndRemainder = ApintMath.div(dividend, factor))[1].signum() == 0)
+        if (this.size == 0)
+        {
+            long size;
+
+            // Check that the factorization of the divisor consists entirely of factors of the base
+            // E.g. if base is 10=2*5 then the divisor should be 2^n*5^m
+            Apint dividend = denominator();
+            for (int i = 0; i < RADIX_FACTORS[radix()].length; i++)
             {
-                dividend = quotientAndRemainder[0];
+                Apint factor = new Apint(RADIX_FACTORS[radix()][i], radix());
+                Apint[] quotientAndRemainder;
+
+                // Keep dividing by factor as long as dividend % factor == 0
+                // that is remove factors of the base from the divisor
+                while ((quotientAndRemainder = ApintMath.div(dividend, factor))[1].signum() == 0)
+                {
+                    dividend = quotientAndRemainder[0];
+                }
             }
+
+            // Check if the divisor was factored all the way to one by just dividing by factors of the base
+            if (!dividend.equals(ONE))
+            {
+                // No - infinite floating-point expansion
+                size = INFINITE;
+            }
+            else
+            {
+                // Yes - calculate the number of digits
+                // Scale the number so that all significant digits will fit in the integer part
+                // The factor 5 is a rough estimate; e.g. if the denominator is 2^n then in base 34 we get close to that value
+                size = ApintMath.scale(numerator(), denominator().scale() * 5).divide(denominator()).size();
+            }
+
+            // Writes and reads of volatile long values are always atomic so multiple threads can read and write this at the same time
+            this.size = size;
         }
 
-        // Check if the divisor was factored all the way to one by just dividing by factors of the base
-        if (!dividend.equals(ONE))
-        {
-            // No - infinite floating-point expansion
-            size = INFINITE;
-        }
-        else
-        {
-            // Yes - calculate the number of digits
-            // Scale the number so that all significant digits will fit in the integer part
-            // The factor 5 is a rough estimate; e.g. if the denominator is 2^n then in base 34 we get close to that value
-            size = ApintMath.scale(numerator(), denominator().scale() * 5).divide(denominator()).size();
-        }
-
-        return size;
+        return this.size;
     }
 
     /**
@@ -450,7 +461,7 @@ public class Aprational
     {
         if (x.signum() == 0)
         {
-            throw new ArithmeticException("Division by zero");
+            throw new ArithmeticException(signum() == 0 ? "Zero divided by zero" : "Division by zero");
         }
         else if (signum() == 0)
         {
@@ -931,7 +942,8 @@ public class Aprational
 
     private Apint numerator;
     private Apint denominator;
-    private long scale = UNDEFINED;
+    private volatile long scale = UNDEFINED;
+    private volatile long size = 0;
     private transient SoftReference<Apfloat> inverseDen = null;
     private transient SoftReference<Apfloat> approx = null;
 }

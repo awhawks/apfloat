@@ -21,7 +21,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see ApintMath
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -328,7 +328,7 @@ public class Apint
     {
         if (x.signum() == 0)
         {
-            throw new ArithmeticException("Division by zero");
+            throw new ArithmeticException(signum() == 0 ? "Zero divided by zero" : "Division by zero");
         }
         else if (signum() == 0)
         {

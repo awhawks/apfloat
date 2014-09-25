@@ -1,5 +1,12 @@
 package org.apfloat.internal;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.apfloat.ApfloatContext;
 import org.apfloat.spi.NTTStrategy;
 
@@ -18,13 +25,38 @@ import org.apfloat.spi.NTTStrategy;
  * All access to this class must be externally synchronized.
  *
  * @since 1.7.0
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
 public class ParallelThreeNTTConvolutionStrategy
     extends ThreeNTTConvolutionStrategy
 {
+    private static class LockFuture
+        extends FutureTask<Void>
+    {
+        public LockFuture(Lock lock)
+        {
+            super(VOID_CALLABLE);
+            this.lock = lock;
+        }
+
+        public boolean isDone()
+        {
+            return this.lock.tryLock();
+        }
+
+        private static final Callable<Void> VOID_CALLABLE = new Callable<Void>()
+        {
+            public Void call()
+            {
+                return null;
+            }
+        };
+
+        private Lock lock;
+    }
+
     /**
      * Creates a new convoluter that uses the specified
      * transform for transforming the data.
@@ -40,40 +72,48 @@ public class ParallelThreeNTTConvolutionStrategy
 
     protected void lock(long length)
     {
-        assert(!this.locked);
+        assert(this.key == null);
 
         if (super.nttStrategy instanceof Parallelizable &&
             super.carryCRTStrategy instanceof Parallelizable &&
             super.stepStrategy instanceof Parallelizable)
         {
             ApfloatContext ctx = ApfloatContext.getContext();
-            int numberOfProcessors = ctx.getNumberOfProcessors();
-            this.parallelRunner = new ParallelRunner(numberOfProcessors);
-
-            ((Parallelizable) super.nttStrategy).setParallelRunner(this.parallelRunner);
-            ((Parallelizable) super.carryCRTStrategy).setParallelRunner(this.parallelRunner);
-            ((Parallelizable) super.stepStrategy).setParallelRunner(this.parallelRunner);
-
             if (length > ctx.getSharedMemoryTreshold() / ctx.getBuilderFactory().getElementSize())
             {
                 // Data size is big: synchronize on shared memory lock
-                Object key = ctx.getSharedMemoryLock();
+                this.key = ctx.getSharedMemoryLock();
 
-                this.parallelRunner.lock(key);
-
-                this.locked = true;
+                if (this.key != null)
+                {
+                    Lock lock;
+                    synchronized (ParallelThreeNTTConvolutionStrategy.locks)
+                    {
+                        lock = ParallelThreeNTTConvolutionStrategy.locks.get(this.key);
+                        if (lock == null)
+                        {
+                            lock = new ReentrantLock();
+                            ParallelThreeNTTConvolutionStrategy.locks.put(this.key, lock);
+                        }
+                    }
+                    ParallelRunner.wait(new LockFuture(lock));
+                }
             }
         }
     }
 
     protected void unlock()
     {
-        if (this.locked)
+        if (this.key != null)
         {
-            this.parallelRunner.unlock();
+            synchronized (ParallelThreeNTTConvolutionStrategy.locks)
+            {
+                ParallelThreeNTTConvolutionStrategy.locks.get(this.key).unlock();
+            }
         }
     }
 
-    private ParallelRunner parallelRunner;
-    private boolean locked;
+    private static Map<Object, Lock> locks = new WeakHashMap<Object, Lock>();
+
+    private Object key;
 }

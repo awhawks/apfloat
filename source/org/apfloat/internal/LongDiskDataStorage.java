@@ -12,7 +12,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>long</code> element type.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -163,7 +163,7 @@ public class LongDiskDataStorage
             super.close();
         }
 
-        private static final long serialVersionUID = -1573539652919953016L;;
+        private static final long serialVersionUID = -1573539652919953016L;
 
         private int mode,
                     startColumn,
@@ -253,7 +253,7 @@ public class LongDiskDataStorage
         {
             if (!(type.equals(Long.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Long");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is long");
             }
             @SuppressWarnings("unchecked")
             T value = (T) (Long) getLong();
@@ -265,7 +265,7 @@ public class LongDiskDataStorage
         {
             if (!(type.equals(Long.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Long");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is long");
             }
             if (!(value instanceof Long))
             {
@@ -305,6 +305,8 @@ public class LongDiskDataStorage
                 this.remaining = length;
             }
         }
+
+        private static final long serialVersionUID = -2804905180796718735L;
 
         private ArrayAccess arrayAccess;
         private long[] data;

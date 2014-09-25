@@ -15,7 +15,7 @@ import org.apfloat.spi.Util;
  * @see NTTStepStrategy
  *
  * @since 1.7.0
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -97,14 +97,6 @@ public abstract class AbstractStepFNTStrategy
     public long getTransformLength(long size)
     {
         return Util.round2up(size);
-    }
-
-    public void setParallelRunner(ParallelRunner parallelRunner)
-    {
-        if (this.stepStrategy instanceof Parallelizable)
-        {
-            ((Parallelizable) this.stepStrategy).setParallelRunner(parallelRunner);
-        }
     }
 
     /**

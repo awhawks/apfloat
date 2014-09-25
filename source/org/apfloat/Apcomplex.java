@@ -20,7 +20,7 @@ import static java.util.FormattableFlags.*;
  * @see Apfloat
  * @see ApcomplexMath
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -429,7 +429,7 @@ public class Apcomplex
     {
         if (z.real().signum() == 0 && z.imag().signum() == 0)
         {
-            throw new ArithmeticException("Division by zero");
+            throw new ArithmeticException(real().signum() == 0 && imag().signum() == 0 ? "Zero divided by zero" : "Division by zero");
         }
 
         Apfloat tmpReal,

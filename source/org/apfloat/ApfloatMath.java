@@ -2,11 +2,15 @@ package org.apfloat;
 
 import java.math.RoundingMode;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Hashtable;
 import java.util.Queue;
 import java.util.PriorityQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -20,7 +24,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApintMath
  *
- * @version 1.7.1
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -1738,7 +1742,7 @@ public class ApfloatMath
     /**
      * Cosine. Calculated using complex functions.
      *
-     * @param x The argument.
+     * @param x The argument (in radians).
      *
      * @return Cosine of <code>x</code>.
      */
@@ -1752,7 +1756,7 @@ public class ApfloatMath
     /**
      * Sine. Calculated using complex functions.
      *
-     * @param x The argument.
+     * @param x The argument (in radians).
      *
      * @return Sine of <code>x</code>.
      */
@@ -1766,7 +1770,7 @@ public class ApfloatMath
     /**
      * Tangent. Calculated using complex functions.
      *
-     * @param x The argument.
+     * @param x The argument (in radians).
      *
      * @return Tangent of <code>x</code>.
      *
@@ -1779,6 +1783,60 @@ public class ApfloatMath
         Apcomplex w = ApcomplexMath.exp(new Apcomplex(Apfloat.ZERO, x));
 
         return w.imag().divide(w.real());
+    }
+
+    /**
+     * Lambert W function. The W function gives the solution to the equation
+     * <code>W e<sup>W</sup> = x</code>. Also known as the product logarithm.<p>
+     *
+     * This function only gives the solution to the principal branch, W<sub>0</sub>.
+     * For the real-valued W<sub>-1</sub> branch, use {@link ApcomplexMath#w(Apcomplex,long)}.
+     *
+     * @param x The argument.
+     *
+     * @return <code>W<sub>0</sub>(x)</code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>x</code> is less than -1/e.
+     *
+     * @since 1.8.0
+     */
+
+    public static Apfloat w(Apfloat x)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        return LambertWHelper.w(x);
+    }
+
+    /**
+     * Converts an angle measured in radians to degrees.<p>
+     *
+     * @param x The angle, in radians.
+     *
+     * @return The angle in degrees.
+     *
+     * @since 1.8.0
+     */
+
+    public static Apfloat toDegrees(Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return x.multiply(new Apfloat(180, Apfloat.INFINITE, x.radix())).divide(pi(x.precision(), x.radix()));
+    }
+
+    /**
+     * Converts an angle measured in degrees to radians.<p>
+     *
+     * @param x The angle, in degrees.
+     *
+     * @return The angle in radians.
+     *
+     * @since 1.8.0
+     */
+
+    public static Apfloat toRadians(Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return x.divide(new Apfloat(180, Apfloat.INFINITE, x.radix())).multiply(pi(x.precision(), x.radix()));
     }
 
     /**
@@ -1829,7 +1887,7 @@ public class ApfloatMath
         x = tmp;
 
         // Create a heap, ordered by size
-        Queue<Apfloat> heap = new PriorityQueue<Apfloat>(x.length, new Comparator<Apfloat>()
+        final Queue<Apfloat> heap = new PriorityQueue<Apfloat>(x.length, new Comparator<Apfloat>()
         {
             public int compare(Apfloat x, Apfloat y)
             {
@@ -1838,17 +1896,19 @@ public class ApfloatMath
                 return (xSize < ySize ? -1 : (xSize > ySize ? 1 : 0));
             }
         });
-        heap.addAll(Arrays.asList(x));
 
-        // Multiply two smallest elements in the heap and put the product back to the heap, until only one element remains
-        // Thanks to Peter Luschny and Spiro Trikaliotis for the improved algorithm!
-        while (heap.size() > 1)
+        // Perform the multiplications in parallel
+        ParallelHelper.ProductKernel<Apfloat> kernel = new ParallelHelper.ProductKernel<Apfloat>()
         {
-            Apfloat a = heap.remove();
-            Apfloat b = heap.remove();
-            Apfloat c = a.multiply(b);
-            heap.add(c);
-        }
+            public void run(Queue<Apfloat> heap)
+            {
+                Apfloat a = heap.remove();
+                Apfloat b = heap.remove();
+                Apfloat c = a.multiply(b);
+                heap.add(c);
+            }
+        };
+        ParallelHelper.parallelProduct(x, heap, kernel);
 
         return heap.remove().precision(maxPrec);
     }
@@ -1913,7 +1973,7 @@ public class ApfloatMath
         x = tmp;
 
         // Sort by scale (might be mostly equal to size)
-        Arrays.sort(x, new Comparator<Apfloat>()
+        Comparator<Apfloat> comparator = new Comparator<Apfloat>()
         {
             public int compare(Apfloat x, Apfloat y)
             {
@@ -1921,13 +1981,68 @@ public class ApfloatMath
                      yScale = y.scale();
                 return (xScale < yScale ? -1 : (xScale > yScale ? 1 : 0));
             }
-        });
+        };
+        Arrays.sort(x, comparator);
 
-        // Add
-        Apfloat s = Apfloat.ZERO;
-        for (int i = 0; i < x.length; i++)
+        // The list of numbers to be added
+        List<Apfloat> list;
+
+        // If there are lots of numbers then use a fully parallel algorithm, for small sums the overhead is not worth it
+        // Also note that memory (or worse - disk) bandwidth is likely a bottleneck, preventing efficient parallelization
+        if (x.length >= 1000)
         {
-            s = s.add(x[i]);
+            // Only add in parallel numbers, which are (probably) below the memory threshold in size
+            ApfloatContext ctx = ApfloatContext.getContext();
+            long maxSize = (long) (ctx.getMemoryThreshold() * 5.0 / Math.log((double) ctx.getDefaultRadix()));
+
+            // Create a queue of small numbers where the parallel algorithm can add and remove elements
+            final Queue<Apfloat> queue = new ConcurrentLinkedQueue<Apfloat>();
+
+            // The large numbers go to the list where they will be added using a single thread algorithm
+            list = new ArrayList<Apfloat>();
+
+            // Put all the numbers to either the parallel queue or single thread list
+            for (Apfloat a : x)
+            {
+                (a.size() <= maxSize ? queue : list).add(a);
+            }
+
+            Runnable runnable = new Runnable()
+            {
+                public void run()
+                {
+                    // Add numbers as long as there are any left in the queue
+                    Apfloat s = Apfloat.ZERO,
+                            a;
+                    while ((a = queue.poll()) != null)
+                    {
+                        s = s.add(a);
+                    }
+                    // Finally, put the sub-sum back in the queue
+                    queue.add(s);
+                }
+            };
+
+            // Run the runnable in multiple threads
+            ParallelHelper.runParallel(runnable);
+
+            // Put the remaining sub-sums to the list to be added once more
+            list.addAll(queue);
+
+            // Sort again the list as it has been now mixed up
+            Collections.sort(list, comparator);
+        }
+        else
+        {
+            // Single thread case - just add all the numbers
+            list = Arrays.asList(x);
+        }
+
+        // Add the remaining elements in the queue (all, for the single-thread case, and sub-sums for the parallel case)
+        Apfloat s = Apfloat.ZERO;
+        for (Apfloat a : list)
+        {
+            s = s.add(a);
         }
 
         return s;

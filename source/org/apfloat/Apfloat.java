@@ -29,7 +29,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see ApfloatMath
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -750,7 +750,7 @@ public class Apfloat
     {
         if (x.signum() == 0)
         {
-            throw new ArithmeticException("Division by zero");
+            throw new ArithmeticException(signum() == 0 ? "Zero divided by zero" : "Division by zero");
         }
         else if (signum() == 0)
         {
@@ -1048,13 +1048,13 @@ public class Apfloat
     }
 
     /**
-     * Tests if the comparison with <code>compareTo</code> should be done in the opposite order.<p>
+     * Tests if the comparison with <code>equals</code> and <code>compareTo</code> should be done in the opposite order.<p>
      *
      * Implementations should avoid infinite recursion.
      *
      * @param x The number to compare to.
      *
-     * @return <code>true</code> if the caller should invoke <code>-this.compareTo(x)</code>; <code>false</code> if <code>x.compareTo(this)</code>.
+     * @return <code>true</code> if this object should invoke <code>x.equals(this)</code> and <code>-x.compareTo(this)</code> instead of comparing normally.
      *
      * @since 1.7.0
      */
@@ -1082,15 +1082,14 @@ public class Apfloat
         {
             return true;
         }
-        else if (obj instanceof Aprational)
-        {
-            // Special handling of aprationals
-            return obj.equals(this);
-        }
         else if (obj instanceof Apfloat)
         {
             Apfloat x = (Apfloat) obj;
-
+            if (x.preferCompare(this))
+            {
+                // Special handling of aprationals
+                return x.equals(this);
+            }
             return getImpl().equals(x.getImpl());
         }
         else

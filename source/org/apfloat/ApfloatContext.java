@@ -9,9 +9,12 @@ import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.MissingResourceException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apfloat.spi.BuilderFactory;
 import org.apfloat.spi.FilenameGenerator;
@@ -53,7 +56,7 @@ import org.apfloat.spi.Util;
  *   <li><code>cacheL1Size</code>, set as in {@link #setCacheL1Size(int)}</li>
  *   <li><code>cacheL2Size</code>, set as in {@link #setCacheL2Size(int)}</li>
  *   <li><code>cacheBurst</code>, set as in {@link #setCacheBurst(int)}</li>
- *   <li><code>memoryTreshold</code>, set as in {@link #setMemoryTreshold(int)}</li>
+ *   <li><code>memoryThreshold</code>, set as in {@link #setMemoryThreshold(long)}</li>
  *   <li><code>shredMemoryTreshold</code>, set as in {@link #setSharedMemoryTreshold(long)}</li>
  *   <li><code>blockSize</code>, set as in {@link #setBlockSize(int)}</li>
  *   <li><code>numberOfProcessors</code>, set as in {@link #setNumberOfProcessors(int)}</li>
@@ -72,7 +75,7 @@ import org.apfloat.spi.Util;
  * cacheL1Size=8192
  * cacheL2Size=262144
  * cacheBurst=32
- * memoryTreshold=65536
+ * memoryThreshold=65536
  * sharedMemoryTreshold=65536
  * blockSize=65536
  * numberOfProcessors=1
@@ -154,7 +157,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -198,13 +201,22 @@ public class ApfloatContext
     public static final String CACHE_BURST = "cacheBurst";
 
     /**
-     * Property name for specifying the apfloat memory treshold.
+     * Property name for specifying the apfloat memory threshold.
      */
 
+    public static final String MEMORY_THRESHOLD = "memoryThreshold";
+
+    /**
+     * Property name for specifying the apfloat memory threshold.
+     *
+     * @deprecated Use {@link #MEMORY_THRESHOLD}.
+     */
+
+    @Deprecated
     public static final String MEMORY_TRESHOLD = "memoryTreshold";
 
     /**
-     * Property name for specifying the apfloat shared memory treshold.
+     * Property name for specifying the apfloat shared memory threshold.
      */
 
     public static final String SHARED_MEMORY_TRESHOLD = "sharedMemoryTreshold";
@@ -624,23 +636,53 @@ public class ApfloatContext
     }
 
     /**
-     * Get the memory treshold.
+     * Get the memory threshold.<p>
      *
-     * @return The memory treshold.
+     * If the value is larger than the maximum value that can be presented
+     * in an integer, then <code>Integer.MAX_VALUE</code> is returned.
      *
-     * @see #setMemoryTreshold(int)
+     * @return The memory threshold.
+     *
+     * @deprecated Use {@link #getMemoryThreshold()}.
      */
 
+    @Deprecated
     public int getMemoryTreshold()
     {
-        return this.memoryTreshold;
+        return (int) Math.min(Integer.MAX_VALUE, getMemoryThreshold());
+    }
+
+    /**
+     * Set the maximum size of apfloats in bytes that are
+     * stored in memory within this context.
+     *
+     * @param memoryThreshold The number of bytes that apfloats that are stored in memory will at most have within this context.
+     *
+     * @deprecated Use {@link #setMemoryThreshold(long)}.
+     */
+
+    @Deprecated
+    public void setMemoryTreshold(int memoryThreshold)
+    {
+        setMemoryThreshold(memoryThreshold);
+    }
+
+    /**
+     * Get the memory threshold.
+     *
+     * @return The memory threshold.
+     */
+
+    public long getMemoryThreshold()
+    {
+        return this.memoryThreshold;
     }
 
     /**
      * Set the maximum size of apfloats in bytes that are
      * stored in memory within this context. The minimum value for this setting is 128.<p>
      *
-     * If the memory treshold is too small, performance will suffer as
+     * If the memory threshold is too small, performance will suffer as
      * small numbers are stored to disk, and the amount of disk I/O
      * overhead becomes significant. On the other hand, if the memory
      * treshold is too big, you can get an <code>OutOfMemoryError</code>.<p>
@@ -648,16 +690,18 @@ public class ApfloatContext
      * The optimal value depends greatly on each application. Obviously,
      * if you have plenty of heap space and don't create too many too big
      * numbers you are not likely to have problems. The default value of
-     * this setting is 64kB.
+     * this setting is 64kB, or the maximum heap size divided by 1024,
+     * whichever is larger.
      *
-     * @param memoryTreshold The number of bytes that apfloats that are stored in memory will at most have within this context.
+     * @param memoryThreshold The number of bytes that apfloats that are stored in memory will at most have within this context.
      */
 
-    public void setMemoryTreshold(int memoryTreshold)
+    public void setMemoryThreshold(long memoryThreshold)
     {
-        memoryTreshold = Math.max(memoryTreshold, 128);
-        this.properties.setProperty(MEMORY_TRESHOLD, String.valueOf(memoryTreshold));
-        this.memoryTreshold = memoryTreshold;
+        memoryThreshold = Math.max(memoryThreshold, 128);
+        this.properties.setProperty(MEMORY_TRESHOLD, String.valueOf(memoryThreshold));
+        this.properties.setProperty(MEMORY_THRESHOLD, String.valueOf(memoryThreshold));
+        this.memoryThreshold = memoryThreshold;
     }
 
     /**
@@ -740,7 +784,7 @@ public class ApfloatContext
     }
 
     /**
-     * Get the number of processors.
+     * Get the number of processors that should be used for parallel calculations.
      *
      * @return The number of processors.
      *
@@ -753,11 +797,20 @@ public class ApfloatContext
     }
 
     /**
-     * Set the number of processors available to calculations using
+     * Set the number of processors available to parallel calculations using
      * this context. The minimum value for this setting is 1.
-     * The default is to use all processors (CPU cores) available.
+     * The default is to use all processors (CPU cores) available.<p>
      *
-     * @param numberOfProcessors Number of processors available to calculations using this context.
+     * Note that if you change the number of processors after the library has
+     * been initialized, the number of threads available to the ExecutorService
+     * is not changed. If you want to change that too, it can be done easily with
+     * <code>setExecutorService(ApfloatContext.getDefaultExecutorService())</code>.
+     *
+     * @param numberOfProcessors Number of processors available to parallel calculations using this context.
+     *
+     * @see #getDefaultExecutorService
+     *
+     * @see #setExecutorService(ExecutorService)
      */
 
     public void setNumberOfProcessors(int numberOfProcessors)
@@ -888,9 +941,9 @@ public class ApfloatContext
             {
                 setCacheBurst(Integer.parseInt(propertyValue));
             }
-            else if (propertyName.equals(MEMORY_TRESHOLD))
+            else if (propertyName.equals(MEMORY_TRESHOLD) || propertyName.equals(MEMORY_THRESHOLD))
             {
-                setMemoryTreshold(Integer.parseInt(propertyValue));
+                setMemoryThreshold(Long.parseLong(propertyValue));
             }
             else if (propertyName.equals(SHARED_MEMORY_TRESHOLD))
             {
@@ -986,12 +1039,14 @@ public class ApfloatContext
      * Get the ExecutorService.
      * It can be used for executing operations in parallel.<p>
      *
-     * By default the executor service is a thread pool that is
+     * By default the ExecutorService is a thread pool that is
      * shared by all the ApfloatContexts. The threads in the pool
      * are daemon threads so the thread pool requires no clean-up
      * at shutdown time.
      *
      * @return The ExecutorService.
+     *
+     * @see #getDefaultExecutorService
      *
      * @since 1.1
      */
@@ -1004,11 +1059,17 @@ public class ApfloatContext
     /**
      * Set the ExecutorService.<p>
      *
-     * Note that if a custom ExecutorService is used, e.g. a thread pool,
+     * If a custom ExecutorService is used, e.g. a thread pool, then the number
+     * of available threads in the pool should match the number of processors
+     * set to all ApfloatContexts with {@link #setNumberOfProcessors(int)}.<p>
+     *
+     * Note that if a custom ExecutorService that requires shutdown is used,
      * it is the caller's responsibility to clean up the ExecutorService
      * at shutdown.
      *
      * @param executorService The ExecutorService.
+     *
+     * @see #getDefaultExecutorService
      *
      * @since 1.1
      */
@@ -1112,7 +1173,11 @@ public class ApfloatContext
     }
 
     /**
-     * Returns a new instance of a default ExecutorService.
+     * Returns a new instance of a default ExecutorService.<p>
+     *
+     * The default executor service is a thread-limited pool
+     * where the number of threads is one less than the number
+     * of processors set with {@link #setNumberOfProcessors(int)}.
      *
      * @return A new instance of a default ExecutorService.
      *
@@ -1135,7 +1200,11 @@ public class ApfloatContext
             private ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
         };
 
-        return Executors.newCachedThreadPool(threadFactory);
+        int numberOfThreads = Math.max(1, getContext().getNumberOfProcessors() - 1);
+        ThreadPoolExecutor executorService = new ThreadPoolExecutor(numberOfThreads, numberOfThreads, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(), threadFactory);
+        executorService.allowCoreThreadTimeOut(true);
+
+        return executorService;
     }
 
     /**
@@ -1203,7 +1272,7 @@ public class ApfloatContext
     private volatile int cacheL1Size;
     private volatile int cacheL2Size;
     private volatile int cacheBurst;
-    private volatile int memoryTreshold;
+    private volatile long memoryThreshold;
     private volatile long sharedMemoryTreshold;
     private volatile int blockSize;
     private volatile int numberOfProcessors;
@@ -1233,6 +1302,8 @@ public class ApfloatContext
 
         long maxMemoryBlockSize = Util.round23down(totalMemory / 5 * 4);
         int numberOfProcessors = Runtime.getRuntime().availableProcessors();
+        long memoryThreshold = Math.max(maxMemoryBlockSize >> 10, 65536);
+        int blockSize = Util.round2down((int) Math.min(memoryThreshold, Integer.MAX_VALUE));
 
         // Guess if we are using a 32-bit or 64-bit platform
         String elementType = (totalMemory >= 4L << 30 ? "Long" : "Int");
@@ -1243,18 +1314,20 @@ public class ApfloatContext
         ApfloatContext.defaultProperties.setProperty(CACHE_L1_SIZE, "8192");
         ApfloatContext.defaultProperties.setProperty(CACHE_L2_SIZE, "262144");
         ApfloatContext.defaultProperties.setProperty(CACHE_BURST, "32");
-        ApfloatContext.defaultProperties.setProperty(MEMORY_TRESHOLD, "65536");
+        ApfloatContext.defaultProperties.setProperty(MEMORY_THRESHOLD, String.valueOf(memoryThreshold));
         ApfloatContext.defaultProperties.setProperty(SHARED_MEMORY_TRESHOLD, String.valueOf(maxMemoryBlockSize / numberOfProcessors / 32));
-        ApfloatContext.defaultProperties.setProperty(BLOCK_SIZE, "65536");
+        ApfloatContext.defaultProperties.setProperty(BLOCK_SIZE, String.valueOf(blockSize));
         ApfloatContext.defaultProperties.setProperty(NUMBER_OF_PROCESSORS, String.valueOf(numberOfProcessors));
         ApfloatContext.defaultProperties.setProperty(FILE_PATH, "");
         ApfloatContext.defaultProperties.setProperty(FILE_INITIAL_VALUE, "0");
         ApfloatContext.defaultProperties.setProperty(FILE_SUFFIX, ".ap");
         ApfloatContext.defaultProperties.setProperty(CLEANUP_AT_EXIT, "true");
 
-        ApfloatContext.defaultExecutorService = getDefaultExecutorService();
-
         // Set combination of default properties and properties specified in the resource bundle
         ApfloatContext.globalContext = new ApfloatContext(loadProperties());
+
+        // ExecutorService depends on the properties so set it last
+        ApfloatContext.defaultExecutorService = getDefaultExecutorService();
+        ApfloatContext.globalContext.setExecutorService(ApfloatContext.defaultExecutorService);
     }
 }

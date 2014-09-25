@@ -20,7 +20,7 @@ import org.apfloat.ApfloatRuntimeException;
  * iterators over non-overlapping parts is permitted. Invoking
  * other methods must generally be externally synchronized.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -50,6 +50,7 @@ public abstract class DataStorage
      */
 
     public static abstract class Iterator
+        implements Serializable
     {
         /**
          * Default constructor. Can be used e.g. for simple anonymous subclasses.
@@ -286,6 +287,8 @@ public abstract class DataStorage
             throws ApfloatRuntimeException
         {
         }
+
+        private static final long serialVersionUID = 7155668655967297483L;
     }
 
     /**
@@ -527,6 +530,8 @@ public abstract class DataStorage
         {
             return this.increment;
         }
+
+        private static final long serialVersionUID = 1668346231773868058L;
 
         private int mode,
                     increment;

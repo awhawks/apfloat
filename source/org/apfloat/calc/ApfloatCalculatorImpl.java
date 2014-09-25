@@ -14,7 +14,7 @@ import org.apfloat.AprationalMath;
 /**
  * Arbitrary precision calculator implementation.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -226,9 +226,33 @@ public class ApfloatCalculatorImpl
             throw new IllegalArgumentException("Truncate can only be used with scalar values");
         }
 
+        public Number toDegrees(Number x)
+        {
+            throw new IllegalArgumentException("ToDegrees can only be used with scalar values");
+        }
+
+        public Number toRadians(Number x)
+        {
+            throw new IllegalArgumentException("ToRadians can only be used with scalar values");
+        }
+
         public Number agm(Number x, Number y)
         {
             return ApcomplexMath.agm((Apcomplex) x, (Apcomplex) y);
+        }
+
+        public Number w(Number x)
+        {
+            return ApcomplexMath.w((Apcomplex) x);
+        }
+
+        public Number w(Number x, Number y)
+        {
+            if (!isLong(y))
+            {
+                throw new IllegalArgumentException("Lambert W can only be used with a valid integer argument");
+            }
+            return ApcomplexMath.w((Apcomplex) x, y.longValue());
         }
 
         public Number atan2(Number x, Number y)
@@ -377,6 +401,16 @@ public class ApfloatCalculatorImpl
         public Number truncate(Number x)
         {
             return ((Apfloat) x).truncate();
+        }
+
+        public Number toDegrees(Number x)
+        {
+            return ApfloatMath.toDegrees((Apfloat) x);
+        }
+
+        public Number toRadians(Number x)
+        {
+            return ApfloatMath.toRadians((Apfloat) x);
         }
 
         public Number atan2(Number x, Number y)

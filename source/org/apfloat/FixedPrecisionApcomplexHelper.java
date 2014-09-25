@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  * <code>ApcomplexMath.acos(Apcomplex.ZERO)</code>.
  *
  * @since 1.5
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -630,6 +630,39 @@ public class FixedPrecisionApcomplexHelper
         throws ApfloatRuntimeException
     {
         return ApcomplexMath.scale(valueOf(z), scale);
+    }
+
+    /**
+     * Lambert W function.
+     *
+     * @param z The operand.
+     *
+     * @return <code>W<sub>0</sub>(z)</code>.
+     *
+     * @since 1.8.0
+     */
+
+    public Apcomplex w(Apcomplex z)
+        throws ApfloatRuntimeException
+    {
+        return valueOf(ApcomplexMath.w(setPrecision(z)));
+    }
+
+    /**
+     * Lambert W function for the specified branch.
+     *
+     * @param z The operand.
+     * @param k The branch.
+     *
+     * @return <code>W<sub>k</sub>(z)</code>.
+     *
+     * @since 1.8.0
+     */
+
+    public Apcomplex w(Apcomplex z, long k)
+        throws ApfloatRuntimeException
+    {
+        return valueOf(ApcomplexMath.w(setPrecision(z), k));
     }
 
     /**

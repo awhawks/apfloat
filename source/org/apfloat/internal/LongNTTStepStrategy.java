@@ -12,7 +12,7 @@ import static org.apfloat.internal.LongModConstants.*;
  * All access to this class must be externally synchronized.
  *
  * @since 1.7.0
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -119,14 +119,7 @@ public class LongNTTStepStrategy
     {
         ParallelRunnable parallelRunnable = createMultiplyElementsParallelRunnable(arrayAccess, startRow, startColumn, rows, columns, length, totalTransformLength, isInverse, modulus);
 
-        if (this.parallelRunner != null)
-        {
-            this.parallelRunner.runParallel(parallelRunnable);
-        }
-        else
-        {
-            parallelRunnable.getRunnable(0, rows).run();
-        }
+        ParallelRunner.runParallel(parallelRunnable);
     }
 
     public void transformRows(ArrayAccess arrayAccess, int length, int count, boolean isInverse, boolean permute, int modulus)
@@ -134,24 +127,12 @@ public class LongNTTStepStrategy
     {
         ParallelRunnable parallelRunnable = createTransformRowsParallelRunnable(arrayAccess, length, count, isInverse, permute, modulus);
 
-        if (this.parallelRunner != null)
-        {
-            this.parallelRunner.runParallel(parallelRunnable);
-        }
-        else
-        {
-            parallelRunnable.getRunnable(0, count).run();
-        }
+        ParallelRunner.runParallel(parallelRunnable);
     }
 
     public long getMaxTransformLength()
     {
         return MAX_TRANSFORM_LENGTH;
-    }
-
-    public void setParallelRunner(ParallelRunner parallelRunner)
-    {
-        this.parallelRunner = parallelRunner;
     }
 
     /**
@@ -181,13 +162,8 @@ public class LongNTTStepStrategy
                                      modDivide((long) 1, (long) totalTransformLength) :
                                      (long) 1);
 
-        ParallelRunnable parallelRunnable = new ParallelRunnable()
+        ParallelRunnable parallelRunnable = new ParallelRunnable(rows)
         {
-            public int getLength()
-            {
-                return rows;
-            }
-
             public Runnable getRunnable(int strideStartRow, int strideRows)
             {
                 ArrayAccess subArrayAccess = arrayAccess.subsequence(strideStartRow * columns, strideRows * columns);
@@ -220,13 +196,8 @@ public class LongNTTStepStrategy
                                   LongWTables.getWTable(modulus, length));
         final int[] permutationTable = (permute ? Scramble.createScrambleTable(length) : null);
 
-        ParallelRunnable parallelRunnable = new ParallelRunnable()
+        ParallelRunnable parallelRunnable = new ParallelRunnable(count)
         {
-            public int getLength()
-            {
-                return count;
-            }
-
             public Runnable getRunnable(int startIndex, int strideCount)
             {
                 ArrayAccess subArrayAccess = arrayAccess.subsequence(startIndex * length, strideCount * length);
@@ -236,6 +207,4 @@ public class LongNTTStepStrategy
 
         return parallelRunnable;
     }
-
-    private ParallelRunner parallelRunner;
 }

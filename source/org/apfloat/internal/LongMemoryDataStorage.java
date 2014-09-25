@@ -9,7 +9,7 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>long</code>
  * element type.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -187,7 +187,7 @@ public class LongMemoryDataStorage
         {
             if (!(type.equals(Long.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Long");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is long");
             }
             @SuppressWarnings("unchecked")
             T value = (T) (Long) getLong();
@@ -199,7 +199,7 @@ public class LongMemoryDataStorage
         {
             if (!(type.equals(Long.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Long");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is long");
             }
             if (!(value instanceof Long))
             {
@@ -216,6 +216,8 @@ public class LongMemoryDataStorage
                 throw new IllegalStateException("At the end of iterator");
             }
         }
+
+        private static final long serialVersionUID = 4304749820031861943L;
 
         private long[] data;
         private int position,
@@ -236,6 +238,8 @@ public class LongMemoryDataStorage
         {
             throw new IllegalStateException("Not a writable iterator");
         }
+
+        private static final long serialVersionUID = -7988916595169322136L;
     }
 
     private class WriteOnlyIterator
@@ -252,6 +256,8 @@ public class LongMemoryDataStorage
         {
             throw new IllegalStateException("Not a readable iterator");
         }
+
+        private static final long serialVersionUID = 5072203220986659720L;
     }
 
     public Iterator iterator(int mode, long startPosition, long endPosition)

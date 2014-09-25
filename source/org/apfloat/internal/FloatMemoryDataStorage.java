@@ -9,7 +9,7 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>float</code>
  * element type.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -187,7 +187,7 @@ public class FloatMemoryDataStorage
         {
             if (!(type.equals(Float.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Float");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is float");
             }
             @SuppressWarnings("unchecked")
             T value = (T) (Float) getFloat();
@@ -199,7 +199,7 @@ public class FloatMemoryDataStorage
         {
             if (!(type.equals(Float.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Float");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is float");
             }
             if (!(value instanceof Float))
             {
@@ -216,6 +216,8 @@ public class FloatMemoryDataStorage
                 throw new IllegalStateException("At the end of iterator");
             }
         }
+
+        private static final long serialVersionUID = -5979620684548284607L;
 
         private float[] data;
         private int position,
@@ -236,6 +238,8 @@ public class FloatMemoryDataStorage
         {
             throw new IllegalStateException("Not a writable iterator");
         }
+
+        private static final long serialVersionUID = -6693429125989500778L;
     }
 
     private class WriteOnlyIterator
@@ -252,6 +256,8 @@ public class FloatMemoryDataStorage
         {
             throw new IllegalStateException("Not a readable iterator");
         }
+
+        private static final long serialVersionUID = -5251200289176969505L;
     }
 
     public Iterator iterator(int mode, long startPosition, long endPosition)

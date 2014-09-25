@@ -12,7 +12,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>double</code> element type.
  *
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -163,7 +163,7 @@ public class DoubleDiskDataStorage
             super.close();
         }
 
-        private static final long serialVersionUID = 3646716922431352928L;;
+        private static final long serialVersionUID = 3646716922431352928L;
 
         private int mode,
                     startColumn,
@@ -253,7 +253,7 @@ public class DoubleDiskDataStorage
         {
             if (!(type.equals(Double.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Double");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is double");
             }
             @SuppressWarnings("unchecked")
             T value = (T) (Double) getDouble();
@@ -265,7 +265,7 @@ public class DoubleDiskDataStorage
         {
             if (!(type.equals(Double.TYPE)))
             {
-                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is Double");
+                throw new UnsupportedOperationException("Unsupported data type " + type.getCanonicalName() + ", the only supported type is double");
             }
             if (!(value instanceof Double))
             {
@@ -305,6 +305,8 @@ public class DoubleDiskDataStorage
                 this.remaining = length;
             }
         }
+
+        private static final long serialVersionUID = -1996647087834590031L;
 
         private ArrayAccess arrayAccess;
         private double[] data;

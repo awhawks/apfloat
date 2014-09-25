@@ -14,7 +14,7 @@ import org.apfloat.spi.Util;
  * <code>ApfloatMath.acos(Apfloat.ZERO)</code>.
  *
  * @since 1.5
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -598,6 +598,54 @@ public class FixedPrecisionApfloatHelper
         throws ApfloatRuntimeException
     {
         return ApfloatMath.round(x, precision(), roundingMode);
+    }
+
+    /**
+     * Lambert W function.
+     *
+     * @param x The operand.
+     *
+     * @return <code>W<sub>0</sub>(x)</code>.
+     *
+     * @since 1.8.0
+     */
+
+    public Apfloat w(Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return valueOf(ApfloatMath.w(setPrecision(x)));
+    }
+
+    /**
+     * Convert radians to degrees.
+     *
+     * @param x The angle in radians.
+     *
+     * @return <code>x</code> converted to degrees.
+     *
+     * @since 1.8.0
+     */
+
+    public Apfloat toDegrees(Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return valueOf(ApfloatMath.toDegrees(setPrecision(x)));
+    }
+
+    /**
+     * Convert degrees to radians.
+     *
+     * @param x The angle in degrees.
+     *
+     * @return <code>x</code> converted to radians.
+     *
+     * @since 1.8.0
+     */
+
+    public Apfloat toRadians(Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return valueOf(ApfloatMath.toRadians(setPrecision(x)));
     }
 
     /**

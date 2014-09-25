@@ -16,7 +16,7 @@ import static org.apfloat.internal.IntModConstants.*;
  * All access to this class must be externally synchronized.
  *
  * @since 1.7.0
- * @version 1.7.0
+ * @version 1.8.0
  * @author Mikko Tommila
  */
 
@@ -104,14 +104,14 @@ public class IntNTTConvolutionStepStrategy
 
         ParallelRunnable parallelRunnable = createMultiplyInPlaceParallelRunnable(sourceAndDestination, source, modulus);
 
-        if (size <= Integer.MAX_VALUE && this.parallelRunner != null &&         // Only if the size fits in an integer, but with memory arrays it should
+        if (size <= Integer.MAX_VALUE &&                                        // Only if the size fits in an integer, but with memory arrays it should
             sourceAndDestination.isCached() && source.isCached())               // Only if the data storage supports efficient parallel random access
         {
-            this.parallelRunner.runParallel(parallelRunnable);
+            ParallelRunner.runParallel(parallelRunnable);
         }
         else
         {
-            parallelRunnable.getRunnable(0, size).run();                        // Just run in current thread without parallelization
+            parallelRunnable.run();                                             // Just run in current thread without parallelization
         }
     }
 
@@ -122,20 +122,15 @@ public class IntNTTConvolutionStepStrategy
 
         ParallelRunnable parallelRunnable = createSquareInPlaceParallelRunnable(sourceAndDestination, modulus);
 
-        if (size <= Integer.MAX_VALUE && this.parallelRunner != null &&     // Only if the size fits in an integer, but with memory arrays it should
+        if (size <= Integer.MAX_VALUE &&                                    // Only if the size fits in an integer, but with memory arrays it should
             sourceAndDestination.isCached())                                // Only if the data storage supports efficient parallel random access
         {
-            this.parallelRunner.runParallel(parallelRunnable);
+            ParallelRunner.runParallel(parallelRunnable);
         }
         else
         {
-            parallelRunnable.getRunnable(0, size).run();                    // Just run in current thread without parallelization
+            parallelRunnable.run();                                         // Just run in current thread without parallelization
         }
-    }
-
-    public void setParallelRunner(ParallelRunner parallelRunner)
-    {
-        this.parallelRunner = parallelRunner;
     }
 
     /**
@@ -154,14 +149,8 @@ public class IntNTTConvolutionStepStrategy
 
         setModulus(MODULUS[modulus]);
 
-        ParallelRunnable parallelRunnable = new ParallelRunnable()
+        ParallelRunnable parallelRunnable = new ParallelRunnable(size)
         {
-            public int getLength()
-            {
-                assert (size <= Integer.MAX_VALUE);
-                return (int) size;
-            }
-
             public Runnable getRunnable(long offset, long length)
             {
                 return new MultiplyInPlaceRunnable(sourceAndDestination, source, offset, length);
@@ -185,14 +174,8 @@ public class IntNTTConvolutionStepStrategy
 
         setModulus(MODULUS[modulus]);
 
-        ParallelRunnable parallelRunnable = new ParallelRunnable()
+        ParallelRunnable parallelRunnable = new ParallelRunnable(size)
         {
-            public int getLength()
-            {
-                assert (size <= Integer.MAX_VALUE);
-                return (int) size;
-            }
-
             public Runnable getRunnable(long offset, long length)
             {
                 return new SquareInPlaceRunnable(sourceAndDestination, offset, length);
@@ -200,6 +183,4 @@ public class IntNTTConvolutionStepStrategy
         };
         return parallelRunnable;
     }
-
-    private ParallelRunner parallelRunner;
 }
