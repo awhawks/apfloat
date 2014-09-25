@@ -22,10 +22,10 @@ public class Scramble
      * length is 256, the permutation is (in binary)<p>
      *
      * 00000101 &rarr; 10100000
-     * 
+     *
      * @param n The number whose bits to reverse.
      * @param length The FFT transform length for which the bit reversal to perform.
-     * 
+     *
      * @return The bits of <code>n</code> reversed.
      */
 
@@ -54,7 +54,7 @@ public class Scramble
      * [3] and [6] should be swapped.
      *
      * @param length The FFT transform length for which the scrambling table is created.
-     * 
+     *
      * @return An array of pairs of indexes that indicate which array elements should be swapped to scramble the array.
      */
 

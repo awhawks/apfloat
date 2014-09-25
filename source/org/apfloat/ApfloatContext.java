@@ -476,7 +476,7 @@ public class ApfloatContext
      * for calculations using this context.
      * The minimum value for this setting is 65536.<p>
      *
-     * If you set the value of this parameter too low, 
+     * If you set the value of this parameter too low,
      * performance will suffer greatly as data is unnecessarily
      * paged to disk. If you set this value too high, your
      * application can crash with an <code>OutOfMemoryError</code>.<p>

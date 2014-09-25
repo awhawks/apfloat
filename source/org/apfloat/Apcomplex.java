@@ -420,7 +420,7 @@ public class Apcomplex
     {
         return real().doubleValue();
     }
-           
+
     /**
      * Returns the value of the this number as a <code>float</code>.
      * Only takes the real part of this number.

@@ -18,7 +18,7 @@ public class FloatScramble
      *
      * The permutation table argument should contain pairs of indexes
      * that indicate array elements whose contents are swapped.
-     * 
+     *
      * @param data The array to permute.
      * @param offset The offset within the array to permute.
      * @param permutationTable Table of indexes indicating which elements in the <code>data</code> are to be swapped.

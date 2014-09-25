@@ -56,7 +56,7 @@ import org.apfloat.ApfloatRuntimeException;
  *       million digits. Remember to specify the correct number of
  *       CPUs on each machine.</li>
  *   <li>Different JVMs can have different performance. For example,
- *       Sun's Java 1.4.1 client VM achieves roughly 70% of the
+ *       Sun's Java 1.4.2 client VM achieves roughly 70% of the
  *       performance of the server VM when running this application
  *       on a Pentium III.</li>
  *   <li>When running {@link OperationServer} on the cluster nodes,

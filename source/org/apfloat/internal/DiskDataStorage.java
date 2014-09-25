@@ -20,7 +20,7 @@ import org.apfloat.spi.FilenameGenerator;
  * Abstract base class for disk-based data storage, containing the common
  * functionality independent of the element type.
  *
- * @version 1.0.2
+ * @version 1.0.3
  * @author Mikko Tommila
  */
 
@@ -93,7 +93,16 @@ public abstract class DiskDataStorage
         public void setSize(long size)
             throws IOException
         {
-            this.randomAccessFile.setLength(size);
+            try
+            {
+                this.randomAccessFile.setLength(size);
+            }
+            catch (IOException ioe)
+            {
+                // Run garbage collection to delete unused temporary files, then retry
+                System.gc();
+                this.randomAccessFile.setLength(size);
+            }
         }
 
         public void transferFrom(ReadableByteChannel in, long position, long size)

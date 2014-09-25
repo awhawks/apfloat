@@ -10,7 +10,7 @@ import org.apfloat.spi.BuilderFactory;
 /**
  * Applet for calculating pi using three different algorithms.
  *
- * @version 1.0.2
+ * @version 1.0.3
  * @author Mikko Tommila
  */
 
@@ -75,7 +75,7 @@ public class PiApplet
                 implementationPackage = builderFactory.getClass().getPackage();
 
         return "Pi calculation applet\n" +
-               "Written by Mikko Tommila 2002 - 2003\n" +
+               "Written by Mikko Tommila 2002 - 2004\n" +
                "Specification-Title: "    + specificationPackage.getSpecificationTitle() + "\n" +
                "Specification-Version: "  + specificationPackage.getSpecificationVersion() + "\n" +
                "Specification-Vendor: "   + specificationPackage.getSpecificationVendor() + "\n" +

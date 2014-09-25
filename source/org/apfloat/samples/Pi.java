@@ -45,23 +45,23 @@ public class Pi
             this.precision = precision;
             this.radix = radix;
         }
-    
+
         private Apfloat a(long n)
             throws ApfloatRuntimeException
         {
             Apfloat s = new Apfloat(n, Apfloat.INFINITE, this.radix),
                     v = this.A.add(this.B.multiply(s));
-    
+
             v = ((n & 1) == 0 ? v : ApfloatMath.negate(v));
-    
+
             return v;
         }
-    
+
         private Apfloat p(long n)
             throws ApfloatRuntimeException
         {
             Apfloat v;
-    
+
             if (n == 0)
             {
                 v = this.ONE;
@@ -70,18 +70,18 @@ public class Pi
             {
                 Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix),
                         sixf = this.SIX.multiply(f);
-    
+
                 v = sixf.subtract(this.ONE).multiply(this.TWO.multiply(f).subtract(this.ONE)).multiply(sixf.subtract(this.FIVE));
             }
-    
+
             return v;
         }
-    
+
         private Apfloat q(long n)
             throws ApfloatRuntimeException
         {
             Apfloat v;
-    
+
             if (n == 0)
             {
                 v = this.ONE;
@@ -89,10 +89,10 @@ public class Pi
             else
             {
                 Apfloat f = new Apfloat(n, Apfloat.INFINITE, this.radix);
-    
+
                 v = this.J.multiply(f).multiply(f).multiply(f);
             }
-    
+
             return v;
         }
 
@@ -113,62 +113,62 @@ public class Pi
             checkAlive();
 
             int length = (int) Math.min(n2 - n1, Integer.MAX_VALUE);
-    
+
             switch (length)             // Java can't switch on a long...
             {
                 case 0:
                 {
                     assert (n1 != n2);
-    
+
                     break;
                 }
                 case 1:
                 {
                     Apfloat p0 = p(n1);
-    
+
                     T.setApfloat(a(n1).multiply(p0));
                     Q.setApfloat(q(n1));
                     if (P != null) P.setApfloat(p0);
-    
+
                     break;
                 }
                 case 2:
                 {
                     Apfloat p0 = p(n1), p01 = p0.multiply(p(n1 + 1)),
                             q1 = q(n1 + 1);
-    
+
                     T.setApfloat(q1.multiply(a(n1)).multiply(p0).add(
                                  a(n1 + 1).multiply(p01)));
                     Q.setApfloat(q(n1).multiply(q1));
                     if (P != null) P.setApfloat(p01);
-    
+
                     break;
                 }
                 case 3:
                 {
                     Apfloat p0 = p(n1), p01 = p0.multiply(p(n1 + 1)), p012 = p01.multiply(p(n1 + 2)),
                             q2 = q(n1 + 2), q12 = q(n1 + 1).multiply(q2);
-    
+
                     T.setApfloat(q12.multiply(a(n1)).multiply(p0).add(
                          q2.multiply(a(n1 + 1)).multiply(p01)).add(
                          a(n1 + 2).multiply(p012)));
                     Q.setApfloat(q(n1).multiply(q12));
                     if (P != null) P.setApfloat(p012);
-    
+
                     break;
                 }
                 case 4:
                 {
                     Apfloat p0 = p(n1), p01 = p0.multiply(p(n1 + 1)), p012 = p01.multiply(p(n1 + 2)), p0123 = p012.multiply(p(n1 + 3)),
                             q3 = q(n1 + 3), q23 = q(n1 + 2).multiply(q3), q123 = q(n1 + 1).multiply(q23);
-    
+
                     T.setApfloat(q123.multiply(a(n1)).multiply(p0).add(
                          q23.multiply(a(n1 + 1)).multiply(p01)).add(
                          q3.multiply(a(n1 + 2)).multiply(p012)).add(
                          a(n1 + 3).multiply(p0123)));
                     Q.setApfloat(q(n1).multiply(q123));
                     if (P != null) P.setApfloat(p0123);
-    
+
                     break;
                 }
                 default:
@@ -177,10 +177,10 @@ public class Pi
                     ApfloatHolder LT = new ApfloatHolder(),
                                   LQ = new ApfloatHolder(),
                                   LP = new ApfloatHolder();
-    
+
                     r(n1, nMiddle, LT, LQ, LP, progressIndicator);
                     r(nMiddle, n2, T, Q, P, progressIndicator);
-    
+
                     T.setApfloat(Q.getApfloat().multiply(LT.getApfloat()).add(LP.getApfloat().multiply(T.getApfloat())));
                     Q.setApfloat(LQ.getApfloat().multiply(Q.getApfloat()));
                     if (P != null) P.setApfloat(LP.getApfloat().multiply(P.getApfloat()));
@@ -241,7 +241,7 @@ public class Pi
          */
 
         protected int radix;
-    
+
         private final Apfloat A;
         private final Apfloat B;
         private final Apfloat J;

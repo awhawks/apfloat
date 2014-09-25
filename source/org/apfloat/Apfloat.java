@@ -12,7 +12,7 @@ import org.apfloat.spi.ApfloatImpl;
  * Immutable arbitrary precision floating-point number class.<p>
  *
  * A pitfall exists with the constructors {@link #Apfloat(float,long)}
- * and {@link #Apfloat(double,long)}. Since <code>float</code>s and 
+ * and {@link #Apfloat(double,long)}. Since <code>float</code>s and
  * <code>double</code>s are always represented internally in radix 2, the
  * conversion to any other radix usually causes round-off errors, and the
  * resulting apfloat won't be accurate to the desired number of digits.<p>

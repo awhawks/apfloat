@@ -784,44 +784,44 @@ public abstract class DataStorage
      *
      * <div align="center">
      *   <table width="400" height="300" border="1">
-     *     <tr> 
-     *       <td width="100" height="25"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="100" height="25">
+     *         <div align="center">
      *           <code>A</code>
      *         </div>
      *       </td>
-     *       <td width="300" rowspan="5"> 
-     *         <div align="center"> 
+     *       <td width="300" rowspan="5">
+     *         <div align="center">
      *           <code>&uarr;<br>
      *           n<sub>1</sub><br>
      *           &darr;<br></code>
      *         </div>
      *       </td>
      *     </tr>
-     *     <tr> 
-     *       <td width="100" height="25"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="100" height="25">
+     *         <div align="center">
      *           <code>B</code>
      *         </div>
      *       </td>
      *     </tr>
-     *     <tr> 
-     *       <td width="100" height="25"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="100" height="25">
+     *         <div align="center">
      *           <code>C</code>
      *         </div>
      *       </td>
      *     </tr>
-     *     <tr> 
-     *       <td width="100" height="25"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="100" height="25">
+     *         <div align="center">
      *           <code>D</code>
      *         </div>
      *       </td>
      *     </tr>
-     *     <tr> 
-     *       <td width="100" height="200"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="100" height="200">
+     *         <div align="center">
      *           <code>&larr; b &rarr;</code>
      *         </div>
      *       </td>
@@ -835,37 +835,37 @@ public abstract class DataStorage
      *
      * <div align="center">
      *   <table width="300" height="100" border="1">
-     *     <tr> 
-     *       <td width="100" height="25"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="100" height="25">
+     *         <div align="center">
      *           <code>A</code>
      *         </div>
      *       </td>
-     *       <td width="200" rowspan="4"> 
-     *         <div align="center"> 
+     *       <td width="200" rowspan="4">
+     *         <div align="center">
      *           <code>&uarr;<br>
      *           b<br>
      *           &darr;<br></code>
      *         </div>
      *       </td>
      *     </tr>
-     *     <tr> 
-     *       <td width="100" height="25"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="100" height="25">
+     *         <div align="center">
      *           <code>B</code>
      *         </div>
      *       </td>
      *     </tr>
-     *     <tr> 
-     *       <td width="100" height="25"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="100" height="25">
+     *         <div align="center">
      *           <code>C</code>
      *         </div>
      *       </td>
      *     </tr>
-     *     <tr> 
-     *       <td width="100" height="25"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="100" height="25">
+     *         <div align="center">
      *           <code>D</code>
      *         </div>
      *       </td>
@@ -879,29 +879,29 @@ public abstract class DataStorage
      *
      * <div align="center">
      *   <table width="300" height="100" border="1">
-     *     <tr> 
-     *       <td width="25" height="100"> 
-     *         <div align="center"> 
+     *     <tr>
+     *       <td width="25" height="100">
+     *         <div align="center">
      *           <code>A</code>
      *         </div>
      *       </td>
-     *       <td width="25" height="100"> 
-     *         <div align="center"> 
+     *       <td width="25" height="100">
+     *         <div align="center">
      *           <code>B</code>
      *         </div>
      *       </td>
-     *       <td width="25" height="100"> 
-     *         <div align="center"> 
+     *       <td width="25" height="100">
+     *         <div align="center">
      *           <code>C</code>
      *         </div>
      *       </td>
-     *       <td width="25" height="100"> 
-     *         <div align="center"> 
+     *       <td width="25" height="100">
+     *         <div align="center">
      *           <code>D</code>
      *         </div>
      *       </td>
-     *       <td width="200" rowspan="4"> 
-     *         <div align="center"> 
+     *       <td width="200" rowspan="4">
+     *         <div align="center">
      *           <code>&uarr;<br>
      *           b<br>
      *           &darr;<br></code>

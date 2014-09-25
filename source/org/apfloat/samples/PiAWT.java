@@ -28,7 +28,7 @@ import org.apfloat.spi.BuilderFactory;
 /**
  * Graphical AWT elements for calculating pi using three different algorithms.
  *
- * @version 1.0.2
+ * @version 1.0.3
  * @author Mikko Tommila
  */
 
@@ -234,7 +234,7 @@ public class PiAWT
     }
 
     // Prints output to a text area
-    private class FlushStringWriter
+    private static class FlushStringWriter
         extends StringWriter
     {
         public FlushStringWriter(TextArea dst)
@@ -251,14 +251,31 @@ public class PiAWT
 
             StringBuffer buffer = getBuffer();
             String text = buffer.toString();
+
+            String lineSeparator = System.getProperty("line.separator");
+            boolean endsWithLineSeparator = text.endsWith(lineSeparator),
+                    endsWithCarriageReturn = text.endsWith("\r");
+
+            if (endsWithLineSeparator)
+            {
+                // Convert trailing line separator to \n to increase compatibility between platforms
+                text = text.substring(0, text.length() - lineSeparator.length()) + '\n';
+            }
+            else if (endsWithCarriageReturn)
+            {
+                // Strip trailing carriage return
+                text = text.substring(0, text.length() - 1);
+            }
+
             this.dst.replaceRange(text, this.position, this.length);
             this.position += text.length();
             this.length = this.position;
-            if (text.endsWith(System.getProperty("line.separator")))
+
+            if (endsWithLineSeparator)
             {
                 this.lastLinefeedPosition = this.position;
             }
-            else if (text.endsWith("\r"))
+            else if (endsWithCarriageReturn)
             {
                 this.position = this.lastLinefeedPosition;
             }

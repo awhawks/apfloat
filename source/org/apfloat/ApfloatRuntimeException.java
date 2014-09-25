@@ -4,7 +4,7 @@ package org.apfloat;
  * Exception indicating some unexpected apfloat
  * implementation specific error situation.
  * This exception can be thrown in different situations, for example:
- * 
+ *
  * <ul>
  *   <li>The result of an operation would have infinite size. For example,
  *       <code>new Apfloat(2).divide(new Apfloat(3))</code>, in radix 10.</li>

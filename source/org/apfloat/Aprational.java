@@ -13,7 +13,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see Apint
  *
- * @version 1.0.1
+ * @version 1.0.3
  * @author Mikko Tommila
  */
 
@@ -695,7 +695,7 @@ public class Aprational
 
             this.denominator = ApintMath.abs(this.denominator);
 
-            if (sign < 0 && numerator.signum() > 0)
+            if (sign != numerator.signum())
             {
                 this.numerator = ApintMath.negate(this.numerator);
             }
