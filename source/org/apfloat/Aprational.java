@@ -13,13 +13,12 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see Apint
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
 public class Aprational
     extends Apfloat
-    implements Comparable
 {
     /**
      * Default constructor. To be used only by subclasses that
@@ -147,14 +146,14 @@ public class Aprational
      * @param radix The radix to be used.
      *
      * @exception java.io.IOException In case of I/O error reading the stream.
-     * @exception java.lang.IllegalArgumentException In case the denominator is zero.
      * @exception java.lang.NumberFormatException In case the number is invalid.
+     * @exception java.lang.IllegalArgumentException In case the denominator is zero.
      *
      * @see #Aprational(PushbackReader)
      */
 
     public Aprational(PushbackReader in, int radix)
-        throws IOException, IllegalArgumentException, NumberFormatException, IllegalArgumentException, ApfloatRuntimeException
+        throws IOException, NumberFormatException, IllegalArgumentException, ApfloatRuntimeException
     {
         this.numerator = new Apint(in, radix);
 
@@ -406,6 +405,34 @@ public class Aprational
     }
 
     /**
+     * Calculates the remainder when divided by an aprational.
+     * The result has the same sign as this number.
+     * If <code>x</code> is zero, then zero is returned.
+     *
+     * @param x The number that is used as the divisor in the remainder calculation.
+     *
+     * @return <code>this % x</code>.
+     *
+     * @since 1.2
+     */
+
+    public Aprational mod(Aprational x)
+        throws ApfloatRuntimeException
+    {
+        if (x.signum() == 0)
+        {
+            return x;                           // By definition
+        }
+        else if (signum() == 0)
+        {
+            // 0 % x = 0
+            return this;
+        }
+
+        return subtract(divide(x).truncate().multiply(x));
+    }
+
+    /**
      * Floor function. Returns the largest (closest to positive infinity) value
      * that is not greater than this aprational and is equal to a mathematical integer.
      *
@@ -476,6 +503,22 @@ public class Aprational
     }
 
     /**
+     * Convert this aprational to the specified radix.
+     *
+     * @param radix The radix.
+     *
+     * @exception java.lang.NumberFormatException If the radix is invalid.
+     *
+     * @since 1.2
+     */
+
+    public Aprational toRadix(int radix)
+        throws NumberFormatException, ApfloatRuntimeException
+    {
+        return new Aprational(numerator().toRadix(radix), denominator().toRadix(radix));
+    }
+
+    /**
      * Compare this aprational to the specified aprational.<p>
      *
      * @param x Aprational to which this aprational is to be compared.
@@ -512,33 +555,6 @@ public class Aprational
                     b = x.multiply(denominator()).precision(INFINITE);  // Actual class must be Apfloat
 
             return a.compareTo(b);
-        }
-    }
-
-    /**
-     * Compare this aprational to the specified object.
-     *
-     * @param obj Object to which this aprational is to be compared.
-     *
-     * @return -1, 0 or 1 as this aprational is numerically less than, equal to, or greater than <code>obj</code>.
-     *
-     * @exception java.lang.ClassCastException If the specified object is not an apfloat.
-     */
-
-    public int compareTo(Object obj)
-        throws ClassCastException
-    {
-        if (obj instanceof Aprational)
-        {
-            return compareTo((Aprational) obj);
-        }
-        else if (obj instanceof Apfloat)
-        {
-            return compareTo((Apfloat) obj);
-        }
-        else
-        {
-            return super.compareTo(obj);
         }
     }
 

@@ -1,6 +1,5 @@
 package org.apfloat.samples;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.Selector;
 import java.nio.channels.SelectionKey;
@@ -13,7 +12,8 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.util.Set;
 import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Server for executing {@link Operation}s from remote calls. The client
@@ -25,7 +25,7 @@ import java.util.LinkedList;
  * occurs during the operation execution, nothing is returned and
  * the socket connection is closed.
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
@@ -223,46 +223,27 @@ public class OperationServer
     {
         Request request;
 
-        synchronized(queue)
+        try
         {
-            while (queue.size() == 0)
-            {
-                try
-                {
-                    // Wait for somebody to put a request in the queue and notify me
-                    // Note that when waiting the synchronization lock is released
-                    queue.wait();
-                }
-                catch (InterruptedException ie)
-                {
-                    // Exits thread
-                    throw new RuntimeException(ie);
-                }
-            }
-
-            request = queue.removeFirst();
-
-            info("Request acquired from queue, queue size now " + queue.size());
+            // Get a request from the queue or wait until somebody puts one there
+            request = queue.take();
         }
+        catch (InterruptedException ie)
+        {
+            // Exits thread
+            throw new RuntimeException(ie);
+        }
+
+        info("Request acquired from queue");
 
         return request;
     }
 
     private static void putRequest(Request request)
     {
-        synchronized(queue)
-        {
-            if (queue.size() == 0)
-            {
-                // Somebody may be waiting on the empty queue, notify it to continue
-                // Note that the notified thread won't be able to continue until this thread exits this synchronized block
-                queue.notify();
-            }
+        queue.add(request);
 
-            queue.addLast(request);
-
-            info("Request put to queue, queue size now " + queue.size());
-        }
+        info("Request put to queue");
     }
 
     private static void warning(String message, Exception e)
@@ -296,6 +277,6 @@ public class OperationServer
     private static final int INFO = 2;
     private static final int DEBUG = 3;
 
-    private static LinkedList<Request> queue = new LinkedList<Request>();
+    private static BlockingQueue<Request> queue = new LinkedBlockingQueue<Request>();
     private static int messageLevel = WARNING;
 }

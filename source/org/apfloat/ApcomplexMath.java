@@ -5,7 +5,7 @@ import org.apfloat.spi.Util;
 /**
  * Various mathematical functions for arbitrary precision complex numbers.
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
@@ -129,6 +129,9 @@ public class ApcomplexMath
             n = -n;
         }
 
+        long precision = z.precision();
+        z = ApfloatHelper.extendPrecision(z);   // Big exponents will accumulate round-off errors
+
         // Algorithm improvements by Bernd Kellner
         int b2pow = 0;
 
@@ -154,7 +157,7 @@ public class ApcomplexMath
             r = r.multiply(r);
         }
 
-        return r;
+        return ApfloatHelper.setPrecision(r, precision);
     }
 
     /**
@@ -220,7 +223,7 @@ public class ApcomplexMath
         }
         else if (n == 0x8000000000000000L)
         {
-            return sqrt(root(z, n / -2));
+            return sqrt(inverseRoot(z, n / -2));
         }
         else if (n < 0)
         {
@@ -267,7 +270,8 @@ public class ApcomplexMath
         }
         else if (n == 0x8000000000000000L)
         {
-            return inverseRoot(inverseRoot(z, n / -2), 2);
+            Apcomplex w = inverseRoot(z, n / -2);
+            return inverseRoot(w, 2);
         }
         else if (n < 0)
         {
@@ -291,9 +295,13 @@ public class ApcomplexMath
 
         long realScale = z.real().scale(),
              imagScale = z.imag().scale(),
-             scaleDiff = Math.max(realScale, imagScale) - Math.min(realScale, imagScale),
+             scale = Math.max(realScale, imagScale),
+             scaleDiff = scale - Math.min(realScale, imagScale),
              doublePrecision = ApfloatHelper.getDoublePrecision(z.radix()),
-             precision = doublePrecision;       // Accuracy of initial guess
+             precision = doublePrecision,       // Accuracy of initial guess
+             scaleQuot = scale / n,
+             scaleRem = scale - scaleQuot * n;
+        double scaleRemFactor = Math.pow((double) z.radix(), (double) -scaleRem / (double) n);
 
         Apcomplex result;
 
@@ -302,24 +310,21 @@ public class ApcomplexMath
             (scaleDiff > doublePrecision / 2 || scaleDiff < 0) && realScale > imagScale)        // Detect overflow
         {
             // z.real() is a lot bigger in magnitude than z.imag()
-            long scaleQuot = realScale / n,
-                 scaleRem = realScale - scaleQuot * n;
-
             Apfloat tmpReal = z.real().precision(doublePrecision),
                     tmpImag = z.imag().precision(doublePrecision);
             Apcomplex tweak = new Apcomplex(Apcomplex.ZERO,
                                             tmpImag.divide(divisor.multiply(tmpReal)));
 
-            tmpReal = ApfloatMath.scale(tmpReal, scaleRem - tmpReal.scale());   // Allow exponents in exess of doubles'
+            tmpReal = ApfloatMath.scale(tmpReal, -tmpReal.scale());     // Allow exponents in exess of doubles'
 
             if ((magnitude = tmpReal.doubleValue()) >= 0.0)
             {
-                doubleReal = Math.pow(magnitude, -1.0 / (double) n);
+                doubleReal = Math.pow(magnitude, -1.0 / (double) n) * scaleRemFactor;
                 doubleImag = 0.0;
             }
             else
             {
-                magnitude = Math.pow(-magnitude, -1.0 / (double) n);
+                magnitude = Math.pow(-magnitude, -1.0 / (double) n) * scaleRemFactor;
                 angle = (tmpImag.signum() >= 0 ? -Math.PI : Math.PI) / (double) n;
                 doubleReal = magnitude * Math.cos(angle);
                 doubleImag = magnitude * Math.sin(angle);
@@ -334,24 +339,21 @@ public class ApcomplexMath
                  (scaleDiff > doublePrecision / 2 || scaleDiff < 0) && imagScale > realScale)        // Detect overflow
         {
             // z.imag() is a lot bigger in magnitude than z.real()
-            long scaleQuot = imagScale / n,
-                 scaleRem = imagScale - scaleQuot * n;
-
             Apfloat tmpReal = z.real().precision(doublePrecision),
                     tmpImag = z.imag().precision(doublePrecision);
             Apcomplex tweak = new Apcomplex(Apfloat.ZERO,
                                             tmpReal.divide(divisor.multiply(tmpImag)));
 
-            tmpImag = ApfloatMath.scale(tmpImag, scaleRem - tmpImag.scale());   // Allow exponents in exess of doubles'
+            tmpImag = ApfloatMath.scale(tmpImag, -tmpImag.scale());     // Allow exponents in exess of doubles'
 
             if ((magnitude = tmpImag.doubleValue()) >= 0.0)
             {
-                magnitude = Math.pow(magnitude, -1.0 / (double) n);
+                magnitude = Math.pow(magnitude, -1.0 / (double) n) * scaleRemFactor;
                 angle = -Math.PI / (2.0 * (double) n);
             }
             else
             {
-                magnitude = Math.pow(-magnitude, -1.0 / (double) n);
+                magnitude = Math.pow(-magnitude, -1.0 / (double) n) * scaleRemFactor;
                 angle = Math.PI / (2.0 * (double) n);
             }
 
@@ -366,20 +368,16 @@ public class ApcomplexMath
         else
         {
             // z.imag() and z.real() approximately the same in magnitude
-            long scaleQuot = realScale / n,
-                 scaleRemReal = realScale - scaleQuot * n,
-                 scaleRemImag = imagScale - scaleQuot * n;
-
             Apfloat tmpReal = z.real().precision(doublePrecision),
                     tmpImag = z.imag().precision(doublePrecision);
 
-            tmpReal = ApfloatMath.scale(tmpReal, scaleRemReal - tmpReal.scale());       // Allow exponents in exess of doubles'
-            tmpImag = ApfloatMath.scale(tmpImag, scaleRemImag - tmpImag.scale());       // Allow exponents in exess of doubles'
+            tmpReal = ApfloatMath.scale(tmpReal, -scale);       // Allow exponents in exess of doubles'
+            tmpImag = ApfloatMath.scale(tmpImag, -scale);       // Allow exponents in exess of doubles'
 
             doubleReal = tmpReal.doubleValue();
             doubleImag = tmpImag.doubleValue();
 
-            magnitude = Math.pow(doubleReal * doubleReal + doubleImag * doubleImag, -1.0 / (2.0 * (double) n));
+            magnitude = Math.pow(doubleReal * doubleReal + doubleImag * doubleImag, -1.0 / (2.0 * (double) n)) * scaleRemFactor;
             angle = -Math.atan2(doubleImag, doubleReal) / (double) n;
 
             doubleReal = magnitude * Math.cos(angle);
@@ -818,6 +816,8 @@ public class ApcomplexMath
     public static Apcomplex pow(Apcomplex z, Apcomplex w)
         throws ApfloatRuntimeException
     {
+        long targetPrecision = Math.min(z.precision(), w.precision());
+
         if (w.real().signum() == 0 && w.imag().signum() == 0)
         {
             if (z.real().signum() == 0 && z.imag().signum() == 0)
@@ -829,10 +829,12 @@ public class ApcomplexMath
         }
         else if (z.real().signum() == 0 && z.imag().signum() == 0 || z.equals(Apcomplex.ONE) || w.equals(Apcomplex.ONE))
         {
-            return z;
+            return z.precision(targetPrecision);
         }
-
-        long targetPrecision = Math.min(z.precision(), w.precision());
+        else if (z.real().signum() >= 0 && z.imag().signum() == 0 && w.imag().signum() == 0)
+        {
+            return ApfloatMath.pow(z.real(), w.real());
+        }
 
         if (targetPrecision == Apfloat.INFINITE)
         {
@@ -854,6 +856,12 @@ public class ApcomplexMath
         throws ApfloatRuntimeException
     {
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix());
+
+        if (z.imag().signum() == 0 && ApfloatMath.abs(z.real()).compareTo(one) <= 0)
+        {
+            return ApfloatMath.acos(z.real());
+        }
+
         Apcomplex i = new Apcomplex(Apfloat.ZERO, one),
                   w = i.multiply(log(z.add(sqrt(z.multiply(z).subtract(one)))));
 
@@ -902,6 +910,12 @@ public class ApcomplexMath
         throws ApfloatRuntimeException
     {
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix());
+
+        if (z.imag().signum() == 0 && ApfloatMath.abs(z.real()).compareTo(one) <= 0)
+        {
+            return ApfloatMath.asin(z.real());
+        }
+
         Apcomplex i = new Apcomplex(Apfloat.ZERO, one);
 
         if (z.imag().signum() >= 0)
@@ -950,6 +964,11 @@ public class ApcomplexMath
     public static Apcomplex atan(Apcomplex z)
         throws ArithmeticException, ApfloatRuntimeException
     {
+        if (z.imag().signum() == 0)
+        {
+            return ApfloatMath.atan(z.real());
+        }
+
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix()),
                 two = new Apfloat(2, Apfloat.INFINITE, z.radix());
         Apcomplex i = new Apcomplex(Apfloat.ZERO, one);

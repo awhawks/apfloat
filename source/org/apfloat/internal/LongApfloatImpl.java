@@ -30,7 +30,7 @@ import static org.apfloat.internal.LongRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
@@ -1374,6 +1374,14 @@ public final class LongApfloatImpl
     public long precision()
     {
         return this.precision;
+    }
+
+    public long size()
+        throws ApfloatRuntimeException
+    {
+        assert (this.dataStorage != null);
+
+        return Math.min(this.precision, getInitialDigits() + (getSize() - 1) * BASE_DIGITS[this.radix]);
     }
 
     public ApfloatImpl precision(long precision)

@@ -15,7 +15,7 @@ package org.apfloat;
  *       an <code>IOException</code> can be thrown in any of the disk operations,
  *       if e.g. a file can't be created, or written to if the disk is full.</li>
  *   <li>Operands of some operation have different radixes.</li>
- *   <li>Other internal limitation, e.g. the maximum transform lenght
+ *   <li>Other internal limitation, e.g. the maximum transform length
  *       mathematically possible for the implementation, is exceeded.</li>
  * </ul>
  *

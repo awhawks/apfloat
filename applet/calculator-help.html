@@ -1,0 +1,194 @@
+<html>
+<head>
+<title>Calculator Help</title>
+</head>
+<body>
+<h1>Calculator Help</h1>
+
+<h2>Basic Usage</h2>
+
+Input commands to the input field at the bottom. Execute the command by
+pressing Enter or by clicking the Calculate button. The large text area
+shows the history of input and output text.<p>
+
+While in the input field, you can scroll the command history back and forth with
+the up and down arrow keys.<p>
+
+You can clear the output window and command history by clicking the Clear button.<p>
+
+<h2>Operators</h2>
+
+The calculator understands basic operations, which are:<p>
+
+<table>
+<tr><td><code>+</code><td>addition</tr>
+<tr><td><code>-</code><td>subtraction</tr>
+<tr><td><code>*</code><td>multiplication</tr>
+<tr><td><code>/</code><td>division</tr>
+<tr><td><code>%</code><td>modulus</tr>
+<tr><td><code>^</code><td>power</tr>
+</table><p>
+
+For example:<p>
+
+<code>1 + 2 * 3 ^ 4</code><p>
+
+calculates 1 + 2 * 3<sup>4</sup>, which is 163.<p>
+
+<h2>Variables</h2>
+
+You can assign values to variables and use variables in expressions, for example:<p>
+
+<code>x = 5</code><br>
+<code>x + 6</code><p>
+
+<h2>Output Format</h2>
+
+You can change the output format of floating-point values with the
+"Floating" and "Fixed" radio buttons. These are for example:<p>
+
+<table>
+<tr><td>Floating:<td><code>1.2345e3</code></tr>
+<tr><td>Fixed:<td><code>1234.5</code></tr>
+</table><p>
+
+Note that the calculator supports extremely large exponents for floating-point
+values. Displaying such numbers in the fixed-point format may be impractical.
+
+<h2>Functions</h2>
+
+The calculator supports many functions.<p>
+
+<h3>Basic:</h3>
+
+<table>
+<tr><td><code>abs(x)</code><td>Absolute value of <code>x</code>.</tr>
+<tr><td><code>cbrt(x)</code><td>Cube root of <code>x</code>.</tr>
+<tr><td><code>ceil(x)</code><td>Ceiling function (round towards positive infinity) of <code>x</code>. Parameter <code>x</code> must be real.</tr>
+<tr><td><code>copySign(x, y)</code><td>Copies sign of <code>y</code> to the value of <code>x</code>. Both <code>x</code> and <code>y</code> must be real.</tr>
+<tr><td><code>factorial(x)</code><td>Factorial of <code>x</code>, that is <code>x!</code>. Parameter <code>x</code> must be an integer.</tr>
+<tr><td><code>floor(x)</code><td>Floor function (round towards negative infinity) of <code>x</code>. Parameter <code>x</code> must be real.</tr>
+<tr><td><code>fmod(x, y)</code><td>Modulus, equivalent to <code>x % y</code>. Both <code>x</code> and <code>y</code> must be real.</tr>
+<tr><td><code>hypot(x, y)</code><td>Equivalent to <code>sqrt(x<sup>2</sup> + y<sup>2</sup>)</code>. Both <code>x</code> and <code>y</code> must be real.</tr>
+<tr><td><code>inverseRoot(x, y)</code><td>Equivalent to <code>x<sup>-1/y</sup></code>. Parameter <code>y</code> must be an integer.</tr>
+<tr><td><code>n(x, y)</code><td>The value of <code>x</code> to the precision of <code>y</code> digits. Parameter <code>y</code> must be an integer.</tr>
+<tr><td><code>root(x, y)</code><td>Equivalent to <code>x<sup>1/y</sup></code>. Parameter <code>y</code> must be an integer.</tr>
+<tr><td><code>scale(x, y)</code><td>Equivalent to <code>x * 10<sup>y</sup></code>. Parameter <code>y</code> must be an integer.</tr>
+<tr><td><code>sqrt(x)</code><td>Square root of <code>x</code>.</tr>
+<tr><td><code>truncate(x)</code><td>Nearest integer rounded towards zero of <code>x</code>. Parameter <code>x</code> must be real.</tr>
+</table><p>
+
+<h3>Trigonometric:</h3>
+
+<table>
+<tr><td><code>acos(x)</code><td>Arc cosine of <code>x</code>.</tr>
+<tr><td><code>acosh(x)</code><td>Hyperbolic arc cosine of <code>x</code>.</tr>
+<tr><td><code>asin(x)</code><td>Arc sine of <code>x</code>.</tr>
+<tr><td><code>asinh(x)</code><td>Hyperbolic arc sine of <code>x</code>.</tr>
+<tr><td><code>atan(x)</code><td>Arc tangent of <code>x</code>.</tr>
+<tr><td><code>atan2(x, y)</code><td>Angle of the point <code>(y, x)</code>. Both <code>x</code> and <code>y</code> must be real.</tr>
+<tr><td><code>atanh(x)</code><td>Hyperbolic arc tangent of <code>x</code>.</tr>
+<tr><td><code>cos(x)</code><td>Cosine of <code>x</code>.</tr>
+<tr><td><code>cosh(x)</code><td>Hyperbolic cosine of <code>x</code>.</tr>
+<tr><td><code>exp(x)</code><td>Exponent function of <code>x</code>, that is <code>e<sup>x</sup></code>.</tr>
+<tr><td><code>log(x)</code><td>Natural logarithm of <code>x</code>.</tr>
+<tr><td><code>sin(x)</code><td>Sine of <code>x</code>.</tr>
+<tr><td><code>sinh(x)</code><td>Hyperbolic sine of <code>x</code>.</tr>
+<tr><td><code>tan(x)</code><td>Tangent of <code>x</code>.</tr>
+<tr><td><code>tanh(x)</code><td>Hyperbolic tangent of <code>x</code>.</tr>
+</table><p>
+
+<h3>Complex manipulation:</h3>
+
+<table>
+<tr><td><code>arg(x)</code><td>Angle on the complex plane of <code>x</code>.</tr>
+<tr><td><code>conj(x)</code><td>Complex conjugate of <code>x</code>.</tr>
+<tr><td><code>imag(x)</code><td>Imaginary part of <code>x</code>.</tr>
+<tr><td><code>real(x)</code><td>Real part of <code>x</code>.</tr>
+</table><p>
+
+<h3>Advanced:</h3>
+
+<table>
+<tr><td><code>agm(x, y)</code><td>Arithmetic-geometric mean of <code>x</code> and <code>y</code>.</tr>
+<tr><td><code>gcd(x, y)</code><td>Greatest common divisor of <code>x</code> and <code>y</code>. Both <code>x</code> and <code>y</code> must be integers.</tr>
+<tr><td><code>lcm(x, y)</code><td>Least common multiple of <code>x</code> and <code>y</code>. Both <code>x</code> and <code>y</code> must be integers.</tr>
+<tr><td><code>pi(x)</code><td>&pi; calculated to <code>x</code> digits of precision. Parameter <code>x</code> must be an integer.</tr>
+</table><p>
+
+<h3>Functional equivalents to the basic operators:</h3>
+
+<table>
+<tr><td><code>add(x, y)</code><td>Equivalent to <code>x + y</code>.</tr>
+<tr><td><code>subtract(x, y)</code><td>Equivalent to <code>x - y</code>.</tr>
+<tr><td><code>multiply(x, y)</code><td>Equivalent to <code>x * y</code>.</tr>
+<tr><td><code>divide(x, y)</code><td>Equivalent to <code>x / y</code>.</tr>
+<tr><td><code>negate(x)</code><td>Equivalent to <code>-x</code>.</tr>
+<tr><td><code>mod(x, y)</code><td>Equivalent to <code>x % y</code>.</tr>
+<tr><td><code>pow(x, y)</code><td>Equivalent to <code>x ^ y</code>.</tr>
+</table><p>
+
+For example:<p>
+
+<code>digits=40</code><br>
+<code>exp(sqrt(n(163, digits)) * pi(digits))</code><p>
+
+<h2>Number Types</h2>
+
+The calculator supports complex and rational numbers in addition to integers and
+floating-point values. For example, <code>sqrt(-1.0)</code> returns <code>i</code>.
+Here <code>i</code> is the imaginary unit and it can be used in input expressions as well.
+If you don't specify an exponent or a decimal point for a number, it will be treated
+as an integer. Integers have infinite precision (see below). For example, inputting<p>
+
+<code>2/3</code><p>
+
+will get you just<p>
+
+<code>2/3</code>,<p>
+
+the rational number. If you want a floating-point calculation instead, use e.g.<p>
+
+<code>2.00 / 3.00</code><p>
+
+<h2>Precision</h2>
+
+The calculator can perform calculations to arbitrary precision (actually the precision
+is currently limited to about 226 million digits). By default, the precision of a
+floating-point number is the number of significant digits that you specify for it.
+For example:<p>
+
+<code>2.</code> has a precision of 1 digit,<br>
+<code>2.0</code> has a precision of 2 digits,<br>
+<code>2.00000</code> has a precision of 6 digits<p>
+
+The result of the calculation is only performed to the precision allowed by the precision
+of the input operands, so for example<p>
+
+<code>sqrt(2.00)</code><p>
+
+calculates the square root of two to three digits of precision.<p>
+
+Integers have infinite precision. This limits their use in certain operations. For example<p>
+
+<code>sqrt(2)</code><p>
+
+will give an error that an inexact square root can't be calculated to infinite precision.
+However, <code>sqrt(4)</code> would work.<p>
+
+If you want to use extreme precision (which this calculator is certainly designed for),
+you can use the function <code>n(x,&nbsp;y)</code> to specify the precision of a number. For example,<p>
+
+<code>sqrt(n(2, 1000))</code><p>
+
+would calculate the square root of two with a precision of 1000 digits.<p>
+
+If you set the precision very high, the calculation may take a very long time. During
+the calculation the calculator may appear unresponsive. For example, calculating<p>
+
+<code>exp(n(1, 1000000))</code><p>
+
+might take an hour or so, depending on your computer's performance.
+
+</body>
+</html>

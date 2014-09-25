@@ -15,13 +15,12 @@ import org.apfloat.spi.ApfloatImpl;
  * numbers to an integer value: {@link Apfloat#floor() }, {@link Apfloat#ceil() },
  * and {@link Apfloat#truncate() }.
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
 public class Apint
     extends Aprational
-    implements Comparable
 {
     /**
      * Default constructor. To be used only by subclasses that
@@ -365,7 +364,7 @@ public class Apint
     public Apint mod(Apint x)
         throws ApfloatRuntimeException
     {
-        return new Apint(ApfloatMath.fmod(this.value, x.value));
+        return new Apint(this.value.mod(x.value));
     }
 
     /**
@@ -401,6 +400,22 @@ public class Apint
     public Apint truncate()
     {
         return this;
+    }
+
+    /**
+     * Convert this apint to the specified radix.
+     *
+     * @param radix The radix.
+     *
+     * @exception java.lang.NumberFormatException If the radix is invalid.
+     *
+     * @since 1.2
+     */
+
+    public Apint toRadix(int radix)
+        throws NumberFormatException, ApfloatRuntimeException
+    {
+        return new Apint(this.value.toRadix(radix));
     }
 
     /**
@@ -453,29 +468,6 @@ public class Apint
         else
         {
             return this.value.compareTo(x);
-        }
-    }
-
-    /**
-     * Compare this apint to the specified object.
-     *
-     * @param obj Object to which this apint is to be compared.
-     *
-     * @return -1, 0 or 1 as this apint is numerically less than, equal to, or greater than <code>obj</code>.
-     *
-     * @exception java.lang.ClassCastException If the specified object is not an apfloat.
-     */
-
-    public int compareTo(Object obj)
-        throws ClassCastException
-    {
-        if (obj instanceof Apint)
-        {
-            return compareTo((Apint) obj);
-        }
-        else
-        {
-            return super.compareTo(obj);
         }
     }
 

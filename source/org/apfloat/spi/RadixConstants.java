@@ -34,4 +34,10 @@ public interface RadixConstants
      */
 
     public static final int LONG_PRECISION[] = { -1, -1, 63, 40, 32, 28, 25, 23, 21, 20, 19, 19, 18, 18, 17, 17, 16, 16, 16, 15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 13, 13 };
+
+    /**
+     * How many digits maximally fit in a <code>long</code> in each radix.
+     */
+
+    public static final int LONG_DIGITS[] = { -1, -1, 63, 39, 31, 27, 24, 22, 21, 19, 18, 18, 17, 17, 16, 16, 15, 15, 15, 14, 14, 14, 14, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12 };
 }

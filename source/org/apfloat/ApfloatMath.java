@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  * Due to different types of round-off errors that can occur in the implementation,
  * no guarantees about e.g. monotonicity are given for any of the methods.
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
@@ -51,6 +51,9 @@ public class ApfloatMath
             n = -n;
         }
 
+        long precision = x.precision();
+        x = ApfloatHelper.extendPrecision(x);   // Big exponents will accumulate round-off errors
+
         // Algorithm improvements by Bernd Kellner
         int b2pow = 0;
 
@@ -76,7 +79,7 @@ public class ApfloatMath
             r = r.multiply(r);
         }
 
-        return r;
+        return r.precision(precision);
     }
 
     /**
@@ -142,7 +145,7 @@ public class ApfloatMath
         }
         else if (n == 0x8000000000000000L)
         {
-            return sqrt(root(x, n / -2));
+            return sqrt(inverseRoot(x, n / -2));
         }
         else if (n < 0)
         {
@@ -154,11 +157,13 @@ public class ApfloatMath
         }
         else if (n == 3)
         {
-            return x.multiply(inverseRoot(x.multiply(x), 3));
+            Apfloat y = x.multiply(x);
+            return x.multiply(inverseRoot(y, 3));
         }
         else
         {
-            return inverseRoot(inverseRoot(x, n), 1);
+            Apfloat y = inverseRoot(x, n);
+            return inverseRoot(y, 1);
         }
     }
 
@@ -188,11 +193,12 @@ public class ApfloatMath
      *
      * @return Inverse <code>n</code>:th root of <code>x</code>, that is <code>x<sup>-1/n</sup></code>.
      *
+     * @exception java.lang.IllegalArgumentException If <code>targetPrecision <= 0</code>.
      * @exception java.lang.ArithmeticException If <code>x</code> or <code>n</code> is zero, or <code>x</code> is negative and <code>n</code> is even.
      */
 
     public static Apfloat inverseRoot(Apfloat x, long n, long targetPrecision)
-        throws ArithmeticException, ApfloatRuntimeException
+        throws IllegalArgumentException, ArithmeticException, ApfloatRuntimeException
     {
         return inverseRoot(x, n, targetPrecision, null);
     }
@@ -207,11 +213,12 @@ public class ApfloatMath
      *
      * @return Inverse <code>n</code>:th root of <code>x</code>, that is <code>x<sup>-1/n</sup></code>.
      *
+     * @exception java.lang.IllegalArgumentException If <code>targetPrecision <= 0</code>.
      * @exception java.lang.ArithmeticException If <code>x</code> or <code>n</code> is zero, or <code>x</code> is negative and <code>n</code> is even.
      */
 
     public static Apfloat inverseRoot(Apfloat x, long n, long targetPrecision, Apfloat initialGuess)
-        throws ArithmeticException, ApfloatRuntimeException
+        throws IllegalArgumentException, ArithmeticException, ApfloatRuntimeException
     {
         return inverseRoot(x, n, targetPrecision, initialGuess, initialGuess == null ? 0 : initialGuess.precision());
     }
@@ -231,6 +238,7 @@ public class ApfloatMath
      *
      * @return Inverse <code>n</code>:th root of <code>x</code>, that is <code>x<sup>-1/n</sup></code>.
      *
+     * @exception java.lang.IllegalArgumentException If <code>targetPrecision <= 0</code> or <code>initialPrecision <= 0</code>.
      * @exception java.lang.ArithmeticException If <code>x</code> or <code>n</code> is zero, or <code>x</code> is negative and <code>n</code> is even.
      */
 
@@ -264,11 +272,13 @@ public class ApfloatMath
         }
         else if (n == 0x8000000000000000L)
         {
-            return inverseRoot(inverseRoot(x, n / -2), 2);
+            Apfloat y = inverseRoot(x, n / -2);
+            return inverseRoot(y, 2);
         }
         else if (n < 0)
         {
-            return inverseRoot(inverseRoot(x, -n), 1);
+            Apfloat y = inverseRoot(x, -n);
+            return inverseRoot(y, 1);
         }
 
         long precision,
@@ -284,11 +294,11 @@ public class ApfloatMath
                  scaleRem = x.scale() - scaleQuot * n;
 
             result = x.precision(doublePrecision);
-            result = scale(result, scaleRem - result.scale());  // Allow scales in exess of doubles'
+            result = scale(result, -result.scale());    // Allow scales in exess of doubles'
 
             precision = doublePrecision;
 
-            result = new Apfloat((double) result.signum() * Math.pow(Math.abs(result.doubleValue()), -1.0 / (double) n), precision, x.radix());
+            result = new Apfloat((double) result.signum() * Math.pow(Math.abs(result.doubleValue()), -1.0 / (double) n) * Math.pow((double) x.radix(), (double) -scaleRem / (double) n), precision, x.radix());
             result = scale(result, -scaleQuot);
         }
         else
@@ -1369,6 +1379,8 @@ public class ApfloatMath
     public static Apfloat pow(Apfloat x, Apfloat y)
         throws ArithmeticException, ApfloatRuntimeException
     {
+        long targetPrecision = Math.min(x.precision(), y.precision());
+
         if (y.signum() == 0)
         {
             if (x.signum() == 0)
@@ -1380,14 +1392,12 @@ public class ApfloatMath
         }
         else if (x.signum() == 0 || x.equals(Apfloat.ONE) || y.equals(Apfloat.ONE))
         {
-            return x;
+            return x.precision(targetPrecision);
         }
         else if (x.signum() < 0)
         {
             throw new ArithmeticException("Power of negative number; result would be complex");
         }
-
-        long targetPrecision = Math.min(x.precision(), y.precision());
 
         // Try to precalculate the needed values just once to the required precision,
         // this may not work too efficiently if x is close to 1 or y is close to zero
@@ -1414,7 +1424,7 @@ public class ApfloatMath
      *
      * @return Inverse hyperbolic cosine of <code>x</code>.
      *
-     * @exception java.lang.ArithmeticException If <code>x <= 1</code>.
+     * @exception java.lang.ArithmeticException If <code>x < 1</code>.
      */
 
     public static Apfloat acosh(Apfloat x)

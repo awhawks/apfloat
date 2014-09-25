@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.io.StringWriter;
 import java.io.PrintWriter;
-import java.io.IOException;
 import javax.imageio.spi.ServiceRegistry;       // Silly that this is under javax.imageio
 
 import org.apfloat.Apfloat;
@@ -121,7 +120,7 @@ public class PiAWT
         constraints.gridwidth = 1;
         add(this.goButton, constraints);
 
-        abortButton = new Button("Abort!");
+        this.abortButton = new Button("Abort!");
         this.abortButton.setEnabled(false);
         constraints.gridwidth = GridBagConstraints.REMAINDER;
         add(this.abortButton, constraints);
@@ -396,8 +395,8 @@ public class PiAWT
     private Label radixLabel;
     private Choice radixChoice;
     private Label methodLabel;
-    private Checkbox chudnovsky;
     private CheckboxGroup methods;
+    private Checkbox chudnovsky;
     private Checkbox gaussLegendre;
     private Checkbox borwein;
     private Label implementationLabel;

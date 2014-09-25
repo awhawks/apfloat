@@ -7,8 +7,6 @@ import java.awt.Label;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-import org.apfloat.ApfloatRuntimeException;
-
 /**
  * AWT client application for calculating pi using three different algorithms.
  *

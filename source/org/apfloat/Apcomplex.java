@@ -5,6 +5,8 @@ import java.io.PushbackReader;
 import java.io.Writer;
 import java.io.IOException;
 
+import org.apfloat.spi.Util;
+
 /**
  * Arbitrary precision complex number class. An apcomplex consists of
  * a real and imaginary part of type {@link Apfloat}.<p>
@@ -16,7 +18,7 @@ import java.io.IOException;
  *
  * @see Apfloat
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
@@ -267,6 +269,54 @@ public class Apcomplex
 
             return Math.max(precisions[0], precisions[1]);
         }
+    }
+
+    /**
+     * Returns an apcomplex with the same value as this apcomplex accurate to the
+     * specified precision.<p>
+     *
+     * If the requested precision less than this number's current precision, the
+     * functionality is quite obvious: the precision is simply truncated, and e.g.
+     * comparison and equality checking will work as expected. Some rounding errors
+     * in e.g. addition and subtraction may still occur, as "invisible" trailing
+     * digits can remain in the number.<p>
+     *
+     * If the requested precision more than this number's current precision, the
+     * functionality is quite undefined: the digits up to this number's current
+     * precision are guaranteed to be the same, but the "new" digits are undefined:
+     * they may be zero, or they may be digits that have been previously discarded
+     * with a call to precision() with a smaller number of digits, or they may be
+     * something else, or any combination of these.<p>
+     *
+     * These limitations allow various performance optimizations to be made.
+     *
+     * @param precision Precision of the new apcomplex.
+     *
+     * @return An apcomplex with the specified precision and same value as this apcomplex.
+     *
+     * @exception java.lang.IllegalArgumentException If <code>precision</code> is <= 0.
+     *
+     * @since 1.2
+     */
+
+    public Apcomplex precision(long precision)
+        throws IllegalArgumentException, ApfloatRuntimeException
+    {
+        ApfloatHelper.checkPrecision(precision);
+
+        Apcomplex z = new Apcomplex(real().precision(precision), imag().precision(precision));
+
+        if (real().signum() == 0 || imag().signum() == 0)
+        {
+            return z;
+        }
+
+        long[] precisions = ApfloatHelper.getMatchingPrecisions(z.real(), z.imag());
+        long realPrecision = precisions[0],
+             imagPrecision = precisions[1];
+
+        return new Apcomplex(realPrecision > 0 ? z.real().precision(realPrecision) : Apfloat.ZERO,
+                             imagPrecision > 0 ? z.imag().precision(imagPrecision) : Apfloat.ZERO);
     }
 
     /**
@@ -553,6 +603,22 @@ public class Apcomplex
             return Math.min(realEquals + realScaleDiff < 0 ? Apfloat.INFINITE : realEquals + realScaleDiff,
                             imagEquals + imagScaleDiff < 0 ? Apfloat.INFINITE : imagEquals + imagScaleDiff);
         }
+    }
+
+    /**
+     * Convert this apcomplex to the specified radix.
+     *
+     * @param radix The radix.
+     *
+     * @exception java.lang.NumberFormatException If the radix is invalid.
+     *
+     * @since 1.2
+     */
+
+    public Apcomplex toRadix(int radix)
+        throws NumberFormatException, ApfloatRuntimeException
+    {
+        return new Apcomplex(real().toRadix(radix), imag().toRadix(radix));
     }
 
     /**

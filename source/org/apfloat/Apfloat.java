@@ -23,13 +23,13 @@ import org.apfloat.spi.ApfloatImpl;
  * digits (in radix 10). In fact, the resulting number will be something like
  * <code>0.30000001192092896</code>...
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
 public class Apfloat
     extends Apcomplex
-    implements Comparable
+    implements Comparable<Apfloat>
 {
     /**
      * Default constructor. To be used only by subclasses that
@@ -510,7 +510,7 @@ public class Apfloat
      *
      * Zero has a scale of <code>-INFINITE</code>.<p>
      *
-     * Note that this definition of <code>scale</code> is different than in <code>java.util.BigDecimal</code>.
+     * Note that this definition of <code>scale</code> is different than in <code>java.math.BigDecimal</code>.
      *
      * @return The exponent of this apfloat in number of digits of the radix in which it's presented.
      */
@@ -742,6 +742,26 @@ public class Apfloat
     }
 
     /**
+     * Calculates the remainder when divided by an apfloat.
+     * The result has the same sign as this number.
+     * If <code>x</code> is zero, then zero is returned.
+     *
+     * @param x The number that is used as the divisor in the remainder calculation.
+     *
+     * @return <code>this % x</code>.
+     *
+     * @see ApfloatMath#fmod(Apfloat,Apfloat)
+     *
+     * @since 1.2
+     */
+
+    public Apfloat mod(Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return ApfloatMath.fmod(this, x);
+    }
+
+    /**
      * Floor function. Returns the largest (closest to positive infinity) value
      * that is not greater than this apfloat and is equal to a mathematical integer.
      *
@@ -919,6 +939,22 @@ public class Apfloat
     }
 
     /**
+     * Convert this apfloat to the specified radix.
+     *
+     * @param radix The radix.
+     *
+     * @exception java.lang.NumberFormatException If the radix is invalid.
+     *
+     * @since 1.2
+     */
+
+    public Apfloat toRadix(int radix)
+        throws NumberFormatException, ApfloatRuntimeException
+    {
+        return RadixConversionHelper.toRadix(this, radix);
+    }
+
+    /**
      * Compare this apfloat to the specified apfloat.<p>
      *
      * Note: if two apfloats are compared where one number doesn't have enough
@@ -952,26 +988,6 @@ public class Apfloat
             // Compare with maximum available precision; would not be efficient with aprationals
             return getImpl().compareTo(x.getImpl());
         }
-    }
-
-    /**
-     * Compare this apfloat to the specified object.<p>
-     *
-     * Note: if two apfloats are compared where one number doesn't have enough
-     * precise digits, the mantissa is assumed to contain zeros.
-     * See {@link #compareTo(Apfloat)}.
-     *
-     * @param obj Object to which this apfloat is to be compared.
-     *
-     * @return -1, 0 or 1 as this apfloat is numerically less than, equal to, or greater than <code>obj</code>.
-     *
-     * @exception java.lang.ClassCastException If the specified object is not an apfloat.
-     */
-
-    public int compareTo(Object obj)
-        throws ClassCastException
-    {
-        return compareTo((Apfloat) obj);
     }
 
     /**

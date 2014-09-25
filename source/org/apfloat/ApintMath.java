@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision integers.
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
@@ -143,18 +143,7 @@ public class ApintMath
         Apfloat approxX = x.precision(precision);
         Apfloat approxRoot;
 
-        if (n == 2)
-        {
-            approxRoot = approxX.multiply(ApfloatMath.inverseRoot(approxX, 2));
-        }
-        else if (n == 3)
-        {
-            approxRoot = approxX.multiply(ApfloatMath.inverseRoot(approxX.multiply(approxX), 3));
-        }
-        else
-        {
-            approxRoot = ApfloatMath.inverseRoot(ApfloatMath.inverseRoot(approxX, n), 1);
-        }
+        approxRoot = ApfloatMath.root(approxX, n);
 
         Apint root = approxRoot.truncate(),                             // May be one too big or one too small
               pow = pow(root, n);

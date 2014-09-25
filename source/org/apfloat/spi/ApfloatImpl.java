@@ -13,7 +13,7 @@ import org.apfloat.ApfloatRuntimeException;
  * A class implementing <code>ApfloatImpl</code> is not required to accept any other <code>ApfloatImpl</code>
  * class as the argument than the same implementing class.
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
@@ -102,6 +102,17 @@ public interface ApfloatImpl
      */
 
     public long precision();
+
+    /**
+     * Returns the size of the mantissa of this <code>ApfloatImpl</code>.
+     *
+     * @return The size of the mantissa of this <code>ApfloatImpl</code>.
+     *
+     * @since 1.2
+     */
+
+    public long size()
+        throws ApfloatRuntimeException;
 
     /**
      * Returns this <code>ApfloatImpl</code> with the specified precision.

@@ -5,7 +5,6 @@ import java.awt.Container;
 import java.awt.Label;
 
 import org.apfloat.ApfloatContext;
-import org.apfloat.spi.BuilderFactory;
 
 /**
  * Applet for calculating pi using three different algorithms.

@@ -7,18 +7,17 @@ import java.io.IOException;
 
 import org.apfloat.spi.ApfloatBuilder;
 import org.apfloat.spi.ApfloatImpl;
-import org.apfloat.spi.RadixConstants;
 import org.apfloat.spi.Util;
+import static org.apfloat.spi.RadixConstants.*;
 
 /**
  * Various utility methods related to apfloats.
  *
- * @version 1.1
+ * @version 1.2
  * @author Mikko Tommila
  */
 
 class ApfloatHelper
-    implements RadixConstants
 {
     private ApfloatHelper()
     {
