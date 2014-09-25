@@ -1081,8 +1081,8 @@ public class Apfloat
      *   <li>The precision is the number of significant digts output. If the precision of the number exceeds the number of characters output, the rounding mode for output is undefined.</li>
      * </ul>
      *
-     * The the decimal separator will be localized if the formatter specifies a locale.
-     * The the digits will be localized also, but only if the radix is less than or equal to 10.
+     * The decimal separator will be localized if the formatter specifies a locale.
+     * The digits will be localized also, but only if the radix is less than or equal to 10.
      *
      * @param formatter The formatter.
      * @param flags The flags to modify the output format.

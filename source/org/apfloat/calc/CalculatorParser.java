@@ -715,7 +715,7 @@ public class CalculatorParser implements CalculatorParserConstants {
   }
 
   public void ReInit(java.io.InputStream stream) {
-     ReInit(stream);
+     ReInit(stream, null);
   }
   public void ReInit(java.io.InputStream stream, String encoding) {
     try { jj_input_stream.ReInit(stream, encoding, 1, 1); } catch(java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
