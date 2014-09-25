@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApfloatMath
  *
- * @version 1.6.1
+ * @version 1.7.1
  * @author Mikko Tommila
  */
 
@@ -397,7 +397,7 @@ public class ApcomplexMath
             // z.real() is a lot bigger in magnitude than z.imag()
             Apfloat tmpReal = z.real().precision(doublePrecision),
                     tmpImag = z.imag().precision(doublePrecision);
-            Apcomplex tweak = new Apcomplex(Apcomplex.ZERO,
+            Apcomplex tweak = new Apcomplex(Apfloat.ZERO,
                                             tmpImag.divide(divisor.multiply(tmpReal)));
 
             tmpReal = ApfloatMath.scale(tmpReal, -tmpReal.scale());     // Allow exponents in excess of doubles'
@@ -786,6 +786,12 @@ public class ApcomplexMath
     public static Apcomplex log(Apcomplex z, Apcomplex w)
         throws ArithmeticException, ApfloatRuntimeException
     {
+        if (z.real().signum() >= 0 && z.imag().signum() == 0 &&
+            w.real().signum() >= 0 && w.imag().signum() == 0)
+        {
+            return ApfloatMath.log(z.real(), w.real());
+        }
+
         return log(z).divide(log(w));
     }
 
@@ -856,6 +862,12 @@ public class ApcomplexMath
         {
             throw new OverflowException("Overflow");
         }
+        else if (z.real().compareTo(new Apfloat((double) Long.MIN_VALUE * Math.log((double) radix), doublePrecision, radix)) <= 0)
+        {
+            // Underflow
+
+            return Apcomplex.ZERO;
+        }
         else if (targetPrecision == 0)
         {
             throw new LossOfPrecisionException("Complete loss of accurate digits in imaginary part");
@@ -922,17 +934,20 @@ public class ApcomplexMath
         {
             // Approximate starting value for iteration
 
-            // An overflow should not occur
-            double doubleValue = z.real().doubleValue() / Math.log((double) radix),
-                   integerPart = Math.floor(doubleValue),
-                   fractionalPart = doubleValue - integerPart;
+            // An overflow or underflow should not occur
+            long scaledRealPrecision = Math.max(0, z.real().scale()) + doublePrecision;
+            Apfloat logRadix = ApfloatMath.log(new Apfloat((double) radix, scaledRealPrecision, radix)),
+                    scaledReal = z.real().precision(scaledRealPrecision).divide(logRadix),
+                    integerPart = scaledReal.truncate(),
+                    fractionalPart = scaledReal.frac();
 
-            resultReal = new Apfloat(Math.pow((double) radix, fractionalPart), doublePrecision, radix);
-            resultReal = ApfloatMath.scale(resultReal, (long) integerPart);
+            resultReal = new Apfloat(Math.pow((double) radix, fractionalPart.doubleValue()), doublePrecision, radix);
+            resultReal = ApfloatMath.scale(resultReal, integerPart.longValue());
 
-            // Initial precision is reduced if z.real() is very big
-            int integerPartDigits = (integerPart > 0 ? (int) Math.floor(Math.log(integerPart + 0.5) / Math.log((double) radix)) : 0);
-            resultReal = resultReal.precision(Math.max(1, doublePrecision - integerPartDigits));
+            if (resultReal.signum() == 0) {
+                // Underflow
+                return Apcomplex.ZERO;
+            }
         }
 
         // Then handle the imaginary part

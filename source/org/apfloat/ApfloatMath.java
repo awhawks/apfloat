@@ -20,7 +20,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApintMath
  *
- * @version 1.7.0
+ * @version 1.7.1
  * @author Mikko Tommila
  */
 
@@ -1366,6 +1366,12 @@ public class ApfloatMath
         {
             throw new OverflowException("Overflow");
         }
+        else if (x.compareTo(new Apfloat((double) Long.MIN_VALUE * Math.log((double) radix), doublePrecision, radix)) <= 0)
+        {
+            // Underflow
+
+            return Apfloat.ZERO;
+        }
         else if (x.scale() <= Long.MIN_VALUE / 2 + Apfloat.EXTRA_PRECISION)
         {
             // Taylor series: exp(x) = 1 + x + x^2/2 + ...
@@ -1386,17 +1392,22 @@ public class ApfloatMath
         {
             // Approximate starting value for iteration
 
-            // An overflow should not occur
-            double doubleValue = x.doubleValue() / Math.log((double) radix),
-                   integerPart = Math.floor(doubleValue),
-                   fractionalPart = doubleValue - integerPart;
+            // An overflow or underflow should not occur
+            long scaledXPrecision = Math.max(0, x.scale()) + doublePrecision;
+            Apfloat logRadix = log(new Apfloat((double) radix, scaledXPrecision, radix)),
+                    scaledX = x.precision(scaledXPrecision).divide(logRadix),
+                    integerPart = scaledX.truncate(),
+                    fractionalPart = scaledX.frac();
 
-            result = new Apfloat(Math.pow((double) radix, fractionalPart), doublePrecision, radix);
-            result = scale(result, (long) integerPart);
+            result = new Apfloat(Math.pow((double) radix, fractionalPart.doubleValue()), doublePrecision, radix);
+            result = scale(result, integerPart.longValue());
 
-            // Initial precision is reduced if x is very big
-            int integerPartDigits = (integerPart > 0 ? (int) Math.floor(Math.log(integerPart + 0.5) / Math.log((double) radix)) : 0);
-            precision = Math.max(1, doublePrecision - integerPartDigits);
+            if (result.signum() == 0) {
+                // Underflow
+                return Apfloat.ZERO;
+            }
+
+            precision = doublePrecision;
         }
 
         int iterations = 0;
