@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision integers.
  *
- * @version 1.0.1
+ * @version 1.0.2
  * @author Mikko Tommila
  */
 
@@ -268,6 +268,32 @@ public class ApintMath
     }
 
     /**
+     * Copy sign from one argument to another.
+     *
+     * @param x The value whose sign is to be adjusted.
+     * @param x The value whose sign is to be used.
+     *
+     * @return <code>x</code> with its sign changed to match the sign of <code>y</code>.
+     */
+
+    private static Apint copySign(Apint x, Apint y)
+        throws ApfloatRuntimeException
+    {
+        if (y.signum() == 0)
+        {
+            return y;
+        }
+        else if (x.signum() != y.signum())
+        {
+            return negate(x);
+        }
+        else
+        {
+            return x;
+        }
+    }
+
+    /**
      * Multiply by a power of the radix.
      * Any rounding will occur towards zero.
      *
@@ -333,15 +359,20 @@ public class ApintMath
 
         q = tx.divide(ty).truncate();           // Approximate division
 
-        r = x.subtract(q.multiply(y));
-
-        a = abs(r);
+        a = a.subtract(abs(q.multiply(y)));
 
         if (a.compareTo(b) >= 0)                // Fix division round-off error
         {
             q = q.add(new Apint(x.signum() * y.signum(), x.radix()));
-            r = new Apint(x.signum(), x.radix()).multiply(a.subtract(b));
+            a = a.subtract(b);
         }
+        else if (a.signum() < 0)                // Fix division round-off error
+        {
+            q = q.subtract(new Apint(x.signum() * y.signum(), x.radix()));
+            a = a.add(b);
+        }
+
+        r = copySign(a, x);
 
         return new Apint[] { q, r };
     }
@@ -433,14 +464,19 @@ public class ApintMath
         }
 
         t = x.multiply(inverseY.precision(precision)).truncate();               // Approximate division
-        t = x.subtract(t.multiply(y));                                          // Remainder (maybe +modulus)
 
-        a = abs(t);
+        a = a.subtract(abs(t.multiply(y)));
 
         if (a.compareTo(b) >= 0)                // Fix division round-off error
         {
-            t = new Apint(x.signum(), x.radix()).multiply(a.subtract(b));
+            a = a.subtract(b);
         }
+        else if (a.signum() < 0)                // Fix division round-off error
+        {
+            a = a.add(b);
+        }
+
+        t = copySign(a, x);
 
         return t;
     }

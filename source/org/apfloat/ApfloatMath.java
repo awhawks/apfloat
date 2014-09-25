@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  * Due to different types of round-off errors that can occur in the implementation,
  * no guarantees about e.g. monotonicity are given for any of the methods.
  *
- * @version 1.0.1
+ * @version 1.0.2
  * @author Mikko Tommila
  */
 
@@ -421,6 +421,32 @@ public class ApfloatMath
     }
 
     /**
+     * Copy sign from one argument to another.
+     *
+     * @param x The value whose sign is to be adjusted.
+     * @param x The value whose sign is to be used.
+     *
+     * @return <code>x</code> with its sign changed to match the sign of <code>y</code>.
+     */
+
+    private static Apfloat copySign(Apfloat x, Apfloat y)
+        throws ApfloatRuntimeException
+    {
+        if (y.signum() == 0)
+        {
+            return y;
+        }
+        else if (x.signum() != y.signum())
+        {
+            return negate(x);
+        }
+        else
+        {
+            return x;
+        }
+    }
+
+    /**
      * Multiply by a power of the radix.
      *
      * @param x The argument.
@@ -440,7 +466,7 @@ public class ApfloatMath
         Apfloat radix = new Apfloat(x.radix(), Apfloat.INFINITE, x.radix()),
                 result;
 
-        if ((scale & 0xC000000000000000L) != 0)
+        if ((Math.abs(scale) & 0xC000000000000000L) != 0)
         {
             // The exponent might overflow in the string or in intermediate calculations
             Apfloat scaler1 = pow(radix, Math.abs(scale) >>> 1),
@@ -543,14 +569,19 @@ public class ApfloatMath
         tx = x.precision(precision);
         ty = y.precision(precision);
 
-        t = tx.subtract(t.multiply(ty));
-
-        a = abs(t);
+        a = abs(tx).subtract(abs(t.multiply(ty)));
+        b = abs(ty);
 
         if (a.compareTo(b) >= 0)                // Fix division round-off error
         {
-            t = new Apfloat(x.signum(), Apfloat.INFINITE, x.radix()).multiply(a.subtract(b));
+            a = a.subtract(b);
         }
+        else if (a.signum() < 0)                // Fix division round-off error
+        {
+            a = a.add(b);
+        }
+
+        t = copySign(a, x);
 
         return t;
     }
@@ -1641,6 +1672,18 @@ public class ApfloatMath
         Apcomplex w = ApcomplexMath.exp(new Apcomplex(Apfloat.ZERO, x));
 
         return w.imag().divide(w.real());
+    }
+
+    // Clean up static maps at shutdown, to allow garbage collecting temporary files
+    static void cleanUp()
+    {
+        ApfloatMath.radixPi = null;
+        ApfloatMath.radixPiCalculator = null;
+        ApfloatMath.radixPiT = null;
+        ApfloatMath.radixPiQ = null;
+        ApfloatMath.radixPiP = null;
+        ApfloatMath.radixPiInverseRoot = null;
+        ApfloatMath.radixLog = null;
     }
 
     // Synchronization keys for pi calculation

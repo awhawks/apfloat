@@ -35,23 +35,20 @@ package org.apfloat.internal;
  * <code>&#177;modulus</code> off).<p>
  *
  * There are different algorithms to calculate the approximate division
- * <code>a * b / modulus</code>. One would be to convert all the operands
- * to <code>double</code>. But, on most platforms converting between integer
- * types and floating point types is not very efficient. Another option is
- * to use fixed-point multiplication using <code>long</code> operands.
- * This is the approach used in this implementation.<p>
+ * <code>a * b / modulus</code>. This implementation simply converts all
+ * the operands to <code>double</code> and performs the mulciplications.
+ * This requires that converting between integer types and floating point
+ * types is efficient. On some platforms this may not be true; in that
+ * case it can be more efficient to perform the multiplications using
+ * 64-bit integer arithmetic.<p>
  *
- * As the modulus is slightly less than 2<sup>31</sup>, we can divide
- * 2<sup>63</sup> by the modulus, to get a fixed-point approximation
- * of the inverse modulus (rounded towards zero) to a precision of 33 bits.
- * The result of <code>a * b</code> takes 62 bits; shifting that right by
- * 30 bits and multiplying by the fixed-point inverse modulus will always
- * fit to 64 bits (because <code>a</code> and <code>b</code> are less than
- * the modulus and the inverse modulus was rounded towards zero). This
- * result can be further right-shifted by 33 to get the approximate result
- * of <code>a * b / modulus</code>.
+ * To simplify the operations, we calculate the inverse modulus as
+ * <code>1.0 / (modulus + 0.5)</code>. Since the modulus is assumed to be
+ * prime, and a <code>double</code> has more bits for precision than an
+ * <code>int</code>, the approximate result of <code>a * b / modulus</code>
+ * will always be either correct or one too small (but never one too big).
  *
- * @version 1.0
+ * @version 1.0.2
  * @author Mikko Tommila
  */
 
@@ -76,8 +73,7 @@ public class IntElementaryModMath
 
     public final int modMultiply(int a, int b)
     {
-        long t = (long) a * (long) b;
-        int r1 = (int) t - (int) ((t >>> 30) * this.inverseModulus >>> 33) * this.modulus,
+        int r1 = a * b - (int) (this.inverseModulus * (double) a * (double) b) * this.modulus,
             r2 = r1 - this.modulus;
 
         return (r2 < 0? r1 : r2);
@@ -136,10 +132,10 @@ public class IntElementaryModMath
 
     public final void setModulus(int modulus)
     {
-        this.inverseModulus = 0x8000000000000000L / -modulus;
+        this.inverseModulus = 1.0 / (modulus + 0.5);    // Round down
         this.modulus = modulus;
     }
 
     private int modulus;
-    private long inverseModulus;
+    private double inverseModulus;
 }

@@ -1,6 +1,5 @@
 package org.apfloat.internal;
 
-import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.BuilderFactory;
 import org.apfloat.spi.ApfloatBuilder;
 import org.apfloat.spi.DataStorageBuilder;

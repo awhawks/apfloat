@@ -5,7 +5,7 @@ import org.apfloat.spi.Util;
 /**
  * Various mathematical functions for arbitrary precision complex numbers.
  *
- * @version 1.0.1
+ * @version 1.0.2
  * @author Mikko Tommila
  */
 
@@ -872,7 +872,6 @@ public class ApcomplexMath
         throws ApfloatRuntimeException
     {
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix());
-        Apcomplex i = new Apcomplex(Apfloat.ZERO, one);
 
         if (z.real().signum() >= 0)
         {

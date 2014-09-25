@@ -1,7 +1,6 @@
 package org.apfloat.internal;
 
 import org.apfloat.ApfloatContext;
-import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.ConvolutionBuilder;
 import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.NTTBuilder;

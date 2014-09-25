@@ -15,7 +15,7 @@ import org.apfloat.spi.ApfloatImpl;
  * numbers to an integer value: {@link Apfloat#floor() }, {@link Apfloat#ceil() },
  * and {@link Apfloat#truncate() }.
  *
- * @version 1.0
+ * @version 1.0.2
  * @author Mikko Tommila
  */
 
@@ -321,11 +321,15 @@ public class Apint
 
         t = tx.divide(ty).truncate();           // Approximate division
 
-        a = ApfloatMath.abs(this.value.subtract(t.multiply(x.value)));
+        a = a.subtract(ApfloatMath.abs(t.multiply(x.value)));
 
         if (a.compareTo(b) >= 0)                // Fix division round-off error
         {
             t = t.add(new Apint(signum() * x.signum(), x.radix()));
+        }
+        else if (a.signum() < 0)                // Fix division round-off error
+        {
+            t = t.subtract(new Apint(signum() * x.signum(), x.radix()));
         }
 
         return t;

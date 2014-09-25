@@ -1,7 +1,5 @@
 package org.apfloat;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Collections;
 import java.util.Map;
@@ -152,7 +150,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.0
+ * @version 1.0.2
  * @author Mikko Tommila
  */
 
@@ -248,6 +246,7 @@ public class ApfloatContext
 
         public void run()
         {
+            ApfloatMath.cleanUp();      // Clear references to static cached apfloats
             System.gc();
             System.gc();
             System.runFinalization();
@@ -278,20 +277,23 @@ public class ApfloatContext
 
     public static ApfloatContext getContext()
     {
-        if (ApfloatContext.threadContexts.size() == 0)
+        synchronized (ApfloatContext.threadContexts)    // Avoid two monitor entry/exit blocks in multi-thread environments
         {
-            return getGlobalContext();
-        }
-        else
-        {
-            ApfloatContext ctx = getThreadContext();
-
-            if (ctx == null)
+            if (ApfloatContext.threadContexts.isEmpty())
             {
-                ctx = getGlobalContext();
+                return getGlobalContext();
             }
+            else
+            {
+                ApfloatContext ctx = getThreadContext();
 
-            return ctx;
+                if (ctx == null)
+                {
+                    ctx = getGlobalContext();
+                }
+
+                return ctx;
+            }
         }
     }
 

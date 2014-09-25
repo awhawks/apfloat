@@ -20,7 +20,7 @@ import org.apfloat.spi.FilenameGenerator;
  * Abstract base class for disk-based data storage, containing the common
  * functionality independent of the element type.
  *
- * @version 1.0
+ * @version 1.0.2
  * @author Mikko Tommila
  */
 
@@ -52,6 +52,10 @@ public abstract class DiskDataStorage
                 {
                     throw new ApfloatRuntimeException("Failed to create new file \"" + this.filename + '\"');
                 }
+
+                // Ensure file is deleted always
+                this.file.deleteOnExit();
+
                 this.randomAccessFile = new RandomAccessFile(this.file, "rw");
             }
             catch (IOException ioe)
@@ -82,11 +86,8 @@ public abstract class DiskDataStorage
                 // Ignore
             }
 
-            if (!this.file.delete())
-            {
-                // E.g. if file is in use, try deleting at a later time
-                this.file.deleteOnExit();
-            }
+            // If deletion fails now, at least deleteOnExit() has been called
+            this.file.delete();
         }
 
         public void setSize(long size)

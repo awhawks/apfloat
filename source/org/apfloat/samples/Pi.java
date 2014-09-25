@@ -12,7 +12,7 @@ import org.apfloat.ApfloatRuntimeException;
 /**
  * Calculates pi using three different algorithms.
  *
- * @version 1.0
+ * @version 1.0.2
  * @author Mikko Tommila
  */
 
@@ -386,7 +386,9 @@ public class Pi
                 Apfloat tmp = a;
                 a = a.add(b).divide(two);
                 checkAlive();
-                b = ApfloatMath.sqrt(tmp.multiply(b));
+                b = tmp.multiply(b);
+                checkAlive();
+                b = ApfloatMath.sqrt(b);
 
                 checkAlive();
                 t = t.subtract(new Apfloat(1L << i, this.precision, this.radix).multiply(ApfloatMath.pow(tmp.subtract(a), 2)));
@@ -402,7 +404,9 @@ public class Pi
             Pi.err.flush();
 
             time = System.currentTimeMillis();
-            Apfloat pi = ApfloatMath.pow(a.add(b), 2).divide(four.multiply(t));
+            a = a.add(b);
+            t = four.multiply(t);
+            Apfloat pi = ApfloatMath.pow(a, 2).divide(t);
             time = System.currentTimeMillis() - time;
 
             Pi.err.println("took " + time / 1000.0 + " seconds");
@@ -598,8 +602,8 @@ public class Pi
 
         Pi.err.println("builderFactory = " + ctx.getBuilderFactory().getClass().getName());
         Pi.err.println("maxMemoryBlockSize = " + ctx.getMaxMemoryBlockSize());
-        Pi.err.println("cacheL1size = " + ctx.getCacheL1Size());
-        Pi.err.println("cacheL2size = " + ctx.getCacheL2Size());
+        Pi.err.println("cacheL1Size = " + ctx.getCacheL1Size());
+        Pi.err.println("cacheL2Size = " + ctx.getCacheL2Size());
         Pi.err.println("cacheBurst = " + ctx.getCacheBurst());
         Pi.err.println("memoryTreshold = " + ctx.getMemoryTreshold());
         Pi.err.println("blockSize = " + ctx.getBlockSize());

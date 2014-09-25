@@ -29,7 +29,7 @@ import org.apfloat.spi.Util;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.0
+ * @version 1.0.2
  * @author Mikko Tommila
  */
 
@@ -85,8 +85,7 @@ public final class LongApfloatImpl
             expIndex = -1,
             leadingZeros = 0,
             trailingZeros = 0,
-            digitSize = 0,
-            maxSize = (int) Math.min(precision == Apfloat.DEFAULT ? Integer.MAX_VALUE : precision, Integer.MAX_VALUE);
+            digitSize = 0;
 
         // Scan through the string looking for various things
         for (int i = 0; i < value.length(); i++)
@@ -531,8 +530,7 @@ public final class LongApfloatImpl
              pointIndex = -1,
              leadingZeros = 0,
              trailingZeros = 0,
-             digitSize = 0,
-             maxSize = (precision == Apfloat.DEFAULT ? Long.MAX_VALUE : precision);
+             digitSize = 0;
 
         // Scan through the string looking for various things
         for (long i = 0; (input = in.read()) != -1; i++)
@@ -1171,7 +1169,7 @@ public final class LongApfloatImpl
         }
 
         long precision = Math.min(this.precision, that.precision),
-             basePrecision = getBasePrecision(precision, 0),        // Round up
+             basePrecision = getBasePrecision(),
              thisDataSize = Math.min(getSize(), basePrecision);
 
         DataStorage dataStorage;
@@ -1236,6 +1234,9 @@ public final class LongApfloatImpl
 
                 size = Math.min(basePrecision, thisDataSize + sequenceSize);
             }
+
+            // One extra word for result in case the initial word becomes zero; to avoid loss of precision
+            size++;
 
             dataStorage = createDataStorage(size);
             dataStorage.setSize(size);

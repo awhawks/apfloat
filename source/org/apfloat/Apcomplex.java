@@ -1,13 +1,9 @@
 package org.apfloat;
 
-import java.math.BigInteger;
-import java.math.BigDecimal;
 import java.io.Serializable;
 import java.io.PushbackReader;
 import java.io.Writer;
 import java.io.IOException;
-
-import org.apfloat.spi.Util;
 
 /**
  * Arbitrary precision complex number class. An apcomplex consists of

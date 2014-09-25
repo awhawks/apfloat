@@ -1,7 +1,5 @@
 package org.apfloat.spi;
 
-import org.apfloat.ApfloatRuntimeException;
-
 /**
  * A <code>BuilderFactory</code> object contains factory methods for building
  * the various parts of an apfloat using the Builder pattern. There
