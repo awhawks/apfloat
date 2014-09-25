@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApfloatMath
  *
- * @version 1.8.0
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -792,7 +792,32 @@ public class ApcomplexMath
             return ApfloatMath.log(z.real(), w.real());
         }
 
-        return log(z).divide(log(w));
+        long targetPrecision = Math.min(z.precision(), w.precision());
+
+        if (z.real().signum() >= 0 && z.imag().signum() == 0)
+        {
+            Apfloat x = z.real();
+
+            Apfloat one = new Apfloat(1, Apfloat.INFINITE, x.radix());
+            targetPrecision = Util.ifFinite(targetPrecision, targetPrecision + one.equalDigits(x)); // If the log() argument is close to 1, the result is less accurate
+            x = x.precision(Math.min(x.precision(), targetPrecision));
+
+            return ApfloatMath.log(x).divide(log(w));
+        }
+        else if (w.real().signum() >= 0 && w.imag().signum() == 0)
+        {
+            Apfloat y = w.real();
+
+            Apfloat one = new Apfloat(1, Apfloat.INFINITE, y.radix());
+            targetPrecision = Util.ifFinite(targetPrecision, targetPrecision + one.equalDigits(y)); // If the log() argument is close to 1, the result is less accurate
+            y = y.precision(Math.min(y.precision(), targetPrecision));
+
+            return log(z).divide(ApfloatMath.log(y));
+        }
+        else
+        {
+            return log(z).divide(log(w));
+        }
     }
 
     // Raw logarithm, regardless of z
@@ -1060,12 +1085,21 @@ public class ApcomplexMath
             return result;
         }
 
-        if (z.real().signum() >= 0 && z.imag().signum() == 0 && w.imag().signum() == 0)
+        if (z.real().signum() >= 0 && z.imag().signum() == 0)
         {
-            return ApfloatMath.pow(z.real(), w.real());
-        }
+            Apfloat x = z.real();
 
-        return exp(w.multiply(log(z)));
+            // Limits precision for log() but may be sub-optimal; precision could be limited more
+            Apfloat one = new Apfloat(1, Apfloat.INFINITE, x.radix());
+            targetPrecision = Util.ifFinite(targetPrecision, targetPrecision + one.equalDigits(x)); // If the log() argument is close to 1, the result is less accurate
+            x = x.precision(Math.min(x.precision(), targetPrecision));
+
+            return exp(w.multiply(ApfloatMath.log(x)));
+        }
+        else
+        {
+            return exp(w.multiply(log(z)));
+        }
     }
 
     /**
@@ -1230,6 +1264,11 @@ public class ApcomplexMath
     public static Apcomplex cos(Apcomplex z)
         throws ApfloatRuntimeException
     {
+        if (z.imag().signum() == 0)
+        {
+            return ApfloatMath.cos(z.real());
+        }
+
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix()),
                 two = new Apfloat(2, Apfloat.INFINITE, z.radix());
         Apcomplex i = new Apcomplex(Apfloat.ZERO, one),
@@ -1249,6 +1288,11 @@ public class ApcomplexMath
     public static Apcomplex cosh(Apcomplex z)
         throws ApfloatRuntimeException
     {
+        if (z.imag().signum() == 0)
+        {
+            return ApfloatMath.cosh(z.real());
+        }
+
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix()),
                 two = new Apfloat(2, Apfloat.INFINITE, z.radix());
         Apcomplex w = exp(z);
@@ -1267,6 +1311,11 @@ public class ApcomplexMath
     public static Apcomplex sin(Apcomplex z)
         throws ApfloatRuntimeException
     {
+        if (z.imag().signum() == 0)
+        {
+            return ApfloatMath.sin(z.real());
+        }
+
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix()),
                 two = new Apfloat(2, Apfloat.INFINITE, z.radix());
         Apcomplex i = new Apcomplex(Apfloat.ZERO, one),
@@ -1286,6 +1335,11 @@ public class ApcomplexMath
     public static Apcomplex sinh(Apcomplex z)
         throws ApfloatRuntimeException
     {
+        if (z.imag().signum() == 0)
+        {
+            return ApfloatMath.sinh(z.real());
+        }
+
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, z.radix()),
                 two = new Apfloat(2, Apfloat.INFINITE, z.radix());
         Apcomplex w = exp(z);
@@ -1306,6 +1360,11 @@ public class ApcomplexMath
     public static Apcomplex tan(Apcomplex z)
         throws ArithmeticException, ApfloatRuntimeException
     {
+        if (z.imag().signum() == 0)
+        {
+            return ApfloatMath.tan(z.real());
+        }
+
         boolean negate = z.imag().signum() > 0;
         z = (negate ? z.negate() : z);
 
@@ -1332,6 +1391,11 @@ public class ApcomplexMath
     public static Apcomplex tanh(Apcomplex z)
         throws ArithmeticException, ApfloatRuntimeException
     {
+        if (z.imag().signum() == 0)
+        {
+            return ApfloatMath.tanh(z.real());
+        }
+
         boolean negate = z.real().signum() < 0;
         z = (negate ? z.negate() : z);
 

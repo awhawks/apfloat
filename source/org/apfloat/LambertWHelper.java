@@ -8,7 +8,7 @@ import org.apfloat.spi.Util;
  * Helper class for Lambert W function.
  *
  * @since 1.8.0
- * @version 1.8.0
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -57,6 +57,11 @@ class LambertWHelper {
             double precisionIncrease = Math.log(Math.abs((double) k) * 2 * Math.PI) / Math.log((double) this.radix);
             this.precision = ApfloatHelper.extendPrecision(this.precision, (long) precisionIncrease);
             this.targetPrecision = ApfloatHelper.extendPrecision(this.targetPrecision, (long) precisionIncrease);
+        }
+
+        if ((this.z.real().signum() != 0 || this.z.imag().signum() != 0) && this.precision == Apfloat.INFINITE)
+        {
+            throw new InfiniteExpansionException("Cannot calculate W to infinite precision");
         }
     }
 
@@ -154,9 +159,15 @@ class LambertWHelper {
         }
         this.targetPrecision = Math.max(this.targetPrecision, 1);   // In case input is -0.3 with precision 1
 
+        boolean done = (digits >= this.targetPrecision);
+        if (!done)
+        {
+            // Precalculate the needed values once to the required precision
+            ApfloatMath.logRadix(this.targetPrecision, this.radix);
+        }
+
         // Fritsch's iteration (quartic)
         // For values close to -1/e the convergence is initially worse but eventually becomes quartic
-        boolean done = (digits >= this.targetPrecision);
         Apfloat oldW;
         boolean converges = false;              // If there are at least a few correct digits in the result
         for (int i = 0; i < 50 && !done; i++)   // Should be enough iterations
@@ -298,9 +309,15 @@ class LambertWHelper {
         }
         this.targetPrecision = Math.max(this.targetPrecision, 1);   // In case input is -0.3 with precision 1
 
+        boolean done = (digits >= this.targetPrecision);
+        if (!done)
+        {
+            // Precalculate the needed values once to the required precision
+            ApfloatMath.logRadix(this.targetPrecision, this.radix);
+        }
+
         // Fritsch's iteration (quartic)
         // For values close to -1/e the convergence is initially worse but eventually becomes quartic
-        boolean done = (digits >= this.targetPrecision);
         Apcomplex oldW;
         boolean converges = false;              // If there are at least a few correct digits in the result
         for (int j = 0; j < 50 && !done; j++)   // Should be enough iterations

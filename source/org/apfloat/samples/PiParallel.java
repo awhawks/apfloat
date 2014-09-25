@@ -17,7 +17,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.5.2
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -324,7 +324,10 @@ public class PiParallel
             numberOfProcessors = (args.length > 2 ? getInt(args[2], "threads", 1, Integer.MAX_VALUE) : ApfloatContext.getContext().getNumberOfProcessors()),
             radix = (args.length > 3 ? getRadix(args[3]) : ApfloatContext.getContext().getDefaultRadix());
 
-        ApfloatContext.getContext().setNumberOfProcessors(numberOfProcessors);
+        // Also set the executor service to use the corresponding number of threads
+        ApfloatContext ctx = ApfloatContext.getContext();
+        ctx.setNumberOfProcessors(numberOfProcessors);
+        ctx.setExecutorService(ApfloatContext.getDefaultExecutorService());
 
         Operation<Apfloat> operation;
 

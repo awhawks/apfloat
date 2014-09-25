@@ -12,7 +12,7 @@ import org.apfloat.ApfloatRuntimeException;
 /**
  * Graphical AWT elements for calculating pi using multiple threads in parallel.
  *
- * @version 1.5
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -74,6 +74,8 @@ public class PiParallelAWT
         ApfloatContext ctx = ApfloatContext.getContext();
         int numberOfProcessors = Integer.parseInt(this.threadsField.getText());
         ctx.setNumberOfProcessors(numberOfProcessors);
+        ctx.setExecutorService(ApfloatContext.getDefaultExecutorService());
+
         Operation<Apfloat> operation = super.getOperation(precision, radix);
         if (operation instanceof Pi.ChudnovskyPiCalculator)
         {

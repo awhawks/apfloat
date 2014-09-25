@@ -9,7 +9,7 @@ import static org.apfloat.ApintMath.scale;
  * Binary recursive GCD algorithm implementation.
  *
  * @since 1.6
- * @version 1.6
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -67,12 +67,21 @@ class GCDHelper
     public static Apint gcd(Apint a, Apint b)
         throws ApfloatRuntimeException
     {
+        if (a.signum() == 0)
+        {
+            return b;
+        }
+        if (b.signum() == 0)
+        {
+            return a;
+        }
+
         // First reduce the numbers so that they have roughly the same size, regardless of algorithm used
-        if (a.scale() > b.scale() && b.signum() != 0)
+        if (a.scale() > b.scale())
         {
             a = a.mod(b);
         }
-        else if (b.scale() > a.scale() && a.signum() != 0)
+        else if (b.scale() > a.scale())
         {
             b = b.mod(a);
         }
@@ -118,25 +127,35 @@ class GCDHelper
         long zeros = Math.min(v(a), v(b));
 
         // Then remove the trailing zeros (it doesn't matter if one number has more zeros than the other), and add one zero to b
-        // (this is strange but it's required by the algorithm)
+        // The algorithm only works if a has no trailing zeros, and b has at least one
         a = scale(a, -v(a));
         b = scale(b, 1 - v(b));
 
-        // Call the recursive algorithm; initial k is the bit length of the numbers
+        // Call the recursive algorithm to compute the odd part of the gcd; initial k is the bit length of the numbers
         long k = Math.max(a.scale(), b.scale());
         HalfGcdType t = halfBinaryGcd(a, b, k);
         long j = t.j;
         Matrix result = t.r;
 
-        // Calculate the odd part of the gcd from the remainder sequence produced by the recursive algorithm
-        Apint gcd = scale(result.r11.multiply(a).add(result.r12.multiply(b)), -2 * j);
+        // As the output of the recursive algorithm, we get two terms of the remainder sequence (like in the elementary algorithm)
+        Apint c = scale(result.r11.multiply(a).add(result.r12.multiply(b)), -2 * j),
+              d = scale(result.r21.multiply(a).add(result.r22.multiply(b)), -2 * j);
 
-        // Verify that the final remainder of the remainder sequence is zero (like it is in the elementary algorithm)
-        Apint r = result.r21.multiply(a).add(result.r22.multiply(b));
-        if (r.signum() != 0)
+        // We have to check if these terms are the *last* terms of the remainder sequence
+        Apint gcd;
+        if (d.signum() == 0)
         {
-            // If and when the recursive algorithm isn't quite finished yet and we get here, then just perform one last step
-            gcd = elementaryGcd(gcd, scale(r, -2 * j));
+            // If d = 0 then c is the odd part of the gcd: c and d are the last terms of the remainder sequence.
+            gcd = c;
+        }
+        else
+        {
+            // However, with large numbers, the initial k argument for the recursive algorithm isn't many times sufficient,
+            // and c and d are not actually the last terms of the remainder sequence. So we continue computing the remainder
+            // sequence, until we reach the last terms, to find the gcd (odd part).
+            // The numbers remaining in the sequence are small, O(log n), compared to the original input numbers, so the elementary
+            // algorithm is sufficient for all practical purposes.
+            gcd = elementaryGcd(c, d);
         }
 
         // Finally scale the odd part of the gcd by the number of trailing zeros in the original numbers
@@ -144,7 +163,7 @@ class GCDHelper
     }
 
     // Based on the "Recursive Binary GCD Algorithm" by Damien Stehlé and Paul Zimmermann.
-    // Adapted from the algorithm presented in "Modern Computer Arithmetic" v. 0.5.1 by Richard P. Brent and Paul Zimmermann.
+    // Adapted from the algorithm presented in "Modern Computer Arithmetic" v. 0.5.9 by Richard P. Brent and Paul Zimmermann.
     private static HalfGcdType halfBinaryGcd(Apint a, Apint b, long k)
         throws ApfloatRuntimeException
     {

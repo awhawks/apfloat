@@ -53,7 +53,7 @@ import org.apfloat.spi.Util;
  * @see DataStorage#getTransposedArray(int,int,int,int)
  *
  * @since 1.7.0
- * @version 1.7.0
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -248,7 +248,7 @@ public class TwoPassFNTStrategy
     private int getMaxMemoryBlockSize(long length)
     {
         ApfloatContext ctx = ApfloatContext.getContext();
-        long maxMemoryBlockSize = Util.round2down(Math.min(ctx.getMaxMemoryBlockSize() / ctx.getBuilderFactory().getElementSize(), Integer.MAX_VALUE));
+        long maxMemoryBlockSize = Util.round2down(Math.min(ctx.getMaxMemoryBlockSize(), Integer.MAX_VALUE)) / ctx.getBuilderFactory().getElementSize();
         int maxBlockSize = (int) Math.min(length, maxMemoryBlockSize);
 
         return maxBlockSize;

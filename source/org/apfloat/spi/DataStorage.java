@@ -20,7 +20,7 @@ import org.apfloat.ApfloatRuntimeException;
  * iterators over non-overlapping parts is permitted. Invoking
  * other methods must generally be externally synchronized.
  *
- * @version 1.8.0
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -881,9 +881,9 @@ public abstract class DataStorage
             throw new IllegalStateException("Write access requested for read-only data storage");
         }
 
-        long size = (long) (startColumn + columns) * (long) rows;
+        long size = (long) columns * rows;
         if (startColumn < 0 || columns < 0 || rows < 0 || startColumn + columns < 0 ||
-            size > getSize())
+            (long) (startColumn + columns) * rows > getSize())
         {
             throw new IllegalArgumentException("Requested block out of range: startColumn=" + startColumn + ", columns=" + columns + ", rows=" + rows + ", available=" + getSize());
         }
@@ -1072,9 +1072,9 @@ public abstract class DataStorage
             throw new IllegalStateException("Write access requested for read-only data storage");
         }
 
-        long size = (long) (startColumn + columns) * (long) rows;
+        long size = (long) columns * rows;
         if (startColumn < 0 || columns < 0 || rows < 0 || startColumn + columns < 0 ||
-            size > getSize())
+            (long) (startColumn + columns) * rows > getSize())
         {
             throw new IllegalArgumentException("Requested block out of range: startColumn=" + startColumn + ", columns=" + columns + ", rows=" + rows + ", available=" + getSize());
         }

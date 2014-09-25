@@ -12,7 +12,7 @@ import org.apfloat.spi.FilenameGenerator;
 /**
  * Applet for calculating pi using four different algorithms.
  *
- * @version 1.7.1
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -116,7 +116,7 @@ public class PiApplet
 
         String lineSeparator = System.getProperty("line.separator");
         return "Pi calculation applet" + lineSeparator +
-               "Written by Mikko Tommila 2002 - 2013" + lineSeparator +
+               "Written by Mikko Tommila 2002 - 2014" + lineSeparator +
                "Specification-Title: "    + specificationPackage.getSpecificationTitle() + lineSeparator +
                "Specification-Version: "  + specificationPackage.getSpecificationVersion() + lineSeparator +
                "Specification-Vendor: "   + specificationPackage.getSpecificationVendor() + lineSeparator +

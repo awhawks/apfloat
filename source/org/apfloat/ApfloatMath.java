@@ -24,7 +24,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApintMath
  *
- * @version 1.8.0
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -972,79 +972,30 @@ public class ApfloatMath
         public void r(long n1, long n2, ApfloatHolder T, ApfloatHolder Q, ApfloatHolder P)
             throws ApfloatRuntimeException
         {
-            int length = (int) Math.min(n2 - n1, Integer.MAX_VALUE);
+            assert (n1 != n2);
+            long length = n2 - n1;
 
-            switch (length)             // Java can't switch on a long...
+            if (length == 1)
             {
-                case 0:
-                {
-                    assert (n1 != n2);
+                Apfloat p0 = p(n1);
 
-                    break;
-                }
-                case 1:
-                {
-                    Apfloat p0 = p(n1);
+                T.setApfloat(a(n1).multiply(p0));
+                Q.setApfloat(q(n1));
+                P.setApfloat(p0);
+            }
+            else
+            {
+                long nMiddle = (n1 + n2) / 2;
+                ApfloatHolder LT = new ApfloatHolder(),
+                              LQ = new ApfloatHolder(),
+                              LP = new ApfloatHolder();
 
-                    T.setApfloat(a(n1).multiply(p0));
-                    Q.setApfloat(q(n1));
-                    P.setApfloat(p0);
+                r(n1, nMiddle, LT, LQ, LP);
+                r(nMiddle, n2, T, Q, P);
 
-                    break;
-                }
-                case 2:
-                {
-                    Apfloat p0 = p(n1), p01 = p0.multiply(p(n1 + 1)),
-                            q1 = q(n1 + 1);
-
-                    T.setApfloat(q1.multiply(a(n1)).multiply(p0).add(
-                                 a(n1 + 1).multiply(p01)));
-                    Q.setApfloat(q(n1).multiply(q1));
-                    P.setApfloat(p01);
-
-                    break;
-                }
-                case 3:
-                {
-                    Apfloat p0 = p(n1), p01 = p0.multiply(p(n1 + 1)), p012 = p01.multiply(p(n1 + 2)),
-                            q2 = q(n1 + 2), q12 = q(n1 + 1).multiply(q2);
-
-                    T.setApfloat(q12.multiply(a(n1)).multiply(p0).add(
-                         q2.multiply(a(n1 + 1)).multiply(p01)).add(
-                         a(n1 + 2).multiply(p012)));
-                    Q.setApfloat(q(n1).multiply(q12));
-                    P.setApfloat(p012);
-
-                    break;
-                }
-                case 4:
-                {
-                    Apfloat p0 = p(n1), p01 = p0.multiply(p(n1 + 1)), p012 = p01.multiply(p(n1 + 2)), p0123 = p012.multiply(p(n1 + 3)),
-                            q3 = q(n1 + 3), q23 = q(n1 + 2).multiply(q3), q123 = q(n1 + 1).multiply(q23);
-
-                    T.setApfloat(q123.multiply(a(n1)).multiply(p0).add(
-                         q23.multiply(a(n1 + 1)).multiply(p01)).add(
-                         q3.multiply(a(n1 + 2)).multiply(p012)).add(
-                         a(n1 + 3).multiply(p0123)));
-                    Q.setApfloat(q(n1).multiply(q123));
-                    P.setApfloat(p0123);
-
-                    break;
-                }
-                default:
-                {
-                    long nMiddle = (n1 + n2) / 2;
-                    ApfloatHolder LT = new ApfloatHolder(),
-                                  LQ = new ApfloatHolder(),
-                                  LP = new ApfloatHolder();
-
-                    r(n1, nMiddle, LT, LQ, LP);
-                    r(nMiddle, n2, T, Q, P);
-
-                    T.setApfloat(Q.getApfloat().multiply(LT.getApfloat()).add(LP.getApfloat().multiply(T.getApfloat())));
-                    Q.setApfloat(LQ.getApfloat().multiply(Q.getApfloat()));
-                    P.setApfloat(LP.getApfloat().multiply(P.getApfloat()));
-                }
+                T.setApfloat(Q.getApfloat().multiply(LT.getApfloat()).add(LP.getApfloat().multiply(T.getApfloat())));
+                Q.setApfloat(LQ.getApfloat().multiply(Q.getApfloat()));
+                P.setApfloat(LP.getApfloat().multiply(P.getApfloat()));
             }
         }
 
@@ -1179,8 +1130,13 @@ public class ApfloatMath
         throws ArithmeticException, ApfloatRuntimeException
     {
         long targetPrecision = Math.min(x.precision(), b.precision());
-        x = x.precision(targetPrecision);
-        b = b.precision(targetPrecision);
+
+        Apfloat one = new Apfloat(1, Apfloat.INFINITE, x.radix());
+        long xPrecision = Util.ifFinite(targetPrecision, targetPrecision + one.equalDigits(x)); // If the log() argument is close to 1, the result is less accurate
+        x = x.precision(Math.min(x.precision(), xPrecision));
+
+        long bPrecision = Util.ifFinite(targetPrecision, targetPrecision + one.equalDigits(b));
+        b = b.precision(Math.min(b.precision(), bPrecision));
 
         return log(x, false).divide(log(b, false));
     }

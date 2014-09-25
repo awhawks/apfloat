@@ -14,7 +14,7 @@ import org.apfloat.AprationalMath;
 /**
  * Arbitrary precision calculator implementation.
  *
- * @version 1.8.0
+ * @version 1.8.1
  * @author Mikko Tommila
  */
 
@@ -527,7 +527,7 @@ public class ApfloatCalculatorImpl
 
         protected Number scale(Number x, long y)
         {
-            return ApintMath.scale((Apint) x, y);
+            return (y >= 0 ? ApintMath.scale((Apint) x, y) : super.scale(x, y));
         }
     }
 
@@ -628,7 +628,7 @@ public class ApfloatCalculatorImpl
             // Complex to float
             x = ((Apcomplex) x).real();
         }
-        if (x instanceof Apfloat && !(x instanceof Aprational) && ((Apfloat) x).equals(((Apfloat) x).truncate()) && ((Apfloat) x).precision() == Apfloat.INFINITE)
+        if (x instanceof Apfloat && !(x instanceof Aprational) && ((Apfloat) x).precision() == Apfloat.INFINITE && ((Apfloat) x).frac().signum() == 0)
         {
             // Float to integer
             x = ((Apfloat) x).truncate();
