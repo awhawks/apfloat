@@ -7,11 +7,12 @@ import static org.apfloat.internal.DoubleRadixConstants.*;
  * Basic arithmetic for calculating the Chinese Remainder
  * Theorem. Works for the <code>double</code> type.
  *
- * @version 1.1
+ * @version 1.6
  * @author Mikko Tommila
  */
 
 public class DoubleCRTMath
+    extends DoubleBaseMath
 {
     /**
      * Creates a carry-CRT math using the specified radix.
@@ -21,6 +22,7 @@ public class DoubleCRTMath
 
     public DoubleCRTMath(int radix)
     {
+        super(radix);
         this.base = (long) BASE[radix];
         this.inverseBase = 1.0 / BASE[radix];
     }
@@ -186,6 +188,8 @@ public class DoubleCRTMath
 
         return (double) carry;
     }
+
+    private static final long serialVersionUID = -8414531999881223922L;
 
     private static final long BASE_MASK = (1L << MAX_POWER_OF_TWO_BITS) - 1;
     private static final double INVERSE_2_64 = 1.0 / 18446744073709551616.0;

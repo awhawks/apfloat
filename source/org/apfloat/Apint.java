@@ -21,7 +21,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see ApintMath
  *
- * @version 1.3
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -203,12 +203,33 @@ public class Apint
      * Zero has a scale of <code>-INFINITE</code>.
      *
      * @return Number of digits in this apint in the radix in which it's presented.
+     *
+     * @see Apfloat#scale()
      */
 
     public long scale()
         throws ApfloatRuntimeException
     {
         return this.value.scale();
+    }
+
+    /**
+     * Returns the size of this apint. Size is equal to the number of significant
+     * digits in the number, excluding any trailing zeros.<p>
+     *
+     * Zero has a size of <code>0</code>.
+     *
+     * @return Number of significant digits in this number, excluding trailing zeros, in the radix in which it's presented.
+     *
+     * @see Apfloat#size()
+     *
+     * @since 1.6
+     */
+
+    public long size()
+        throws ApfloatRuntimeException
+    {
+        return this.value.size();
     }
 
     /**
@@ -406,6 +427,29 @@ public class Apint
     public Apint truncate()
     {
         return this;
+    }
+
+    /**
+     * Converts this apint to Java's <code>BigInteger</code>.
+     * This method can be greatly faster than converting to String
+     * and then to BigInteger.
+     *
+     * @return This apint converted to a <code>BigInteger</code>.
+     *
+     * @exception java.lang.IllegalArgumentException If this number is too big to fit in a <code>BigInteger</code>.
+     *
+     * @since 1.6
+     */
+
+    public BigInteger toBigInteger()
+        throws IllegalArgumentException
+    {
+        if (signum() == 0)
+        {
+            return BigInteger.ZERO;
+        }
+
+        return ApfloatHelper.toBigInteger(this);
     }
 
     /**

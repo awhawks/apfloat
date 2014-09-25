@@ -35,8 +35,8 @@ import org.apfloat.spi.Util;
  * </pre>
  *
  * The <code>key</code> is any object that is used to determine distinct
- * groups for the synchronization. For example, the shared memory lock
- * object from {@link ApfloatContext#getSharedMemoryLock()} can be used
+ * groups for the synchronization. For example, the shared memory lock object
+ * from {@link ApfloatContext#getSharedMemoryLock()} can be used as the key
  * to limit memory consumption when the shared memory treshold is exceeded.<p>
  *
  * To avoid any blocking due to synchronization, a <code>ParallelRunner</code>
@@ -77,6 +77,7 @@ public class ParallelRunner
         }
 
         public void run(ParallelRunnable parallelRunnable)
+            throws ApfloatRuntimeException
         {
             // Initialize and start other parallel threads, if any - synchronized
             start(parallelRunnable);
@@ -138,7 +139,7 @@ public class ParallelRunner
                 ExecutorService executorService = ctx.getExecutorService();
                 for (int i = 0; i < numberOfProcessors; i++)
                 {
-                    // Dispatch a task to a separate thread to execute the run() method if this object, to participate in the actual work
+                    // Dispatch a task to a separate thread to execute the run() method of this object, to participate in the actual work
                     // The parallelRunnable and position are atomic, so that the other threads can see them even though this thread has not yet exited synchronization
                     Future<?> future = executorService.submit(this);
                     this.futures.add(future);
@@ -147,6 +148,7 @@ public class ParallelRunner
         }
 
         private synchronized void join()
+            throws ApfloatRuntimeException
         {
             // Wait for the parallel execution threads to complete, if any
             if (this.futures != null)
@@ -322,5 +324,5 @@ public class ParallelRunner
 
     private static final int MINIMUM_BATCH_SIZE = 16;
 
-    private static Map<Object,ParallelRunnableTask> tasks = new IdentityHashMap<Object,ParallelRunnableTask>();
+    private static Map<Object, ParallelRunnableTask> tasks = new IdentityHashMap<Object, ParallelRunnableTask>();
 }

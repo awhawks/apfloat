@@ -7,11 +7,12 @@ import static org.apfloat.internal.FloatRadixConstants.*;
  * Basic arithmetic for calculating the Chinese Remainder
  * Theorem. Works for the <code>float</code> type.
  *
- * @version 1.1
+ * @version 1.6
  * @author Mikko Tommila
  */
 
 public class FloatCRTMath
+    extends FloatBaseMath
 {
     /**
      * Creates a carry-CRT math using the specified radix.
@@ -21,6 +22,7 @@ public class FloatCRTMath
 
     public FloatCRTMath(int radix)
     {
+        super(radix);
         this.base = BASE[radix];
     }
 
@@ -161,6 +163,8 @@ public class FloatCRTMath
 
         return carry;
     }
+
+    private static final long serialVersionUID = 2778445457339436642L;
 
     private static final double INVERSE_MAX_POWER_OF_TWO_BASE = 1.0 / MAX_POWER_OF_TWO_BASE;
 

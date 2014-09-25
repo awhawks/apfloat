@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  * <code>ApfloatMath.acos(Apfloat.ZERO)</code>.
  *
  * @since 1.5
- * @version 1.5
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -346,6 +346,28 @@ public class FixedPrecisionApfloatHelper
         // So, if the argument would have more precision, it could be used, however checking for
         // this as well as the computation itself could be very time-consuming so we don't do it
         return valueOf(ApfloatMath.log(setPrecision(x)));
+    }
+
+    /**
+     * Logarithm in specified base.
+     *
+     * @param x The operand.
+     * @param b The base.
+     *
+     * @return The base-<code>b</code> logarithm of <code>x</code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>x</code> or <code>b</code> is less than or equal to zero.
+     *
+     * @since 1.6
+     */
+
+    public Apfloat log(Apfloat x, Apfloat b)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        // If x or b is close to one then result will actually have limited accuracy
+        // So, if the argument would have more precision, it could be used, however checking for
+        // this as well as the computation itself could be very time-consuming so we don't do it
+        return valueOf(ApfloatMath.log(setPrecision(x), setPrecision(b)));
     }
 
     /**

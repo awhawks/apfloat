@@ -12,7 +12,7 @@ import org.apfloat.AprationalMath;
 /**
  * Arbitrary precision calculator implementation.
  *
- * @version 1.2
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -169,6 +169,11 @@ public class ApfloatCalculatorImpl
             return ApcomplexMath.log((Apcomplex) x);
         }
 
+        public Number log(Number x, Number y)
+        {
+            return ApcomplexMath.log((Apcomplex) x, (Apcomplex) y);
+        }
+
         public Number pi(Number x)
         {
             if (!isLong(x))
@@ -248,9 +253,23 @@ public class ApfloatCalculatorImpl
             return inverseRoot(x, y.longValue());
         }
 
+        public Number inverseRoot(Number x, Number y, Number z)
+        {
+            if (!isLong(y) || !isLong(z))
+            {
+                throw new IllegalArgumentException("Inverse root can only be used with valid integer arguments");
+            }
+            return inverseRoot(x, y.longValue(), z.longValue());
+        }
+
         protected Number inverseRoot(Number x, long y)
         {
             return ApcomplexMath.inverseRoot((Apcomplex) x, y);
+        }
+
+        protected Number inverseRoot(Number x, long y, long z)
+        {
+            return ApcomplexMath.inverseRoot((Apcomplex) x, y, z);
         }
 
         public Number lcm(Number x, Number y)
@@ -267,9 +286,23 @@ public class ApfloatCalculatorImpl
             return root(x, y.longValue());
         }
 
+        public Number root(Number x, Number y, Number z)
+        {
+            if (!isLong(y) || !isLong(z))
+            {
+                throw new IllegalArgumentException("Root can only be used with valid integer arguments");
+            }
+            return root(x, y.longValue(), z.longValue());
+        }
+
         protected Number root(Number x, long y)
         {
             return ApcomplexMath.root((Apcomplex) x, y);
+        }
+
+        protected Number root(Number x, long y, long z)
+        {
+            return ApcomplexMath.root((Apcomplex) x, y, z);
         }
 
         public Number scale(Number x, Number y)

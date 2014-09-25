@@ -8,6 +8,7 @@ import java.util.Formatter;
 import static java.util.FormattableFlags.*;
 
 import org.apfloat.spi.ApfloatImpl;
+import static org.apfloat.spi.RadixConstants.*;
 
 /**
  * Arbitrary precision rational number class. An aprational consists of
@@ -16,7 +17,7 @@ import org.apfloat.spi.ApfloatImpl;
  * @see Apint
  * @see AprationalMath
  *
- * @version 1.4
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -255,6 +256,8 @@ public class Aprational
      * Zero has a scale of <code>-INFINITE</code>.
      *
      * @return Number of digits in the truncated value of this aprational in the radix in which it's presented.
+     *
+     * @see Apfloat#scale()
      */
 
     public synchronized long scale()
@@ -283,6 +286,58 @@ public class Aprational
         }
 
         return this.scale;
+    }
+
+    /**
+     * Returns the size of this aprational. Size is equal to the number of significant
+     * digits in the aprational's floating-point expansion. If the expansion is infinite
+     * then this method returns <code>INFINITE</code>.<p>
+     *
+     * Zero has a size of <code>0</code>.
+     *
+     * @return Number of significant digits in the floating-point expansion of this aprational in the radix in which it's presented.
+     *
+     * @see Apfloat#size()
+     *
+     * @since 1.6
+     */
+
+    public long size()
+        throws ApfloatRuntimeException
+    {
+        long size;
+
+        // Check that the factorization of the divisor consists entirely of factors of the base
+        // E.g. if base is 10=2*5 then the divisor should be 2^n*5^m
+        Apint dividend = denominator();
+        for (int i = 0; i < RADIX_FACTORS[radix()].length; i++)
+        {
+            Apint factor = new Apint(RADIX_FACTORS[radix()][i], radix());
+            Apint[] quotientAndRemainder;
+
+            // Keep dividing by factor as long as dividend % factor == 0
+            // that is remove factors of the base from the divisor
+            while ((quotientAndRemainder = ApintMath.div(dividend, factor))[1].signum() == 0)
+            {
+                dividend = quotientAndRemainder[0];
+            }
+        }
+
+        // Check if the divisor was factored all the way to one by just dividing by factors of the base
+        if (!dividend.equals(ONE))
+        {
+            // No - infinite floating-point expansion
+            size = INFINITE;
+        }
+        else
+        {
+            // Yes - calculate the number of digits
+            // Scale the number so that all significant digits will fit in the integer part
+            // The factor 5 is a rough estimate; e.g. if the denominator is 2^n then in base 34 we get close to that value
+            size = ApintMath.scale(numerator(), denominator().scale() * 5).divide(denominator()).size();
+        }
+
+        return size;
     }
 
     /**

@@ -2,7 +2,11 @@ package org.apfloat;
 
 import java.math.BigInteger;
 import java.math.BigDecimal;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PushbackReader;
+import java.io.Writer;
 import java.io.IOException;
 
 import org.apfloat.spi.ApfloatBuilder;
@@ -13,7 +17,7 @@ import static org.apfloat.spi.RadixConstants.*;
 /**
  * Various utility methods related to apfloats.
  *
- * @version 1.5
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -169,10 +173,10 @@ class ApfloatHelper
     }
 
     public static ApfloatImpl createApfloat(BigInteger value)
-        throws ApfloatRuntimeException
+        throws NumberFormatException, ApfloatRuntimeException
     {
         int radix = getDefaultRadix();
-        return createApfloat(value.toString(radix), Apfloat.INFINITE, radix, true);
+        return createApfloat(value, Apfloat.INFINITE, radix);
     }
 
     public static ApfloatImpl createApfloat(BigInteger value, long precision)
@@ -185,9 +189,22 @@ class ApfloatHelper
     public static ApfloatImpl createApfloat(BigInteger value, long precision, int radix)
         throws NumberFormatException, IllegalArgumentException, ApfloatRuntimeException
     {
+        if (precision != Apfloat.DEFAULT)
+        {
+            checkPrecision(precision);
+        }
         checkRadix(radix);
+        Apfloat a;
+        try
+        {
+            a = new Apfloat(createApfloat(toPushbackReader(value), Apfloat.INFINITE, 16, true));
+        }
+        catch (IOException ioe)
+        {
+            throw new ApfloatRuntimeException("Should not occur");
+        }
         precision = (precision == Apfloat.DEFAULT ? Apfloat.INFINITE : precision);
-        return createApfloat(value.toString(radix), precision, radix, true);
+        return a.toRadix(radix).getImpl(precision);
     }
 
     public static ApfloatImpl createApfloat(BigDecimal value)
@@ -551,22 +568,135 @@ class ApfloatHelper
                              z.imag().precision(extendPrecision(z.imag().precision(), extraPrecision)));
     }
 
-    public static long size(Apfloat x)
-        throws ApfloatRuntimeException
-    {
-        return (x.signum() == 0 ? 0 : x.getImpl(x.precision()).size());
-    }
-
-    public static long size(Apcomplex z)
-        throws ApfloatRuntimeException
-    {
-        return Math.max(size(z.real()), size(z.imag()));
-    }
-
     public static long size(Aprational x)
         throws ApfloatRuntimeException
     {
-        return Math.max(size((Apfloat) x.numerator()), size((Apfloat) x.denominator()));
+        return Math.max(x.numerator().size(), x.denominator().size());
+    }
+
+    public static BigInteger toBigInteger(Apint x)
+    {
+        assert (x.signum() != 0);
+
+        // The naive approach to convert to String and then to BigInteger is highly
+        // inefficient as the BigInteger String constructor has O(n^2) complexity.
+        // Therefore we first convert to radix-16 and then to a byte array.
+        Apint a = ApintMath.abs(x.toRadix(16));
+        long scale = a.scale();
+        long byteCount = (scale + 1) >> 1;
+
+        if (byteCount > Integer.MAX_VALUE)
+        {
+            throw new IllegalArgumentException("Maximum array size exceeded");
+        }
+
+        final byte[] bytes = new byte[(int) byteCount];
+        final boolean startHi = ((scale & 1) == 0);
+
+        try
+        {
+            a.writeTo(new Writer()
+            {
+                public void write(int c)
+                {
+                    c = Character.digit(c, 16);
+                    if (this.hi)
+                    {
+                        this.b = (c << 4);
+                    }
+                    else
+                    {
+                        this.b += (c & 0x0F);
+                        bytes[this.bytePosition] = (byte) this.b;
+                        this.bytePosition++;
+                    }
+                    this.hi = !this.hi;
+                }
+
+                public void write(char cbuf[], int off, int len)
+                {
+                    for (int i = 0; i < len; i++)
+                    {
+                        write(cbuf[off + i]);
+                    }
+                }
+
+                public void close()
+                {
+                }
+
+                public void flush()
+                {
+                }
+
+                private int b;
+                private int bytePosition;
+                private boolean hi = startHi;
+            });
+        }
+        catch (IOException ioe)
+        {
+            throw new ApfloatRuntimeException("Should not occur");
+        }
+
+        BigInteger b = new BigInteger(x.signum(), bytes);
+        return b;
+    }
+
+    // Get a reader for the radix-16 presentation of the BigInteger.
+    // The BigInteger.toString() method has O(n^2) complexity,
+    // therefore we convert to a byte array instead.
+    public static PushbackReader toPushbackReader(BigInteger x)
+        throws IOException
+    {
+        byte[] bytes = x.abs().toByteArray();
+        final int startB = (x.signum() < 0 ? '-' : -1);     // Start the stream with minus sign in case of negative number
+        InputStream in = new ByteArrayInputStream(bytes)
+        {
+            public int read()
+            {
+                int c;
+                if (this.b == -1)
+                {
+                    this.b = super.read();
+                    if (this.b == -1)
+                    {
+                        c = -1;
+                    }
+                    else
+                    {
+                        c = Character.forDigit(this.b >> 4, 16);
+                        this.b = Character.forDigit(this.b & 0x0F, 16);
+                    }
+                }
+                else
+                {
+                    c = this.b;
+                    this.b = -1;
+                }
+                return c;
+            }
+
+            public int read(byte[] b, int off, int len)
+            {
+                int i = 0;
+                for (; i < len; i++)
+                {
+                    int c = read();
+                    if (c == -1)
+                    {
+                        i = (i == 0 ? -1 : i);  // In case of EOF; there was nothing to read in the stream
+                        break;
+                    }
+                    b[i + off] = (byte) c;
+                }
+                return i;
+            }
+
+            private int b = startB;
+        };
+
+        return new PushbackReader(new InputStreamReader(in, "ISO-8859-1"));
     }
 
     private static int getDefaultRadix()

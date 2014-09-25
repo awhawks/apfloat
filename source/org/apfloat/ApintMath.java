@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision integers.
  *
- * @version 1.5.2
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -387,14 +387,7 @@ public class ApintMath
     public static Apint gcd(Apint a, Apint b)
         throws ApfloatRuntimeException
     {
-        while (b.signum() != 0)
-        {
-            Apint r = a.mod(b);
-            a = b;
-            b = r;
-        }
-
-        return abs(a);
+        return GCDHelper.gcd(a, b);
     }
 
     /**

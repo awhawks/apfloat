@@ -1,5 +1,7 @@
 package org.apfloat.internal;
 
+import java.util.RandomAccess;
+
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.ConvolutionStrategy;
@@ -18,7 +20,7 @@ import static org.apfloat.internal.FloatModConstants.*;
  *
  * All access to this class must be externally synchronized.
  *
- * @version 1.5.1
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -26,6 +28,63 @@ public class Float3NTTConvolutionStrategy
     extends FloatModMath
     implements ConvolutionStrategy
 {
+    // Runnable for multiplying elements in place
+    private class MultiplyInPlaceRunnable
+        implements Runnable
+    {
+        public MultiplyInPlaceRunnable(DataStorage sourceAndDestination, DataStorage source)
+        {
+            this.sourceAndDestination = sourceAndDestination;
+            this.source = source;
+        }
+
+        public void run()
+        {
+            long size = this.sourceAndDestination.getSize();
+            DataStorage.Iterator dest = this.sourceAndDestination.iterator(DataStorage.READ_WRITE, 0, size),
+                                 src = this.source.iterator(DataStorage.READ, 0, size);
+
+            while (size > 0)
+            {
+                dest.setFloat(modMultiply(dest.getFloat(), src.getFloat()));
+
+                dest.next();
+                src.next();
+                size--;
+            }
+        }
+
+        private DataStorage sourceAndDestination,
+                            source;
+    }
+
+    // Runnable for squaring elements in place
+    private class SquareInPlaceRunnable
+        implements Runnable
+    {
+        public SquareInPlaceRunnable(DataStorage sourceAndDestination)
+        {
+            this.sourceAndDestination = sourceAndDestination;
+        }
+
+        public void run()
+        {
+            long size = this.sourceAndDestination.getSize();
+            DataStorage.Iterator iterator = this.sourceAndDestination.iterator(DataStorage.READ_WRITE, 0, size);
+
+            while (size > 0)
+            {
+                float value = iterator.getFloat();
+                iterator.setFloat(modMultiply(value, value));
+
+                iterator.next();
+                size--;
+            }
+        }
+
+        private DataStorage sourceAndDestination;
+    }
+
     /**
      * Creates a new convoluter that uses the specified
      * transform for transforming the data.
@@ -36,8 +95,8 @@ public class Float3NTTConvolutionStrategy
 
     public Float3NTTConvolutionStrategy(int radix, NTTStrategy transform)
     {
-        this.radix = radix;
         this.transform = transform;
+        this.carryCRT = new FloatCarryCRT(radix);
     }
 
     public DataStorage convolute(DataStorage x, DataStorage y, long resultSize)
@@ -58,7 +117,7 @@ public class Float3NTTConvolutionStrategy
                         resultMod1 = convoluteOne(x, y, length, 1, false),
                         resultMod2 = convoluteOne(x, y, length, 2, true);
 
-            result = new FloatCarryCRT(this.radix).carryCRT(resultMod0, resultMod1, resultMod2, resultSize);
+            result = this.carryCRT.carryCRT(resultMod0, resultMod1, resultMod2, resultSize);
         }
         finally
         {
@@ -110,7 +169,7 @@ public class Float3NTTConvolutionStrategy
                         resultMod1 = autoConvoluteOne(x, length, 1, false),
                         resultMod2 = autoConvoluteOne(x, length, 2, true);
 
-            result = new FloatCarryCRT(this.radix).carryCRT(resultMod0, resultMod1, resultMod2, resultSize);
+            result = this.carryCRT.carryCRT(resultMod0, resultMod1, resultMod2, resultSize);
         }
         finally
         {
@@ -147,24 +206,38 @@ public class Float3NTTConvolutionStrategy
      * @param modulus Which modulus to use (0, 1, 2)
      */
 
-    private void multiplyInPlace(DataStorage sourceAndDestination, DataStorage source, int modulus)
+    private void multiplyInPlace(final DataStorage sourceAndDestination, final DataStorage source, int modulus)
         throws ApfloatRuntimeException
     {
         assert (sourceAndDestination != source);
 
-        long size = sourceAndDestination.getSize();
-        DataStorage.Iterator dest = sourceAndDestination.iterator(DataStorage.READ_WRITE, 0, size),
-                             src = source.iterator(DataStorage.READ, 0, size);
+        final long size = sourceAndDestination.getSize();
 
         setModulus(MODULUS[modulus]);
 
-        while (size > 0)
+        if (size <= Integer.MAX_VALUE && this.parallelRunner != null &&                         // Only if the size fits in an integer, but with memory arrays it should
+            sourceAndDestination instanceof RandomAccess && source instanceof RandomAccess)     // Only if the data storage supports efficient parallel random access
         {
-            dest.setFloat(modMultiply(dest.getFloat(), src.getFloat()));
+            ParallelRunnable parallelRunnable = new ParallelRunnable()
+            {
+                public int getLength()
+                {
+                    return (int) size;
+                }
 
-            dest.next();
-            src.next();
-            size--;
+                public Runnable getRunnable(int offset, int length)
+                {
+                    DataStorage subSourceAndDestination = sourceAndDestination.subsequence(offset, length);
+                    DataStorage subSource = source.subsequence(offset, length);
+                    return new MultiplyInPlaceRunnable(subSourceAndDestination, subSource);
+                }
+            };
+
+            this.parallelRunner.runParallel(parallelRunnable);
+        }
+        else
+        {
+            new MultiplyInPlaceRunnable(sourceAndDestination, source).run();    // Just run in current thread without parallelization
         }
     }
 
@@ -179,21 +252,35 @@ public class Float3NTTConvolutionStrategy
      * @param modulus Which modulus to use (0, 1, 2)
      */
 
-    private void squareInPlace(DataStorage sourceAndDestination, int modulus)
+    private void squareInPlace(final DataStorage sourceAndDestination, int modulus)
         throws ApfloatRuntimeException
     {
-        long size = sourceAndDestination.getSize();
-        DataStorage.Iterator iterator = sourceAndDestination.iterator(DataStorage.READ_WRITE, 0, size);
+        final long size = sourceAndDestination.getSize();
 
         setModulus(MODULUS[modulus]);
 
-        while (size > 0)
+        if (size <= Integer.MAX_VALUE && this.parallelRunner != null &&     // Only if the size fits in an integer, but with memory arrays it should
+            sourceAndDestination instanceof RandomAccess)                   // Only if the data storage supports efficient parallel random access
         {
-            float value = iterator.getFloat();
-            iterator.setFloat(modMultiply(value, value));
+            ParallelRunnable parallelRunnable = new ParallelRunnable()
+            {
+                public int getLength()
+                {
+                    return (int) size;
+                }
 
-            iterator.next();
-            size--;
+                public Runnable getRunnable(int offset, int length)
+                {
+                    DataStorage subSourceAndDestination = sourceAndDestination.subsequence(offset, length);
+                    return new SquareInPlaceRunnable(subSourceAndDestination);
+                }
+            };
+
+            this.parallelRunner.runParallel(parallelRunnable);
+        }
+        else
+        {
+            new SquareInPlaceRunnable(sourceAndDestination).run();      // Just run in current thread without parallelization
         }
     }
 
@@ -208,6 +295,7 @@ public class Float3NTTConvolutionStrategy
             this.parallelRunner = new ParallelRunner(numberOfProcessors);
 
             ((ParallelNTTStrategy) this.transform).setParallelRunner(parallelRunner);
+            this.carryCRT.setParallelRunner(parallelRunner);
 
             if (length > ctx.getSharedMemoryTreshold() / 4)
             {
@@ -246,7 +334,7 @@ public class Float3NTTConvolutionStrategy
     }
 
     private NTTStrategy transform;
-    private int radix;
+    private FloatCarryCRT carryCRT;
     private ParallelRunner parallelRunner;
     private boolean locked;
 }

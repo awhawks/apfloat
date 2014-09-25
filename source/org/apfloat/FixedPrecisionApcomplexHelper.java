@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  * <code>ApcomplexMath.acos(Apcomplex.ZERO)</code>.
  *
  * @since 1.5
- * @version 1.5
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -418,6 +418,25 @@ public class FixedPrecisionApcomplexHelper
     }
 
     /**
+     * Logarithm in specified base.
+     *
+     * @param z The operand.
+     * @param w The base.
+     *
+     * @return The base-<code>w</code> logarithm of <code>z</code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>z</code> or <code>w</code> is zero.
+     *
+     * @since 1.6
+     */
+
+    public Apcomplex log(Apcomplex z, Apcomplex w)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        return valueOf(ApcomplexMath.log(setPrecision(z), setPrecision(w)));
+    }
+
+    /**
      * Sine.
      *
      * @param z The operand.
@@ -521,6 +540,24 @@ public class FixedPrecisionApcomplexHelper
         throws ArithmeticException, ApfloatRuntimeException
     {
         return valueOf(ApcomplexMath.inverseRoot(setPrecision(z), n));
+    }
+
+    /**
+     * Inverse root with branch.
+     *
+     * @param z The operand.
+     * @param n Which inverse root to take.
+     * @param k Which branch to take.
+     *
+     * @return <code>z<sup>-1/n</sup>e<sup>-i2&pi;k/n</sup></code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>z</code> or <code>n</code> is zero.
+     */
+
+    public Apcomplex inverseRoot(Apcomplex z, long n, long k)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        return valueOf(ApcomplexMath.inverseRoot(setPrecision(z), n, k));
     }
 
     /**

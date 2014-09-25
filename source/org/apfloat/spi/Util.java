@@ -5,7 +5,7 @@ import org.apfloat.Apfloat;
 /**
  * Miscellaneous utility methods.
  *
- * @version 1.3
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -395,6 +395,36 @@ public class Util
         assert (x > 0);
 
         return 63 - Long.numberOfLeadingZeros(x);
+    }
+
+    /**
+     * Base-2 logarithm rounded up to nearest power of two.
+     *
+     * @param x The input value, which must be positive.
+     *
+     * @return <code>log<sub>2</sub>(x)</code> rounded up to nearest integer.
+     */
+
+    public static int log2up(int x)
+    {
+        assert (x > 0);
+
+        return log2down(x) + (x == (x & -x) ? 0 : 1);
+    }
+
+    /**
+     * Base-2 logarithm rounded up to nearest power of two.
+     *
+     * @param x The input value, which must be positive.
+     *
+     * @return <code>log<sub>2</sub>(x)</code> rounded up to nearest integer.
+     */
+
+    public static int log2up(long x)
+    {
+        assert (x > 0);
+
+        return log2down(x) + (x == (x & -x) ? 0 : 1);
     }
 
     /**

@@ -16,8 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Mikko Tommila
  */
 
-class ConcurrentWeakHashMap<K,V>
-    extends AbstractMap<K,V>
+class ConcurrentWeakHashMap<K, V>
+    extends AbstractMap<K, V>
 {
     private static class Key
         extends WeakReference<Object>
@@ -52,12 +52,12 @@ class ConcurrentWeakHashMap<K,V>
         }
     }
 
-    private ConcurrentHashMap<Key,V> map;
+    private ConcurrentHashMap<Key, V> map;
     private ReferenceQueue<Object> queue;
 
     public ConcurrentWeakHashMap()
     {
-        this.map = new ConcurrentHashMap<Key,V>();
+        this.map = new ConcurrentHashMap<Key, V>();
         this.queue = new ReferenceQueue<Object>();
     }
 
@@ -67,7 +67,7 @@ class ConcurrentWeakHashMap<K,V>
         this.map.clear();
     }
 
-    public Set<Map.Entry<K,V>> entrySet()
+    public Set<Map.Entry<K, V>> entrySet()
     {
         throw new UnsupportedOperationException();
     }

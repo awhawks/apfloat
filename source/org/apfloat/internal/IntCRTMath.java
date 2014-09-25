@@ -7,11 +7,12 @@ import static org.apfloat.internal.IntRadixConstants.*;
  * Basic arithmetic for calculating the Chinese Remainder
  * Theorem. Works for the <code>int</code> type.
  *
- * @version 1.1
+ * @version 1.6
  * @author Mikko Tommila
  */
 
 public class IntCRTMath
+    extends IntBaseMath
 {
     /**
      * Creates a carry-CRT math using the specified radix.
@@ -21,6 +22,7 @@ public class IntCRTMath
 
     public IntCRTMath(int radix)
     {
+        super(radix);
         this.base = BASE[radix];
     }
 
@@ -161,6 +163,8 @@ public class IntCRTMath
 
         return carry;
     }
+
+    private static final long serialVersionUID = 6698972116690441263L;
 
     private static final int BASE_MASK = (1 << MAX_POWER_OF_TWO_BITS) - 1;
 

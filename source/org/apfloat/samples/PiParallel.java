@@ -5,7 +5,6 @@ import java.io.IOException;
 
 import org.apfloat.Apfloat;
 import org.apfloat.ApfloatContext;
-import org.apfloat.ApfloatMath;
 import org.apfloat.ApfloatRuntimeException;
 
 /**

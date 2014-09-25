@@ -1,5 +1,7 @@
 package org.apfloat.internal;
 
+import java.util.RandomAccess;
+
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.DataStorage;
@@ -9,12 +11,13 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>double</code>
  * element type.
  *
- * @version 1.4.2
+ * @version 1.6
  * @author Mikko Tommila
  */
 
 public final class DoubleMemoryDataStorage
     extends DataStorage
+    implements RandomAccess
 {
     /**
      * Default constructor.

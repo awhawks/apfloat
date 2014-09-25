@@ -10,7 +10,7 @@ import static org.apfloat.internal.DoubleRadixConstants.*;
  * Mathematical operations on numbers in a base.
  * Implementation for the <code>double</code> type.
  *
- * @version 1.4
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -50,9 +50,8 @@ public class DoubleBaseMath
         throws ApfloatRuntimeException
     {
         assert (src1 == null || src1 != src2);
-        assert (src1 != dst);
-        assert (src2 != dst);
 
+        boolean sameDst = (src1 == dst || src2 == dst);
         double base = BASE[this.radix];
 
         for (long i = 0; i < size; i++)
@@ -74,7 +73,7 @@ public class DoubleBaseMath
 
             if (src1 != null) src1.next();
             if (src2 != null) src2.next();
-            dst.next();
+            if (!sameDst) dst.next();
         }
 
         return carry;

@@ -8,7 +8,7 @@ import java.util.Map;
  * Calculator implementation with function support.
  * Provides a mapping mechanism for functions.
  *
- * @version 1.2
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -39,20 +39,34 @@ public abstract class FunctionCalculatorImpl
      * Function taking a fixed number of arguments.
      */
 
-    protected static abstract class AbstractFunction
+    protected abstract class FixedFunction
         implements Function
     {
         /**
          * Constructor.
          *
          * @param name The function's name.
-         * @param arguments Number of arguments that the function takes.
+         * @param arguments The number of arguments that the function takes.
          */
 
-        protected AbstractFunction(String name, int arguments)
+        protected FixedFunction(String name, int arguments)
+        {
+            this(name, arguments, arguments);
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param name The function's name.
+         * @param minArguments The minimum number of arguments that the function takes.
+         * @param maxArguments The maximum number of arguments that the function takes.
+         */
+
+        protected FixedFunction(String name, int minArguments, int maxArguments)
         {
             this.name = name;
-            this.arguments = arguments;
+            this.minArguments = minArguments;
+            this.maxArguments = maxArguments;
         }
 
         /**
@@ -66,89 +80,37 @@ public abstract class FunctionCalculatorImpl
         protected void validate(List<Number> arguments)
             throws ParseException
         {
-            if (arguments.size() != this.arguments)
+            if (this.minArguments == this.maxArguments && arguments.size() != this.minArguments)
             {
-                throw new ParseException("Function " + this.name + " takes " + this.arguments + " argument" + (this.arguments == 1 ? "" : "s") + ", not " + arguments.size());
+                throw new ParseException("Function " + this.name + " takes " + this.minArguments + " argument" + (this.minArguments == 1 ? "" : "s") + ", not " + arguments.size());
+            }
+            if (arguments.size() < this.minArguments || arguments.size() > this.maxArguments)
+            {
+                throw new ParseException("Function " + this.name + " takes " + this.minArguments + " to " + this.maxArguments + " arguments, not " + arguments.size());
             }
         }
 
+        public final Number call(List<Number> arguments)
+            throws ParseException
+        {
+            validate (arguments);
+            return promote(call(getFunctions(arguments), arguments));
+        }
+
+        /**
+         * Call the function.
+         *
+         * @param functions The function implementations.
+         * @param arguments The function's argument(s).
+         *
+         * @return The function's value.
+         */
+
+        protected abstract Number call(Functions functions, List<Number> arguments);
+
         private String name;
-        private int arguments;
-    }
-
-    /**
-     * Function taking one argument.
-     */
-
-    protected abstract class Function1
-        extends AbstractFunction
-    {
-        /**
-         * Constructor.
-         *
-         * @param name The function's name.
-         */
-
-        protected Function1(String name)
-        {
-            super(name, 1);
-        }
-
-        public final Number call(List<Number> arguments)
-            throws ParseException
-        {
-            validate (arguments);
-            return promote(call(getFunctions(arguments), arguments.get(0)));
-        }
-
-        /**
-         * Call the function.
-         *
-         * @param functions The function implementations.
-         * @param argument The function's argument.
-         *
-         * @return The function's value.
-         */
-
-        protected abstract Number call(Functions functions, Number argument);
-    }
-
-    /**
-     * Function taking two arguments.
-     */
-
-    protected abstract class Function2
-        extends AbstractFunction
-    {
-        /**
-         * Constructor.
-         *
-         * @param name The function's name.
-         */
-
-        protected Function2(String name)
-        {
-            super(name, 2);
-        }
-
-        public final Number call(List<Number> arguments)
-            throws ParseException
-        {
-            validate (arguments);
-            return promote(call(getFunctions(arguments), arguments.get(0), arguments.get(1)));
-        }
-
-        /**
-         * Call the function.
-         *
-         * @param functions The function implementations.
-         * @param argument1 The function's first argument.
-         * @param argument2 The function's second argument.
-         *
-         * @return The function's value.
-         */
-
-        protected abstract Number call(Functions functions, Number argument1, Number argument2);
+        private int minArguments;
+        private int maxArguments;
     }
 
     /**
@@ -185,6 +147,7 @@ public abstract class FunctionCalculatorImpl
         public Number factorial(Number x);
         public Number floor(Number x);
         public Number log(Number x);
+        public Number log(Number x, Number y);
         public Number pi(Number x);
         public Number sin(Number x);
         public Number sinh(Number x);
@@ -200,8 +163,10 @@ public abstract class FunctionCalculatorImpl
         public Number gcd(Number x, Number y);
         public Number hypot(Number x, Number y);
         public Number inverseRoot(Number x, Number y);
+        public Number inverseRoot(Number x, Number y, Number z);
         public Number lcm(Number x, Number y);
         public Number root(Number x, Number y);
+        public Number root(Number x, Number y, Number z);
         public Number scale(Number x, Number y);
         public Number precision(Number x, Number y);
     }
@@ -214,53 +179,53 @@ public abstract class FunctionCalculatorImpl
     {
         this.functions = new HashMap<String, Function>();
 
-        setFunction("negate", new Function1("negate") { protected Number call(Functions functions, Number argument) { return functions.negate(argument); } });
-        setFunction("add", new Function2("add") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.add(argument1, argument2); } });
-        setFunction("subtract", new Function2("subtract") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.subtract(argument1, argument2); } });
-        setFunction("multiply", new Function2("multiply") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.multiply(argument1, argument2); } });
-        setFunction("divide", new Function2("divide") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.divide(argument1, argument2); } });
-        setFunction("mod", new Function2("mod") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.mod(argument1, argument2); } });
-        setFunction("pow", new Function2("pow") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.pow(argument1, argument2); } });
+        setFunction("negate", new FixedFunction("negate", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.negate(arguments.get(0)); } });
+        setFunction("add", new FixedFunction("add", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.add(arguments.get(0), arguments.get(1)); } });
+        setFunction("subtract", new FixedFunction("subtract", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.subtract(arguments.get(0), arguments.get(1)); } });
+        setFunction("multiply", new FixedFunction("multiply", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.multiply(arguments.get(0), arguments.get(1)); } });
+        setFunction("divide", new FixedFunction("divide", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.divide(arguments.get(0), arguments.get(1)); } });
+        setFunction("mod", new FixedFunction("mod", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.mod(arguments.get(0), arguments.get(1)); } });
+        setFunction("pow", new FixedFunction("pow", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.pow(arguments.get(0), arguments.get(1)); } });
 
-        setFunction("abs", new Function1("abs") { protected Number call(Functions functions, Number argument) { return functions.abs(argument); } });
-        setFunction("acos", new Function1("acos") { protected Number call(Functions functions, Number argument) { return functions.acos(argument); } });
-        setFunction("acosh", new Function1("acosh") { protected Number call(Functions functions, Number argument) { return functions.acosh(argument); } });
-        setFunction("asin", new Function1("asin") { protected Number call(Functions functions, Number argument) { return functions.asin(argument); } });
-        setFunction("asinh", new Function1("asinh") { protected Number call(Functions functions, Number argument) { return functions.asinh(argument); } });
-        setFunction("atan", new Function1("atan") { protected Number call(Functions functions, Number argument) { return functions.atan(argument); } });
-        setFunction("atanh", new Function1("atanh") { protected Number call(Functions functions, Number argument) { return functions.atanh(argument); } });
-        setFunction("cbrt", new Function1("cbrt") { protected Number call(Functions functions, Number argument) { return functions.cbrt(argument); } });
-        setFunction("ceil", new Function1("ceil") { protected Number call(Functions functions, Number argument) { return functions.ceil(argument); } });
-        setFunction("cos", new Function1("cos") { protected Number call(Functions functions, Number argument) { return functions.cos(argument); } });
-        setFunction("cosh", new Function1("cosh") { protected Number call(Functions functions, Number argument) { return functions.cosh(argument); } });
-        setFunction("exp", new Function1("exp") { protected Number call(Functions functions, Number argument) { return functions.exp(argument); } });
-        setFunction("factorial", new Function1("factorial") { protected Number call(Functions functions, Number argument) { return functions.factorial(argument); } });
-        setFunction("floor", new Function1("floor") { protected Number call(Functions functions, Number argument) { return functions.floor(argument); } });
-        setFunction("log", new Function1("log") { protected Number call(Functions functions, Number argument) { return functions.log(argument); } });
-        setFunction("pi", new Function1("pi") { protected Number call(Functions functions, Number argument) { return functions.pi(argument); } });
-        setFunction("sin", new Function1("sin") { protected Number call(Functions functions, Number argument) { return functions.sin(argument); } });
-        setFunction("sinh", new Function1("sinh") { protected Number call(Functions functions, Number argument) { return functions.sinh(argument); } });
-        setFunction("sqrt", new Function1("sqrt") { protected Number call(Functions functions, Number argument) { return functions.sqrt(argument); } });
-        setFunction("tan", new Function1("tan") { protected Number call(Functions functions, Number argument) { return functions.tan(argument); } });
-        setFunction("tanh", new Function1("tanh") { protected Number call(Functions functions, Number argument) { return functions.tanh(argument); } });
-        setFunction("truncate", new Function1("truncate") { protected Number call(Functions functions, Number argument) { return functions.truncate(argument); } });
+        setFunction("abs", new FixedFunction("abs", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.abs(arguments.get(0)); } });
+        setFunction("acos", new FixedFunction("acos", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.acos(arguments.get(0)); } });
+        setFunction("acosh", new FixedFunction("acosh", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.acosh(arguments.get(0)); } });
+        setFunction("asin", new FixedFunction("asin", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.asin(arguments.get(0)); } });
+        setFunction("asinh", new FixedFunction("asinh", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.asinh(arguments.get(0)); } });
+        setFunction("atan", new FixedFunction("atan", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.atan(arguments.get(0)); } });
+        setFunction("atanh", new FixedFunction("atanh", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.atanh(arguments.get(0)); } });
+        setFunction("cbrt", new FixedFunction("cbrt", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.cbrt(arguments.get(0)); } });
+        setFunction("ceil", new FixedFunction("ceil", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.ceil(arguments.get(0)); } });
+        setFunction("cos", new FixedFunction("cos", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.cos(arguments.get(0)); } });
+        setFunction("cosh", new FixedFunction("cosh", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.cosh(arguments.get(0)); } });
+        setFunction("exp", new FixedFunction("exp", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.exp(arguments.get(0)); } });
+        setFunction("factorial", new FixedFunction("factorial", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.factorial(arguments.get(0)); } });
+        setFunction("floor", new FixedFunction("floor", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.floor(arguments.get(0)); } });
+        setFunction("log", new FixedFunction("log", 1, 2) { protected Number call(Functions functions, List<Number> arguments) { return (arguments.size() == 1 ? functions.log(arguments.get(0)) : functions.log(arguments.get(0), arguments.get(1))); } });
+        setFunction("pi", new FixedFunction("pi", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.pi(arguments.get(0)); } });
+        setFunction("sin", new FixedFunction("sin", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.sin(arguments.get(0)); } });
+        setFunction("sinh", new FixedFunction("sinh", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.sinh(arguments.get(0)); } });
+        setFunction("sqrt", new FixedFunction("sqrt", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.sqrt(arguments.get(0)); } });
+        setFunction("tan", new FixedFunction("tan", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.tan(arguments.get(0)); } });
+        setFunction("tanh", new FixedFunction("tanh", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.tanh(arguments.get(0)); } });
+        setFunction("truncate", new FixedFunction("truncate", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.truncate(arguments.get(0)); } });
 
-        setFunction("arg", new Function1("arg") { protected Number call(Functions functions, Number argument) { return functions.arg(argument); } });
-        setFunction("conj", new Function1("conj") { protected Number call(Functions functions, Number argument) { return functions.conj(argument); } });
-        setFunction("imag", new Function1("imag") { protected Number call(Functions functions, Number argument) { return functions.imag(argument); } });
-        setFunction("real", new Function1("real") { protected Number call(Functions functions, Number argument) { return functions.real(argument); } });
+        setFunction("arg", new FixedFunction("arg", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.arg(arguments.get(0)); } });
+        setFunction("conj", new FixedFunction("conj", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.conj(arguments.get(0)); } });
+        setFunction("imag", new FixedFunction("imag", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.imag(arguments.get(0)); } });
+        setFunction("real", new FixedFunction("real", 1) { protected Number call(Functions functions, List<Number> arguments) { return functions.real(arguments.get(0)); } });
 
-        setFunction("agm", new Function2("agm") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.agm(argument1, argument2); } });
-        setFunction("atan2", new Function2("atan2") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.atan2(argument1, argument2); } });
-        setFunction("copySign", new Function2("copySign") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.copySign(argument1, argument2); } });
-        setFunction("fmod", new Function2("fmod") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.fmod(argument1, argument2); } });
-        setFunction("gcd", new Function2("gcd") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.gcd(argument1, argument2); } });
-        setFunction("hypot", new Function2("hypot") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.hypot(argument1, argument2); } });
-        setFunction("inverseRoot", new Function2("inverseRoot") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.inverseRoot(argument1, argument2); } });
-        setFunction("lcm", new Function2("lcm") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.lcm(argument1, argument2); } });
-        setFunction("root", new Function2("root") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.root(argument1, argument2); } });
-        setFunction("scale", new Function2("scale") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.scale(argument1, argument2); } });
-        setFunction("n", new Function2("precision") { protected Number call(Functions functions, Number argument1, Number argument2) { return functions.precision(argument1, argument2); } });
+        setFunction("agm", new FixedFunction("agm", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.agm(arguments.get(0), arguments.get(1)); } });
+        setFunction("atan2", new FixedFunction("atan2", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.atan2(arguments.get(0), arguments.get(1)); } });
+        setFunction("copySign", new FixedFunction("copySign", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.copySign(arguments.get(0), arguments.get(1)); } });
+        setFunction("fmod", new FixedFunction("fmod", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.fmod(arguments.get(0), arguments.get(1)); } });
+        setFunction("gcd", new FixedFunction("gcd", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.gcd(arguments.get(0), arguments.get(1)); } });
+        setFunction("hypot", new FixedFunction("hypot", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.hypot(arguments.get(0), arguments.get(1)); } });
+        setFunction("inverseRoot", new FixedFunction("inverseRoot", 2, 3) { protected Number call(Functions functions, List<Number> arguments) { return (arguments.size() == 2 ? functions.inverseRoot(arguments.get(0), arguments.get(1)) : functions.inverseRoot(arguments.get(0), arguments.get(1), arguments.get(2))); } });
+        setFunction("lcm", new FixedFunction("lcm", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.lcm(arguments.get(0), arguments.get(1)); } });
+        setFunction("root", new FixedFunction("root", 2, 3) { protected Number call(Functions functions, List<Number> arguments) { return (arguments.size() == 2 ? functions.root(arguments.get(0), arguments.get(1)) : functions.root(arguments.get(0), arguments.get(1), arguments.get(2))); } });
+        setFunction("scale", new FixedFunction("scale", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.scale(arguments.get(0), arguments.get(1)); } });
+        setFunction("n", new FixedFunction("precision", 2) { protected Number call(Functions functions, List<Number> arguments) { return functions.precision(arguments.get(0), arguments.get(1)); } });
     }
 
     public Number function(String name, List<Number> arguments)

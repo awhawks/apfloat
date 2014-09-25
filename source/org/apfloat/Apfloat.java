@@ -29,7 +29,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see ApfloatMath
  *
- * @version 1.3
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -506,7 +506,7 @@ public class Apfloat
     /**
      * Returns the scale of this apfloat. The scale is defined here as<p>
      *
-     * <code>apfloat = mantissa * radix<sup>scale</sup></code><p>
+     * <code>apfloat = signum * mantissa * radix<sup>scale</sup></code><p>
      *
      * where 1/radix <= mantissa < 1. In other words,
      * <code>scale&nbsp;=&nbsp;floor(log<sub>radix</sub>(apfloat))&nbsp;+&nbsp;1</code>.<p>
@@ -531,6 +531,40 @@ public class Apfloat
         else
         {
             return this.impl.scale();
+        }
+    }
+
+    /**
+     * Returns the size of this apfloat. The size is defined here as<p>
+     *
+     * <code>apfloat = signum * mantissa * radix<sup>scale</sup></code> and<p>
+     * <code>mantissa = n / radix<sup>size</sup></code><p>
+     *
+     * where 1/radix <= mantissa < 1 and n is the smallest possible integer.
+     * In other words, the size is the number of significant digits in the
+     * mantissa (excluding leading and trailing zeros but including all zeros
+     * between the first and last nonzero digit).
+     *
+     * For example, 1 has a size of 1, and 100 has also a size of 1 (in radix 10).
+     * 11 has a size of 2, and 10001000 has a size of 5.<p>
+     *
+     * Zero has a size of <code>0</code>.
+     *
+     * @return The number of digits in this number, from the most significant digit to the least significant nonzero digit, in the radix in which it's presented.
+     *
+     * @since 1.6
+     */
+
+    public long size()
+        throws ApfloatRuntimeException
+    {
+        if (signum() == 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return this.impl.size();
         }
     }
 

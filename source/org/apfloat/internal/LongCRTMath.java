@@ -7,11 +7,12 @@ import static org.apfloat.internal.LongRadixConstants.*;
  * Basic arithmetic for calculating the Chinese Remainder
  * Theorem. Works for the <code>long</code> type.
  *
- * @version 1.1
+ * @version 1.6
  * @author Mikko Tommila
  */
 
 public class LongCRTMath
+    extends LongBaseMath
 {
     /**
      * Creates a carry-CRT math using the specified radix.
@@ -21,6 +22,7 @@ public class LongCRTMath
 
     public LongCRTMath(int radix)
     {
+        super(radix);
         this.base = BASE[radix];
         this.inverseBase = 1.0 / BASE[radix];
     }
@@ -212,6 +214,8 @@ public class LongCRTMath
 
         return carry;
     }
+
+    private static final long serialVersionUID = 7400961005627736773L;
 
     private static final long BASE_MASK = (1L << MAX_POWER_OF_TWO_BITS) - 1;
     private static final double INVERSE_MAX_POWER_OF_TWO_BASE = 1.0 / MAX_POWER_OF_TWO_BASE;

@@ -9,7 +9,7 @@ import static org.apfloat.spi.RadixConstants.*;
 /**
  * Helper class for radix conversion.
  *
- * @version 1.3
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -92,7 +92,7 @@ class RadixConversionHelper
         }
 
         int fromRadix = x.radix();
-        long size = ApfloatHelper.size(x),
+        long size = x.size(),
              scale = x.scale(),
              precision = getPrecision(x.precision(), fromRadix, toRadix);
         RadixPowerList radixPowerList = new RadixPowerList(fromRadix, toRadix, precision);

@@ -19,7 +19,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApintMath
  *
- * @version 1.5.1
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -1037,14 +1037,15 @@ public class ApfloatMath
              workingPrecision = ApfloatHelper.extendPrecision(precision);   // To avoid cumulative round-off errors
 
         Long terms = ApfloatMath.radixPiTerms.get(radixKey);
-        if (terms != null)
-        {
-            // Some terms have been calculated already previously
-            long currentTerms = terms.longValue();
+        LT = ApfloatMath.radixPiT.get(radixKey);
+        LQ = ApfloatMath.radixPiQ.get(radixKey);
+        LP = ApfloatMath.radixPiP.get(radixKey);
+        inverseRoot = ApfloatMath.radixPiInverseRoot.get(radixKey);
 
-            LT = ApfloatMath.radixPiT.get(radixKey);
-            LQ = ApfloatMath.radixPiQ.get(radixKey);
-            LP = ApfloatMath.radixPiP.get(radixKey);
+        if (terms != null && LT != null && LQ != null && LP != null && inverseRoot != null)
+        {
+            // Some terms have been calculated already previously and cached
+            long currentTerms = terms;
 
             // Check if there actually are more needed terms or if the needed
             // extra precision is just a few digits achievable with current terms
@@ -1058,7 +1059,6 @@ public class ApfloatMath
             }
 
             // Improve the inverse root value from the current precision
-            inverseRoot = ApfloatMath.radixPiInverseRoot.get(radixKey);
             inverseRoot = inverseRoot(new Apfloat(640320, workingPrecision, radix), 2, workingPrecision, inverseRoot);
         }
         else
@@ -1078,7 +1078,7 @@ public class ApfloatMath
         inverseRoot = inverseRoot.precision(precision);
         pi = pi.precision(precision);
 
-        // Put the updated values to the hashtable
+        // Put the updated values to the caches
         ApfloatMath.radixPiT.put(radixKey, LT);
         ApfloatMath.radixPiQ.put(radixKey, LQ);
         ApfloatMath.radixPiP.put(radixKey, LP);
@@ -1103,6 +1103,38 @@ public class ApfloatMath
      */
 
     public static Apfloat log(Apfloat x)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        return log(x, true);
+    }
+
+    /**
+     * Logarithm in arbitrary base.<p>
+     *
+     * The logarithm is calculated using the arithmetic-geometric mean.
+     * See the Borweins' book for the formula.
+     *
+     * @param x The argument.
+     * @param b The base.
+     *
+     * @return Base-<code>b</code> logarithm of <code>x</code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>x <= 0</code> or <code>b <= 0</code>.
+     *
+     * @since 1.6
+     */
+
+    public static Apfloat log(Apfloat x, Apfloat b)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        long targetPrecision = Math.min(x.precision(), b.precision());
+        x = x.precision(targetPrecision);
+        b = b.precision(targetPrecision);
+
+        return log(x, false).divide(log(b, false));
+    }
+
+    private static Apfloat log(Apfloat x, boolean multiplyByPi)
         throws ArithmeticException, ApfloatRuntimeException
     {
         if (x.signum() <= 0)
@@ -1132,16 +1164,16 @@ public class ApfloatMath
         }
         else
         {
-            Apfloat logRadix = ApfloatHelper.extendPrecision(logRadix(targetPrecision, x.radix()));
+            Apfloat logRadix = ApfloatHelper.extendPrecision(logRadix(targetPrecision, x.radix(), multiplyByPi));
             radixPower = new Apfloat(originalScale, Apfloat.INFINITE, x.radix()).multiply(logRadix);
         }
 
-        return ApfloatHelper.extendPrecision(rawLog(x)).add(radixPower).precision(finalPrecision);
+        return ApfloatHelper.extendPrecision(rawLog(x, multiplyByPi)).add(radixPower).precision(finalPrecision);
     }
 
     // Raw logarithm, regardless of x
     // Doesn't work for big x, but is faster if used alone for small numbers
-    private static Apfloat rawLog(Apfloat x)
+    private static Apfloat rawLog(Apfloat x, boolean multiplyByPi)
         throws ApfloatRuntimeException
     {
         assert (x.signum() > 0);                                        // Must be real logarithm
@@ -1169,8 +1201,13 @@ public class ApfloatMath
         Apfloat agme = ApfloatHelper.extendPrecision(agm(one, e)),
                 agmex = ApfloatHelper.extendPrecision(agm(one, x));
 
-        Apfloat pi = ApfloatHelper.extendPrecision(pi(targetPrecision, x.radix())),
-                log = pi.multiply(agmex.subtract(agme)).divide(new Apfloat(2, Apfloat.INFINITE, x.radix()).multiply(agme).multiply(agmex));
+        Apfloat log = agmex.subtract(agme).precision(workingPrecision);
+        if (multiplyByPi)
+        {
+            Apfloat pi = ApfloatHelper.extendPrecision(pi(targetPrecision, x.radix()));
+            log = pi.multiply(log);
+        }
+        log = log.divide(new Apfloat(2, Apfloat.INFINITE, x.radix()).multiply(agme).multiply(agmex));
 
         return log.precision(targetPrecision);
     }
@@ -1202,6 +1239,12 @@ public class ApfloatMath
     public static Apfloat logRadix(long precision, int radix)
         throws ApfloatRuntimeException
     {
+        return logRadix(precision, radix, true);
+    }
+
+    private static Apfloat logRadix(long precision, int radix, boolean multiplyByPi)
+        throws ApfloatRuntimeException
+    {
         // Get synchronization lock - getting the lock is also synchronized
         Integer radixKey = getRadixLogKey(new Integer(radix));      // Use new Integer since we synchronize on it; Integer.valueOf() could be shared instance
 
@@ -1212,15 +1255,26 @@ public class ApfloatMath
         // - doesn't block getting it for other radixes
         synchronized (radixKey)
         {
-            logRadix = ApfloatMath.radixLog.get(radixKey);
+            Map<Integer, Apfloat> cache = (multiplyByPi ? ApfloatMath.radixLogPi : ApfloatMath.radixLog);     // Which cache to use, the one multiplied by pi or not
+            logRadix = cache.get(radixKey);
 
             if (logRadix == null || logRadix.precision() < precision)
             {
-                Apfloat f = new Apfloat("0.1", precision, radix);
+                if (multiplyByPi)
+                {
+                    // We want the multiplied-by-pi version so get first the not-multiplied-by-pi version
+                    logRadix = ApfloatHelper.extendPrecision(logRadix(precision, radix, false));
+                    Apfloat pi = ApfloatHelper.extendPrecision(pi(precision, radix));
+                    logRadix = logRadix.multiply(pi).precision(precision);
+                }
+                else
+                {
+                    Apfloat f = new Apfloat("0.1", precision, radix);
 
-                logRadix = rawLog(f).negate();
+                    logRadix = rawLog(f, multiplyByPi).negate();
+                }
 
-                ApfloatMath.radixLog.put(radixKey, logRadix);
+                cache.put(radixKey, logRadix);
             }
             else
             {
@@ -1728,8 +1782,8 @@ public class ApfloatMath
         {
             public int compare(Apfloat x, Apfloat y)
             {
-                long xSize = ApfloatHelper.size(x),
-                     ySize = ApfloatHelper.size(y);
+                long xSize = x.size(),
+                     ySize = y.size();
                 return (xSize < ySize ? -1 : (xSize > ySize ? 1 : 0));
             }
         });
@@ -1906,23 +1960,25 @@ public class ApfloatMath
         ApfloatMath.radixPiP = null;
         ApfloatMath.radixPiInverseRoot = null;
         ApfloatMath.radixLog = null;
+        ApfloatMath.radixLogPi = null;
     }
 
     // Synchronization keys for pi calculation
     private static ConcurrentMap<Integer, Integer> radixPiKeys = new ConcurrentHashMap<Integer, Integer>();
 
-    // Shared precalculated values related to pi for different radixes
-    private static Map<Integer, Apfloat> radixPi = new Hashtable<Integer, Apfloat>();
+    // Shared cached values related to pi for different radixes
+    private static Map<Integer, Apfloat> radixPi = new ConcurrentSoftHashMap<Integer, Apfloat>();
     private static Map<Integer, PiCalculator> radixPiCalculator = new Hashtable<Integer, PiCalculator>();
-    private static Map<Integer, Apfloat> radixPiT = new Hashtable<Integer, Apfloat>();
-    private static Map<Integer, Apfloat> radixPiQ = new Hashtable<Integer, Apfloat>();
-    private static Map<Integer, Apfloat> radixPiP = new Hashtable<Integer, Apfloat>();
-    private static Map<Integer, Apfloat> radixPiInverseRoot = new Hashtable<Integer, Apfloat>();
+    private static Map<Integer, Apfloat> radixPiT = new ConcurrentSoftHashMap<Integer, Apfloat>();
+    private static Map<Integer, Apfloat> radixPiQ = new ConcurrentSoftHashMap<Integer, Apfloat>();
+    private static Map<Integer, Apfloat> radixPiP = new ConcurrentSoftHashMap<Integer, Apfloat>();
+    private static Map<Integer, Apfloat> radixPiInverseRoot = new ConcurrentSoftHashMap<Integer, Apfloat>();
     private static Map<Integer, Long> radixPiTerms = new Hashtable<Integer, Long>();
 
     // Synchronization keys for logarithm calculation
     private static ConcurrentMap<Integer, Integer> radixLogKeys = new ConcurrentHashMap<Integer, Integer>();
 
-    // Shared precalculated values related to logarithm for different radixes
-    private static Map<Integer, Apfloat> radixLog = new Hashtable<Integer, Apfloat>();
+    // Shared cached values related to logarithm for different radixes
+    private static Map<Integer, Apfloat> radixLog = new ConcurrentHashMap<Integer, Apfloat>();
+    private static Map<Integer, Apfloat> radixLogPi = new ConcurrentHashMap<Integer, Apfloat>();
 }

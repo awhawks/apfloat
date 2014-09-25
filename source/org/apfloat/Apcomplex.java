@@ -20,7 +20,7 @@ import static java.util.FormattableFlags.*;
  * @see Apfloat
  * @see ApcomplexMath
  *
- * @version 1.3
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -326,7 +326,7 @@ public class Apcomplex
      *
      * Zero has a scale of <code>-INFINITE</code>.
      *
-     * @return The exponent of this apfloat in number of digits of the radix in which it's presented.
+     * @return The exponent of this apcomplex in number of digits of the radix in which it's presented.
      *
      * @see Apfloat#scale()
      */
@@ -335,6 +335,24 @@ public class Apcomplex
         throws ApfloatRuntimeException
     {
         return Math.max(real().scale(), imag().scale());
+    }
+
+    /**
+     * Returns the size of this apcomplex. The size is the maximum of the size of the real part and imaginary part.<p>
+     *
+     * Zero has a size of <code>0</code>.
+     *
+     * @return The number of digits in this number, from the most significant digit to the least significant nonzero digit, in the radix in which it's presented.
+     *
+     * @see Apfloat#size()
+     *
+     * @since 1.6
+     */
+
+    public long size()
+        throws ApfloatRuntimeException
+    {
+        return Math.max(real().size(), imag().size());
     }
 
     /**

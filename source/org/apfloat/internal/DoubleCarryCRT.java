@@ -1,6 +1,7 @@
 package org.apfloat.internal;
 
 import java.math.BigInteger;
+import java.util.RandomAccess;
 
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
@@ -13,13 +14,144 @@ import static org.apfloat.internal.DoubleModConstants.*;
  * Number Theoretic Transform based convolution. Works for the
  * <code>double</code> type.
  *
- * @version 1.1
+ * @version 1.6
  * @author Mikko Tommila
  */
 
 public class DoubleCarryCRT
     extends DoubleCRTMath
 {
+    // Runnable for calculating the carry-CRT in blocks, then get the carry of the previous block, add it, and provide carry to the next block
+    private class CarryCRTRunnable
+        implements Runnable
+    {
+        public CarryCRTRunnable(DataStorage resultMod0, DataStorage resultMod1, DataStorage resultMod2, DataStorage dataStorage, long size, long resultSize, long offset, long skipSize, MessagePasser<Long, double[]> messagePasser)
+        {
+            this.resultMod0 = resultMod0;
+            this.resultMod1 = resultMod1;
+            this.resultMod2 = resultMod2;
+            this.dataStorage = dataStorage;
+            this.size = size;
+            this.resultSize = resultSize;
+            this.offset = offset;
+            this.skipSize = skipSize;
+            this.messagePasser = messagePasser;
+        }
+
+        public void run()
+        {
+            DataStorage.Iterator src0 = this.resultMod0.iterator(DataStorage.READ, this.size, 0),
+                                 src1 = this.resultMod1.iterator(DataStorage.READ, this.size, 0),
+                                 src2 = this.resultMod2.iterator(DataStorage.READ, this.size, 0),
+                                 dst = this.dataStorage.iterator(DataStorage.WRITE, this.resultSize, 0);
+
+            double[] carryResult = new double[3],
+                      sum = new double[3],
+                      tmp = new double[3];
+
+            // Preliminary carry-CRT calculation (happens in parallel in multiple blocks)
+            for (long i = 0; i < this.size; i++)
+            {
+                double y0 = MATH_MOD_0.modMultiply(T0, src0.getDouble()),
+                        y1 = MATH_MOD_1.modMultiply(T1, src1.getDouble()),
+                        y2 = MATH_MOD_2.modMultiply(T2, src2.getDouble());
+
+                multiply(M12, y0, sum);
+                multiply(M02, y1, tmp);
+
+                if (add(tmp, sum) != 0 ||
+                    compare(sum, M012) >= 0)
+                {
+                    subtract(M012, sum);
+                }
+
+                multiply(M01, y2, tmp);
+
+                if (add(tmp, sum) != 0 ||
+                    compare(sum, M012) >= 0)
+                {
+                    subtract(M012, sum);
+                }
+
+                add(sum, carryResult);
+
+                double result = divide(carryResult);
+
+                // In the first block, ignore the first element (it's zero in full precision calculations)
+                // and possibly one or two more in limited precision calculations
+                if (i >= this.skipSize)
+                {
+                    dst.setDouble(result);
+                    dst.next();
+                }
+
+                src0.next();
+                src1.next();
+                src2.next();
+            }
+
+            // Calculate the last words (in base math)
+            double result0 = divide(carryResult);
+            double result1 = carryResult[2];
+
+            assert (carryResult[0] == 0);
+            assert (carryResult[1] == 0);
+
+            // Last block has one extra element (corresponding to the one skipped in the first block)
+            if (this.resultSize == this.size - this.skipSize + 1)
+            {
+                dst.setDouble(result0);
+                dst.close();
+
+                result0 = result1;
+                assert (result1 == 0);
+            }
+
+            double[] results = { result1, result0 };
+
+            // Finishing step - get the carry from the previous block and propagate it through the data
+            if (this.offset > 0)
+            {
+                double[] previousResults = this.messagePasser.receiveMessage(this.offset);
+
+                // Get iterators for the previous block carries, and dst, padded with this block's carries
+                // Note that size could be 1 but carries size is 2
+                DataStorage.Iterator src = arrayIterator(previousResults);
+                dst = compositeIterator(this.dataStorage.iterator(DataStorage.READ_WRITE, this.resultSize, 0), this.resultSize, arrayIterator(results));
+
+                // Propagate base addition through dst, and this block's carries
+                double carry = baseAdd(dst, src, 0, dst, previousResults.length);
+                carry = baseCarry(dst, carry, this.resultSize);
+                dst.close();                                                    // Iterator likely was not iterated to end
+
+                assert (carry == 0);
+            }
+
+            // Finally, send the carry to the next block
+            this.messagePasser.sendMessage(this.offset + this.size, results);
+        }
+
+        private double baseCarry(DataStorage.Iterator srcDst, double carry, long size)
+        {
+            for (long i = 0; i < size && carry > 0; i++)
+            {
+                carry = baseAdd(srcDst, null, carry, srcDst, 1);
+            }
+
+            return carry;
+        }
+
+        private DataStorage resultMod0;
+        private DataStorage resultMod1;
+        private DataStorage resultMod2;
+        private DataStorage dataStorage;
+        private long size;
+        private long resultSize;
+        private long offset;
+        private long skipSize;
+        private MessagePasser<Long, double[]> messagePasser;
+    }
+
     /**
      * Creates a carry-CRT object using the specified radix.
      *
@@ -52,71 +184,143 @@ public class DoubleCarryCRT
      * @return The final result with the CRT performed and the carries calculated.
      */
 
-    public DataStorage carryCRT(DataStorage resultMod0, DataStorage resultMod1, DataStorage resultMod2, long resultSize)
+    public DataStorage carryCRT(final DataStorage resultMod0, final DataStorage resultMod1, final DataStorage resultMod2, final long resultSize)
         throws ApfloatRuntimeException
     {
-        long size = Math.min(resultSize + 2, resultMod0.getSize());     // Some extra precision if not full result is required
+        final long size = Math.min(resultSize + 2, resultMod0.getSize());   // Some extra precision if not full result is required
 
         ApfloatContext ctx = ApfloatContext.getContext();
         DataStorageBuilder dataStorageBuilder = ctx.getBuilderFactory().getDataStorageBuilder();
-        DataStorage dataStorage = dataStorageBuilder.createDataStorage(resultSize * 8);
+        final DataStorage dataStorage = dataStorageBuilder.createDataStorage(resultSize * 8);
         dataStorage.setSize(resultSize);
 
-        DataStorage.Iterator src0 = resultMod0.iterator(DataStorage.READ, size, 0),
-                             src1 = resultMod1.iterator(DataStorage.READ, size, 0),
-                             src2 = resultMod2.iterator(DataStorage.READ, size, 0),
-                             dst = dataStorage.iterator(DataStorage.WRITE, resultSize, 0);
+        final MessagePasser<Long, double[]> messagePasser = new MessagePasser<Long, double[]>();
 
-        double[] carryResult = new double[3],
-                  sum = new double[3],
-                  tmp = new double[3];
-
-        for (long i = size; i > 0; i--)
+        if (size <= Integer.MAX_VALUE && this.parallelRunner != null &&     // Only if the size fits in an integer, but with memory arrays it should
+            resultMod0 instanceof RandomAccess &&                           // Only if the data storage supports efficient parallel random access
+            resultMod1 instanceof RandomAccess &&
+            resultMod2 instanceof RandomAccess &&
+            dataStorage instanceof RandomAccess)
         {
-            double y0 = MATH_MOD_0.modMultiply(T0, src0.getDouble()),
-                    y1 = MATH_MOD_1.modMultiply(T1, src1.getDouble()),
-                    y2 = MATH_MOD_2.modMultiply(T2, src2.getDouble());
-
-            multiply(M12, y0, sum);
-            multiply(M02, y1, tmp);
-
-            if (add(tmp, sum) != 0 ||
-                compare(sum, M012) >= 0)
+            ParallelRunnable parallelRunnable = new ParallelRunnable()
             {
-                subtract(M012, sum);
-            }
+                public int getLength()
+                {
+                    return (int) size;
+                }
 
-            multiply(M01, y2, tmp);
+                public Runnable getRunnable(int offset, int length)
+                {
+                    DataStorage subResultMod0 = resultMod0.subsequence(size - offset - length, length);
+                    DataStorage subResultMod1 = resultMod1.subsequence(size - offset - length, length);
+                    DataStorage subResultMod2 = resultMod2.subsequence(size - offset - length, length);
+                    long skipSize = (offset == 0 ? size - resultSize + 1: 0);   // For the first block, ignore the first 1-3 elements
+                    long lastSize = (offset + length == size ? 1: 0);           // For the last block, add 1 element
+                    long nonLastSize = 1 - lastSize;                            // For the other than last blocks, move 1 element
+                    long subResultSize = length - skipSize + lastSize;
 
-            if (add(tmp, sum) != 0 ||
-                compare(sum, M012) >= 0)
-            {
-                subtract(M012, sum);
-            }
+                    DataStorage subDataStorage = dataStorage.subsequence(size - offset - length + nonLastSize, subResultSize);
+                    return new CarryCRTRunnable(subResultMod0, subResultMod1, subResultMod2, subDataStorage, length, subResultSize, offset, skipSize, messagePasser);
+                }
+            };
 
-            add(sum, carryResult);
-
-            double result = divide(carryResult);
-
-            if (i < resultSize)
-            {
-                dst.setDouble(result);
-                dst.next();
-            }
-
-            src0.next();
-            src1.next();
-            src2.next();
+            this.parallelRunner.runParallel(parallelRunnable);
+        }
+        else
+        {
+            // Just run in current thread without parallelization
+            new CarryCRTRunnable(resultMod0, resultMod1, resultMod2, dataStorage, size, resultSize, 0, size - resultSize + 1, messagePasser).run();
         }
 
-        dst.setDouble(carryResult[2]);
-        dst.close();
-
-        assert (carryResult[0] == 0);
-        assert (carryResult[1] == 0);
+        // Sanity check
+        double[] carries = null;
+        assert ((carries = messagePasser.getMessage(size)) != null);
+        assert (carries.length == 2);
+        assert (carries[0] == 0);
+        assert (carries[1] == 0);
 
         return dataStorage;
     }
+
+    /**
+     * Set the parallel runner to be used when executing the CRT.
+     *
+     * @param parallelRunner The parallel runner.
+     */
+
+    public void setParallelRunner(ParallelRunner parallelRunner)
+    {
+        this.parallelRunner = parallelRunner;
+    }
+
+    // Wrap an array in a simple reverse-order iterator, padded with zeros
+    private static DataStorage.Iterator arrayIterator(final double[] data)
+    {
+        return new DataStorage.Iterator()
+        {
+            public boolean hasNext()
+            {
+                return true;
+            }
+
+            public void next()
+            {
+                this.position--;
+            }
+
+            public double getDouble()
+            {
+                assert (this.position >= 0);
+                return data[this.position];
+            }
+
+            public void setDouble(double value)
+            {
+                assert (this.position >= 0);
+                data[this.position] = value;
+            }
+
+            private int position = data.length - 1;
+        };
+    }
+
+    // Composite iterator, made by concatenating two iterators
+    private static DataStorage.Iterator compositeIterator(final DataStorage.Iterator iterator1, final long size, final DataStorage.Iterator iterator2)
+    {
+        return new DataStorage.Iterator()
+        {
+            public boolean hasNext()
+            {
+                return (this.position < size ? iterator1.hasNext() : iterator2.hasNext());
+            }
+
+            public void next()
+            {
+                (this.position < size ? iterator1 : iterator2).next();
+                this.position++;
+            }
+
+            public double getDouble()
+            {
+                return (this.position < size ? iterator1 : iterator2).getDouble();
+            }
+
+            public void setDouble(double value)
+            {
+                (this.position < size ? iterator1 : iterator2).setDouble(value);
+            }
+
+            public void close()
+                throws ApfloatRuntimeException
+            {
+                (this.position < size ? iterator1 : iterator2).close();
+            }
+
+            private long position;
+        };
+    }
+
+    private static final long serialVersionUID = -3954870352092656433L;
 
     private static final DoubleModMath MATH_MOD_0,
                                         MATH_MOD_1,
@@ -128,6 +332,8 @@ public class DoubleCarryCRT
                                    M02,
                                    M12,
                                    M012;
+
+    private ParallelRunner parallelRunner;
 
     static
     {

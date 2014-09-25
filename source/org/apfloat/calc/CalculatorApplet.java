@@ -3,11 +3,15 @@ package org.apfloat.calc;
 import java.applet.Applet;
 import java.awt.Container;
 import java.awt.Label;
+import java.security.AccessControlException;
+
+import org.apfloat.ApfloatContext;
+import org.apfloat.spi.FilenameGenerator;
 
 /**
  * Calculator applet.
  *
- * @version 1.2
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -20,6 +24,24 @@ public class CalculatorApplet
         public Container getContents()
         {
             return new CalculatorAWT();
+        }
+
+        public void init()
+        {
+            // Recreate the executor service in case the old thread group was destroyed by reloading the applet
+            ApfloatContext ctx = ApfloatContext.getContext();
+            ctx.setExecutorService(ApfloatContext.getDefaultExecutorService());
+
+            try
+            {
+                // The applet may not be able to write files to the current directory, but probably can write to the temp directory
+                FilenameGenerator filenameGenerator = new FilenameGenerator(System.getProperty("java.io.tmpdir"), null, null);
+                ctx.setFilenameGenerator(filenameGenerator);
+            }
+            catch (AccessControlException ace)
+            {
+                // Ignore - reading the system property may not be allowed in unsigned applets
+            }
         }
     }
 
@@ -44,6 +66,7 @@ public class CalculatorApplet
         else
         {
             add(new Handler().getContents());
+            new Handler().init();
         }
     }
 

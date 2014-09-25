@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  *
  * @see ApfloatMath
  *
- * @version 1.5
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -761,6 +761,25 @@ public class ApcomplexMath
                              result.imag().precision(finalImagPrecision).add(imagBias));
     }
 
+    /**
+     * Logarithm in arbitrary base.<p>
+     *
+     * @param z The argument.
+     * @param w The base.
+     *
+     * @return Base-<code>w</code> logarithm of <code>z</code>.
+     *
+     * @exception java.lang.ArithmeticException If <code>z</code> or <code>w</code> is zero.
+     *
+     * @since 1.6
+     */
+
+    public static Apcomplex log(Apcomplex z, Apcomplex w)
+        throws ArithmeticException, ApfloatRuntimeException
+    {
+        return log(z).divide(log(w));
+    }
+
     // Raw logarithm, regardless of z
     // Doesn't work for really big z, but is faster if used alone for small numbers
     private static Apcomplex rawLog(Apcomplex z)
@@ -1359,8 +1378,8 @@ public class ApcomplexMath
         {
             public int compare(Apcomplex z, Apcomplex w)
             {
-                long zSize = ApfloatHelper.size(z),
-                     wSize = ApfloatHelper.size(w);
+                long zSize = z.size(),
+                     wSize = w.size();
                 return (zSize < wSize ? -1 : (zSize > wSize ? 1 : 0));
             }
         });

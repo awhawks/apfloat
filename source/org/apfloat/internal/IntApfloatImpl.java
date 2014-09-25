@@ -1,5 +1,6 @@
 package org.apfloat.internal;
 
+import java.io.ObjectInputStream;
 import java.io.PushbackReader;
 import java.io.Writer;
 import java.io.StringWriter;
@@ -32,7 +33,7 @@ import static org.apfloat.internal.IntRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.5.1
+ * @version 1.6
  * @author Mikko Tommila
  */
 
@@ -412,6 +413,12 @@ public final class IntApfloatImpl
             value *= Math.pow(doubleBase, (double) MAX_DOUBLE_SIZE);
         }
         this.exponent++;
+
+        if (value < 1.0)
+        {
+            // Round-off error in case the input was very close but just under the base, e.g. 9.999999999999996E-10
+            value = 1.0;
+        }
 
         for (size = 0; size < MAX_DOUBLE_SIZE && value > 0.0; size++)
         {
@@ -1400,7 +1407,44 @@ public final class IntApfloatImpl
     {
         assert (this.dataStorage != null);
 
-        return Math.min(this.precision, getInitialDigits() + (getSize() - 1) * BASE_DIGITS[this.radix]);
+        return getInitialDigits() + (getSize() - 1) * BASE_DIGITS[this.radix] - getLeastZeros();
+    }
+
+    // Get number of trailing zeros
+    private long getLeastZeros()
+        throws ApfloatRuntimeException
+    {
+        if (this.leastZeros == UNDEFINED)
+        {
+            // Cache the value
+            // NOTE: This is not synchronized; it's OK if multiple threads set this at the same time
+            long index = getSize() - 1;
+            int word = getWord(index);
+            word = getLeastSignificantWord(index, word);
+
+            long leastZeros = 0;
+            if (word == 0)
+            {
+                // Usually the last word is nonzero but in case precision was later changed, it might be zero
+                long trailingZeros = getTrailingZeros(this.dataStorage, index) + 1;
+                index -= trailingZeros;
+                word = getWord(index);
+                word = getLeastSignificantWord(index, word);
+
+                leastZeros += trailingZeros * BASE_DIGITS[this.radix];
+            }
+
+            assert (word != 0);
+
+            while (word % this.radix == 0)
+            {
+                leastZeros++;
+                word /= this.radix;
+            }
+            this.leastZeros = leastZeros;
+        }
+
+        return this.leastZeros;
     }
 
     public ApfloatImpl precision(long precision)
@@ -1908,9 +1952,7 @@ public final class IntApfloatImpl
                 // Scan through log(size) scattered words in the mantissa
                 for (long i = 0; i < size; i = i + i + 1)
                 {
-                    ArrayAccess arrayAccess = this.dataStorage.getArray(DataStorage.READ, i, 1);
-                    int word = arrayAccess.getIntData()[arrayAccess.getOffset()];
-                    arrayAccess.close();
+                    int word = getWord(i);
 
                     if (i == size - 1)
                     {
@@ -2205,6 +2247,22 @@ public final class IntApfloatImpl
         }
     }
 
+    private int getWord(long index)
+    {
+        ArrayAccess arrayAccess = this.dataStorage.getArray(DataStorage.READ, index, 1);
+        int word = arrayAccess.getIntData()[arrayAccess.getOffset()];
+        arrayAccess.close();
+
+        return word;
+    }
+
+    private void readObject(ObjectInputStream in)
+        throws IOException, ClassNotFoundException
+    {
+        this.leastZeros = UNDEFINED;
+        in.defaultReadObject();
+    }
+
     // Gets a new data storage for specified size
     private static DataStorage createDataStorage(long size)
         throws ApfloatRuntimeException
@@ -2241,4 +2299,5 @@ public final class IntApfloatImpl
     private int radix;
     private int hashCode = 0;
     private int initialDigits = UNDEFINED;
+    private long leastZeros = UNDEFINED;
 }
