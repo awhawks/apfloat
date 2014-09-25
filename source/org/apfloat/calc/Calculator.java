@@ -22,7 +22,7 @@ public class Calculator
      */
 
     public static void main(String args[])
-        throws ParseException 
+        throws ParseException
     {
         CalculatorParser calculatorParser = new CalculatorParser(System.in, System.out, new ApfloatCalculatorImpl());
         while (calculatorParser.parseOneLine())

@@ -1,11 +1,14 @@
 package org.apfloat;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 import org.apfloat.spi.Util;
 
 /**
  * Various mathematical functions for arbitrary precision complex numbers.
  *
- * @version 1.2
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -25,6 +28,7 @@ public class ApcomplexMath
      * @return <code>-z</code>.
      */
 
+    @Deprecated
     public static Apcomplex negate(Apcomplex z)
         throws ApfloatRuntimeException
     {
@@ -210,8 +214,7 @@ public class ApcomplexMath
                 throw new ArithmeticException("Zeroth root of zero");
             }
 
-            return new Apcomplex(new Apfloat(1, Apfloat.INFINITE, z.radix()),
-                                 Apfloat.ZERO);
+            return new Apcomplex(new Apfloat(1, Apfloat.INFINITE, z.radix()));
         }
         else if (z.real().signum() == 0 && z.imag().signum() == 0)
         {
@@ -260,13 +263,21 @@ public class ApcomplexMath
         }
         else if (n == 0)
         {
-            return new Apcomplex(new Apfloat(1, Apfloat.INFINITE, z.radix()),
-                                 Apfloat.ZERO);
+            return new Apcomplex(new Apfloat(1, Apfloat.INFINITE, z.radix()));
         }
         else if (z.equals(Apcomplex.ONE))
         {
             // Trivial case
             return z;
+        }
+        else if (z.imag().signum() == 0 && z.real().signum() > 0)
+        {
+            return new Apcomplex(ApfloatMath.inverseRoot(z.real(), n));
+        }
+        else if (n == 2 && z.imag().signum() == 0 && z.real().signum() < 0)
+        {
+            // Avoid round-off errors and produce a pure imaginary result
+            return new Apcomplex(Apfloat.ZERO, ApfloatMath.inverseRoot(z.real().negate(), n).negate());
         }
         else if (n == 0x8000000000000000L)
         {
@@ -1118,5 +1129,114 @@ public class ApcomplexMath
         w = w.subtract(one).divide(w.add(one));
 
         return (negate ? w.negate() : w);
+    }
+
+    /**
+     * Product of numbers.
+     * The precision used in the multiplications is only
+     * what is needed for the end result. This method may
+     * perform significantly better than simply multiplying
+     * the numbers sequentially.
+     *
+     * @param z The argument(s).
+     *
+     * @return The product of the given numbers.
+     *
+     * @exception java.lang.IllegalArgumentException If there are no arguments.
+     *
+     * @since 1.3
+     */
+
+    public static Apcomplex product(Apcomplex... z)
+        throws IllegalArgumentException, ApfloatRuntimeException
+    {
+        if (z.length == 0)
+        {
+            throw new IllegalArgumentException("No arguments given");
+        }
+
+        // Determine working precision
+        long maxPrec = Apcomplex.INFINITE;
+        for (int i = 0; i < z.length; i++)
+        {
+            if (z[i].real().signum() == 0 && z[i].imag().signum() == 0)
+            {
+                return Apcomplex.ZERO;
+            }
+            maxPrec = Math.min(maxPrec, z[i].precision());
+        }
+
+        // Do not use z.clone() as the array might be of some subclass type, resulting in ArrayStoreException later
+        Apcomplex[] tmp = new Apcomplex[z.length];
+
+        // Add sqrt length digits for round-off errors
+        long extraPrec = (long) Math.sqrt((double) z.length);
+        for (int i = 0; i < z.length; i++)
+        {
+            tmp[i] = ApfloatHelper.extendPrecision(z[i], extraPrec);
+        }
+        z = tmp;
+
+        // Sort by size
+        Arrays.sort(z, new Comparator<Apcomplex>()
+        {
+            public int compare(Apcomplex z, Apcomplex w)
+            {
+                long zSize = ApfloatHelper.size(z),
+                     wSize = ApfloatHelper.size(w);
+                return (zSize < wSize ? -1 : (zSize > wSize ? 1 : 0));
+            }
+        });
+
+        // Recursively multiply
+        return ApfloatHelper.setPrecision(recursiveProduct(z, 0, z.length - 1), maxPrec);
+    }
+
+    private static Apcomplex recursiveProduct(Apcomplex[] z, int n, int m)
+        throws ApfloatRuntimeException
+    {
+        if (n == m)
+        {
+            return z[n];
+        }
+        else
+        {
+            int k = (n + m) >>> 1;
+            return recursiveProduct(z, n, k).multiply(recursiveProduct(z, k + 1, m));
+        }
+    }
+
+    /**
+     * Sum of numbers.
+     * The precision used in the additions is only
+     * what is needed for the end result. This method may
+     * perform significantly better than simply adding
+     * the numbers sequentially.
+     *
+     * @param z The argument(s).
+     *
+     * @return The sum of the given numbers.
+     *
+     * @exception java.lang.IllegalArgumentException If there are no arguments.
+     *
+     * @since 1.3
+     */
+
+    public static Apcomplex sum(Apcomplex... z)
+        throws IllegalArgumentException, ApfloatRuntimeException
+    {
+        if (z.length == 0)
+        {
+            throw new IllegalArgumentException("No arguments given");
+        }
+
+        Apfloat[] x = new Apfloat[z.length],
+                  y = new Apfloat[z.length];
+        for (int i = 0; i < z.length; i++)
+        {
+            x[i] = z[i].real();
+            y[i] = z[i].imag();
+        }
+        return new Apcomplex(ApfloatMath.sum(x), ApfloatMath.sum(y));
     }
 }

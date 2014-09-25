@@ -42,7 +42,7 @@ public class PiGUI
         this.statusLabel = new Label();
 
         add(getContents(), BorderLayout.NORTH);
-        add(statusLabel, BorderLayout.SOUTH);
+        add(this.statusLabel, BorderLayout.SOUTH);
 
         setVisible(true);
     }

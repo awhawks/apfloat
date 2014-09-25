@@ -3,7 +3,6 @@ options
     LOOKAHEAD = 2;
     STATIC = false;
     UNICODE_INPUT = true;
-    OPTIMIZE_TOKEN_MANAGER = true;
     ERROR_REPORTING = false;
 }
 
@@ -186,7 +185,7 @@ String variable():
 Number function():
 {
     String v;
-    List l;
+    List<Number> l;
     Number a;
 }
 {
@@ -194,9 +193,9 @@ Number function():
     "(" l = argumentList() ")"                  { return this.calculatorImpl.function(v, l); }
 }
 
-List argumentList():
+List<Number> argumentList():
 {
-    List list = new ArrayList();
+    List<Number> list = new ArrayList<Number>();
     Number a;
 }
 {

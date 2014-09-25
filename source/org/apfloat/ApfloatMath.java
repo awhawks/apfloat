@@ -1,5 +1,7 @@
 package org.apfloat;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -12,7 +14,7 @@ import org.apfloat.spi.Util;
  * Due to different types of round-off errors that can occur in the implementation,
  * no guarantees about e.g. monotonicity are given for any of the methods.
  *
- * @version 1.2
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -405,6 +407,7 @@ public class ApfloatMath
      * @return <code>-x</code>.
      */
 
+    @Deprecated
     public static Apfloat negate(Apfloat x)
         throws ApfloatRuntimeException
     {
@@ -1586,7 +1589,7 @@ public class ApfloatMath
      */
 
     public static Apfloat atan(Apfloat x)
-        throws ArithmeticException, ApfloatRuntimeException
+        throws ApfloatRuntimeException
     {
         Apfloat one = new Apfloat(1, Apfloat.INFINITE, x.radix()),
                 two = new Apfloat(2, Apfloat.INFINITE, x.radix());
@@ -1691,6 +1694,137 @@ public class ApfloatMath
         Apcomplex w = ApcomplexMath.exp(new Apcomplex(Apfloat.ZERO, x));
 
         return w.imag().divide(w.real());
+    }
+
+    /**
+     * Product of numbers.
+     * The precision used in the multiplications is only
+     * what is needed for the end result. This method may
+     * perform significantly better than simply multiplying
+     * the numbers sequentially.
+     *
+     * @param x The argument(s).
+     *
+     * @return The product of the given numbers.
+     *
+     * @exception java.lang.IllegalArgumentException If there are no arguments.
+     *
+     * @since 1.3
+     */
+
+    public static Apfloat product(Apfloat... x)
+        throws IllegalArgumentException, ApfloatRuntimeException
+    {
+        if (x.length == 0)
+        {
+            throw new IllegalArgumentException("No arguments given");
+        }
+
+        // Determine working precision
+        long maxPrec = Apfloat.INFINITE;
+        for (int i = 0; i < x.length; i++)
+        {
+            if (x[i].signum() == 0)
+            {
+                return Apfloat.ZERO;
+            }
+            maxPrec = Math.min(maxPrec, x[i].precision());
+        }
+
+        // Do not use x.clone() as the array might be of some subclass type, resulting in ArrayStoreException later
+        Apfloat[] tmp = new Apfloat[x.length];
+
+        // Add sqrt length digits for round-off errors
+        long extraPrec = (long) Math.sqrt((double) x.length);
+        for (int i = 0; i < x.length; i++)
+        {
+            tmp[i] = ApfloatHelper.extendPrecision(x[i], extraPrec);
+        }
+        x = tmp;
+
+        // Sort by size
+        Arrays.sort(x, new Comparator<Apfloat>()
+        {
+            public int compare(Apfloat x, Apfloat y)
+            {
+                long xSize = ApfloatHelper.size(x),
+                     ySize = ApfloatHelper.size(y);
+                return (xSize < ySize ? -1 : (xSize > ySize ? 1 : 0));
+            }
+        });
+
+        // Recursively multiply
+        return recursiveProduct(x, 0, x.length - 1).precision(maxPrec);
+    }
+
+    private static Apfloat recursiveProduct(Apfloat[] x, int n, int m)
+        throws ApfloatRuntimeException
+    {
+        if (n == m)
+        {
+            return x[n];
+        }
+        else
+        {
+            int k = (n + m) >>> 1;
+            return recursiveProduct(x, n, k).multiply(recursiveProduct(x, k + 1, m));
+        }
+    }
+
+    /**
+     * Sum of numbers.
+     * The precision used in the additions is only
+     * what is needed for the end result. This method may
+     * perform significantly better than simply adding
+     * the numbers sequentially.
+     *
+     * @param x The argument(s).
+     *
+     * @return The sum of the given numbers.
+     *
+     * @exception java.lang.IllegalArgumentException If there are no arguments.
+     *
+     * @since 1.3
+     */
+
+    public static Apfloat sum(Apfloat... x)
+        throws IllegalArgumentException, ApfloatRuntimeException
+    {
+        if (x.length == 0)
+        {
+            throw new IllegalArgumentException("No arguments given");
+        }
+
+        // Determine working precision
+        long maxScale = -Apfloat.INFINITE,
+             maxPrec = Apfloat.INFINITE;
+        for (int i = 0; i < x.length; i++)
+        {
+            long oldScale = maxScale,
+                 oldPrec = maxPrec,
+                 newScale = x[i].scale(),
+                 newPrec = x[i].precision();
+            maxScale = Math.max(oldScale, newScale);
+            long oldScaleDiff = (maxScale - oldScale < 0 ? Apfloat.INFINITE : maxScale - oldScale),
+                 newScaleDiff = (maxScale - newScale < 0 ? Apfloat.INFINITE : maxScale - newScale);
+            maxPrec = Math.min(Util.ifFinite(oldPrec, oldPrec + oldScaleDiff),
+                               Util.ifFinite(newPrec, newPrec + newScaleDiff));
+        }
+
+        Apfloat s = Apfloat.ZERO;
+        for (int i = 0; i < x.length; i++)
+        {
+            long scale = x[i].scale(),
+                 prec = x[i].precision(),
+                 scaleDiff = (maxScale - scale < 0 ? Apfloat.INFINITE : maxScale - scale),
+                 destPrec = (maxPrec - scaleDiff <= 0 ? 0 : Util.ifFinite(maxPrec, maxPrec - scaleDiff));
+            if (destPrec > 0)
+            {
+                s = s.add(x[i].precision(destPrec));
+            }
+        }
+
+        return s;
     }
 
     // Clean up static maps at shutdown, to allow garbage collecting temporary files

@@ -47,6 +47,8 @@ public abstract class ArrayAccess
      *
      * @param offset The sub-sequence starting offset within this ArrayAccess.
      * @param length The sub-sequence length.
+     *
+     * @return The sub-sequence array access.
      */
 
     public abstract ArrayAccess subsequence(int offset, int length);

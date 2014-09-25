@@ -64,7 +64,7 @@ public abstract class FunctionCalculatorImpl
          */
 
         protected void validate(List<Number> arguments)
-            throws ParseException 
+            throws ParseException
         {
             if (arguments.size() != this.arguments)
             {
@@ -95,7 +95,7 @@ public abstract class FunctionCalculatorImpl
         }
 
         public final Number call(List<Number> arguments)
-            throws ParseException 
+            throws ParseException
         {
             validate (arguments);
             return promote(call(getFunctions(arguments), arguments.get(0)));
@@ -132,7 +132,7 @@ public abstract class FunctionCalculatorImpl
         }
 
         public final Number call(List<Number> arguments)
-            throws ParseException 
+            throws ParseException
         {
             validate (arguments);
             return promote(call(getFunctions(arguments), arguments.get(0), arguments.get(1)));

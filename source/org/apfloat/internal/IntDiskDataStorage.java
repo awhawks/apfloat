@@ -68,9 +68,9 @@ public final class IntDiskDataStorage
                         IntBuffer src = buffer.asIntBuffer();
                         int readLength = src.remaining();
 
-                        src.get(array, readPosition, readLength);
+                        src.get(array, this.readPosition, readLength);
 
-                        readPosition += readLength;
+                        this.readPosition += readLength;
                         buffer.position(readLength * 4);
 
                         return readLength * 4;
@@ -99,9 +99,9 @@ public final class IntDiskDataStorage
                         IntBuffer dst = buffer.asIntBuffer();
                         int writeLength = dst.remaining();
 
-                        dst.put(array, writePosition, writeLength);
+                        dst.put(array, this.writePosition, writeLength);
 
-                        writePosition += writeLength;
+                        this.writePosition += writeLength;
                         buffer.position(writeLength * 4);
 
                         return writeLength * 4;

@@ -76,7 +76,7 @@ public class IntElementaryModMath
         int r1 = a * b - (int) (this.inverseModulus * (double) a * (double) b) * this.modulus,
             r2 = r1 - this.modulus;
 
-        return (r2 < 0? r1 : r2);
+        return (r2 < 0 ? r1 : r2);
     }
 
     /**
@@ -93,7 +93,7 @@ public class IntElementaryModMath
         int r1 = a + b,
             r2 = r1 - this.modulus;
 
-        return (r2 < 0? r1 : r2);
+        return (r2 < 0 ? r1 : r2);
     }
 
     /**
@@ -110,7 +110,7 @@ public class IntElementaryModMath
         int r1 = a - b,
             r2 = r1 + this.modulus;
 
-        return (r1 < 0? r2 : r1);
+        return (r1 < 0 ? r2 : r1);
     }
 
     /**

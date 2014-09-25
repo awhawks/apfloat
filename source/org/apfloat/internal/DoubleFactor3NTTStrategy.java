@@ -46,7 +46,7 @@ public class DoubleFactor3NTTStrategy
         if (length == power2length)
         {
             // Transform length is a power of two
-            factor2Strategy.transform(dataStorage, modulus);
+            this.factor2Strategy.transform(dataStorage, modulus);
         }
         else
         {
@@ -65,9 +65,9 @@ public class DoubleFactor3NTTStrategy
             transformColumns(false, dataStorage0, dataStorage1, dataStorage2, power2length, w, w3);
 
             // Transform the rows
-            factor2Strategy.transform(dataStorage0, modulus);
-            factor2Strategy.transform(dataStorage1, modulus);
-            factor2Strategy.transform(dataStorage2, modulus);
+            this.factor2Strategy.transform(dataStorage0, modulus);
+            this.factor2Strategy.transform(dataStorage1, modulus);
+            this.factor2Strategy.transform(dataStorage2, modulus);
         }
     }
 
@@ -85,7 +85,7 @@ public class DoubleFactor3NTTStrategy
         if (length == power2length)
         {
             // Transform length is a power of two
-            factor2Strategy.inverseTransform(dataStorage, modulus, totalTransformLength);
+            this.factor2Strategy.inverseTransform(dataStorage, modulus, totalTransformLength);
         }
         else
         {
@@ -101,9 +101,9 @@ public class DoubleFactor3NTTStrategy
                         dataStorage2 = dataStorage.subsequence(2 * power2length, power2length);
 
             // Transform the rows
-            factor2Strategy.inverseTransform(dataStorage0, modulus, totalTransformLength);
-            factor2Strategy.inverseTransform(dataStorage1, modulus, totalTransformLength);
-            factor2Strategy.inverseTransform(dataStorage2, modulus, totalTransformLength);
+            this.factor2Strategy.inverseTransform(dataStorage0, modulus, totalTransformLength);
+            this.factor2Strategy.inverseTransform(dataStorage1, modulus, totalTransformLength);
+            this.factor2Strategy.inverseTransform(dataStorage2, modulus, totalTransformLength);
 
             // Transform the columns
             transformColumns(true, dataStorage0, dataStorage1, dataStorage2, power2length, w, w3);

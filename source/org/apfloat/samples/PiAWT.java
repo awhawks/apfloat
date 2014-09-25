@@ -29,7 +29,7 @@ import org.apfloat.spi.BuilderFactory;
 /**
  * Graphical AWT elements for calculating pi using three different algorithms.
  *
- * @version 1.2.1
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -382,6 +382,7 @@ public class PiAWT
     private void crashed(Throwable cause)
     {
         Pi.getErr().println("Crashed with " + cause);
+        cause.printStackTrace();
     }
 
     private void end()

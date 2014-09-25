@@ -5,7 +5,7 @@ import org.apfloat.Apfloat;
 /**
  * Miscellaneous utility methods.
  *
- * @version 1.0
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -27,19 +27,7 @@ public class Util
     {
         assert (x >= 0);
 
-        if (x == 0)
-        {
-            return 0;
-        }
-
-        int r = 1;
-
-        while ((x >>= 1) > 0)
-        {
-            r <<= 1;
-        }
-
-        return r;
+        return Integer.highestOneBit(x);
     }
 
     /**
@@ -54,19 +42,7 @@ public class Util
     {
         assert (x >= 0);
 
-        if (x == 0)
-        {
-            return 0;
-        }
-
-        long r = 1;
-
-        while ((x >>= 1) > 0)
-        {
-            r <<= 1;
-        }
-
-        return r;
+        return Long.highestOneBit(x);
     }
 
     /**
@@ -403,14 +379,7 @@ public class Util
     {
         assert (x > 0);
 
-        int r = 0;
-
-        while ((x >>= 1) > 0)
-        {
-            r++;
-        }
-
-        return r;
+        return 31 - Integer.numberOfLeadingZeros(x);
     }
 
     /**
@@ -425,14 +394,7 @@ public class Util
     {
         assert (x > 0);
 
-        int r = 0;
-
-        while ((x >>= 1) > 0)
-        {
-            r++;
-        }
-
-        return r;
+        return 63 - Long.numberOfLeadingZeros(x);
     }
 
     /**

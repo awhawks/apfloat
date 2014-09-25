@@ -4,8 +4,9 @@ import java.io.Serializable;
 import java.io.PushbackReader;
 import java.io.Writer;
 import java.io.IOException;
-
-import org.apfloat.spi.Util;
+import java.util.Formattable;
+import java.util.Formatter;
+import static java.util.FormattableFlags.*;
 
 /**
  * Arbitrary precision complex number class. An apcomplex consists of
@@ -18,13 +19,13 @@ import org.apfloat.spi.Util;
  *
  * @see Apfloat
  *
- * @version 1.2
+ * @version 1.3
  * @author Mikko Tommila
  */
 
 public class Apcomplex
     extends Number
-    implements Serializable
+    implements Formattable, Serializable
 {
     /**
      * Constant for zero. It is safe to use <code>ZERO</code>
@@ -610,6 +611,8 @@ public class Apcomplex
      *
      * @param radix The radix.
      *
+     * @return This number in the specified radix.
+     *
      * @exception java.lang.NumberFormatException If the radix is invalid.
      *
      * @since 1.2
@@ -732,6 +735,57 @@ public class Apcomplex
             out.write(", ");
             imag().writeTo(out, pretty);
             out.write(')');
+        }
+    }
+
+    /**
+     * Formats the object using the provided formatter.
+     *
+     * @param formatter The formatter.
+     * @param flags The flags to modify the output format.
+     * @param width The minimum number of characters to be written to the output, or <code>-1</code> for no minimum.
+     * @param precision The maximum number of characters to be written to the output, or <code>-1</code> for no maximum.
+     *
+     * @since 1.3
+     *
+     * @see Apfloat#formatTo(Formatter,int,int,int)
+     */
+
+    public void formatTo(Formatter formatter, int flags, int width, int precision)
+    {
+        if (imag().signum() == 0)
+        {
+            real().formatTo(formatter, flags, width, precision);
+        }
+        else
+        {
+            if (width == -1)
+            {
+                formatter.format("(");
+                real().formatTo(formatter, flags, width, precision);
+                formatter.format(", ");
+                imag().formatTo(formatter, flags, width, precision);
+                formatter.format(")");
+            }
+            else
+            {
+                try
+                {
+                    Writer out = FormattingHelper.wrapAppendableWriter(formatter.out());
+                    out = FormattingHelper.wrapPadWriter(out, (flags & LEFT_JUSTIFY) == LEFT_JUSTIFY);
+                    formatter = new Formatter(out, formatter.locale());
+                    formatter.format("(");
+                    real().formatTo(formatter, flags, -1, precision);
+                    formatter.format(", ");
+                    imag().formatTo(formatter, flags, -1, precision);
+                    formatter.format(")");
+                    FormattingHelper.finishPad(out, width);
+                }
+                catch (IOException ioe)
+                {
+                    // Ignore as we can't propagate it; unfortunately we can't set it to the formattable either
+                }
+            }
         }
     }
 

@@ -5,11 +5,15 @@ import java.math.BigDecimal;
 import java.io.PushbackReader;
 import java.io.Writer;
 import java.io.IOException;
+import java.util.Formatter;
+import static java.util.FormattableFlags.*;
 
 import org.apfloat.spi.ApfloatImpl;
 
 /**
- * Immutable arbitrary precision floating-point number class.<p>
+ * Arbitrary precision floating-point number class.<p>
+ *
+ * Apfloat numbers are immutable.<p>
  *
  * A pitfall exists with the constructors {@link #Apfloat(float,long)}
  * and {@link #Apfloat(double,long)}. Since <code>float</code>s and
@@ -23,7 +27,7 @@ import org.apfloat.spi.ApfloatImpl;
  * digits (in radix 10). In fact, the resulting number will be something like
  * <code>0.30000001192092896</code>...
  *
- * @version 1.2
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -1063,6 +1067,53 @@ public class Apfloat
         throws IOException, ApfloatRuntimeException
     {
         this.impl.writeTo(out, pretty);
+    }
+
+    /**
+     * Formats the object using the provided formatter.<p>
+     *
+     * The format specifiers affect the output as follows:<p>
+     * <ul>
+     *   <li>By default, the exponential notation is used.</li>
+     *   <li>If the alternate format is specified (<code>'#'</code>), then the fixed-point notation is used.</li>
+     *   <li>Width is the minimum number of characters output. Any padding is done using spaces. Padding is on the left by default.</li>
+     *   <li>If the <code>'-'</code> flag is specified, then the padding will be on the right.</li>
+     *   <li>The precision is the number of significant digts output. If the precision of the number exceeds the number of characters output, the rounding mode for output is undefined.</li>
+     * </ul>
+     *
+     * The the decimal separator will be localized if the formatter specifies a locale.
+     * The the digits will be localized also, but only if the radix is less than or equal to 10.
+     *
+     * @param formatter The formatter.
+     * @param flags The flags to modify the output format.
+     * @param width The minimum number of characters to be written to the output, or <code>-1</code> for no minimum.
+     * @param precision The maximum number of characters to be written to the output, or <code>-1</code> for no maximum.
+     *
+     * @since 1.3
+     */
+
+    public void formatTo(Formatter formatter, int flags, int width, int precision)
+    {
+        Apfloat x = (precision == -1 ? this : ApfloatHelper.limitPrecision(this, precision));
+        try
+        {
+            Writer out = FormattingHelper.wrapAppendableWriter(formatter.out());
+            out = FormattingHelper.wrapLocalizeWriter(out, formatter, radix(), (flags & UPPERCASE) == UPPERCASE);
+            if (width == -1)
+            {
+                x.writeTo(out, (flags & ALTERNATE) == ALTERNATE);
+            }
+            else
+            {
+                out = FormattingHelper.wrapPadWriter(out, (flags & LEFT_JUSTIFY) == LEFT_JUSTIFY);
+                x.writeTo(out, (flags & ALTERNATE) == ALTERNATE);
+                FormattingHelper.finishPad(out, width);
+            }
+        }
+        catch (IOException ioe)
+        {
+            // Ignore as we can't propagate it; unfortunately we can't set it to the formattable either
+        }
     }
 
     /**

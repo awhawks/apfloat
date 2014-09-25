@@ -207,7 +207,7 @@ public class Pi
 
             // Perform the calculation of T, Q and P to requested precision only, to improve performance
 
-            long terms = (long) ((double) precision * Math.log((double) this.radix) / 32.65445004177);
+            long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 32.65445004177);
 
             long time = System.currentTimeMillis();
             r(0, terms + 1, T, Q, null, new ChudnovskyProgressIndicator(terms));
@@ -288,29 +288,29 @@ public class Pi
             switch (length)             // Java can't switch on a long...
             {
                 case 1:
-                    currentElements += 1;
+                    this.currentElements += 1;
                     break;
                 case 2:
-                    currentElements += 4;
+                    this.currentElements += 4;
                     break;
                 case 3:
-                    currentElements += 8;
+                    this.currentElements += 8;
                     break;
                 case 4:
-                    currentElements += 12;
+                    this.currentElements += 12;
                     break;
                 default:
-                    currentElements += n2 - n1;
+                    this.currentElements += n2 - n1;
             }
 
-            int percentComplete = (int) (100 * currentElements / totalElements);
+            int percentComplete = (int) (100 * this.currentElements / this.totalElements);
 
-            if (percentComplete != oldPercentComplete)
+            if (percentComplete != this.oldPercentComplete)
             {
                 Pi.err.print(percentComplete + "% complete\r");
                 Pi.err.flush();
 
-                oldPercentComplete = percentComplete;
+                this.oldPercentComplete = percentComplete;
             }
         }
 

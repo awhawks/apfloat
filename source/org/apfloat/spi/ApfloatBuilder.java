@@ -23,6 +23,8 @@ public interface ApfloatBuilder
      * @param radix The radix in which the number is created.
      * @param isInteger Specifies if the number to be parsed from the string is to be treated as an integer or not.
      *
+     * @return A new <code>ApfloatImpl</code>.
+     *
      * @exception java.lang.NumberFormatException If the number is not valid.
      */
 
@@ -35,6 +37,8 @@ public interface ApfloatBuilder
      * @param value The value of the number.
      * @param precision The precision of the number (in digits of the radix).
      * @param radix The radix in which the number is created.
+     *
+     * @return A new <code>ApfloatImpl</code>.
      *
      * @exception java.lang.NumberFormatException If the number is not valid.
      */
@@ -49,6 +53,8 @@ public interface ApfloatBuilder
      * @param precision The precision of the number (in digits of the radix).
      * @param radix The radix in which the number is created.
      *
+     * @return A new <code>ApfloatImpl</code>.
+     *
      * @exception java.lang.NumberFormatException If the number is not valid.
      */
 
@@ -62,6 +68,8 @@ public interface ApfloatBuilder
      * @param precision The precision of the number (in digits of the radix).
      * @param radix The radix in which the number is created.
      * @param isInteger Specifies if the number to be parsed from the stream is to be treated as an integer or not.
+     *
+     * @return A new <code>ApfloatImpl</code>.
      *
      * @exception java.io.IOException If an I/O error occurs accessing the stream.
      * @exception java.lang.NumberFormatException If the number is not valid.

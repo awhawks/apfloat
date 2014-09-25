@@ -218,7 +218,7 @@ public class PiParallel
                         operation1 = nodes[1].executeBackground(Qoperation);
                         t = executeAdd(nodes[0], tmp1, tmp2);
                         if (P != null) p = nodes[0].execute(Poperation);
-                        q = (Apfloat) operation1.getResult();
+                        q = operation1.getResult();
                         break;
                     }
                     case 3:
@@ -254,7 +254,7 @@ public class PiParallel
 
                 if (sqrtBackgroundOperation != null)
                 {
-                    F.setApfloat((Apfloat) sqrtBackgroundOperation.getResult());
+                    F.setApfloat(sqrtBackgroundOperation.getResult());
                 }
 
                 if (progressIndicator != null)
@@ -389,7 +389,7 @@ public class PiParallel
 
             // Perform the calculation of T, Q and P to requested precision only, to improve performance
 
-            long terms = (long) ((double) precision * Math.log((double) this.radix) / 32.65445004177);
+            long terms = (long) ((double) this.precision * Math.log((double) this.radix) / 32.65445004177);
 
             long time = System.currentTimeMillis();
             r(0, terms + 1, T, Q, null, F, nodes, new ParallelChudnovskyProgressIndicator(terms));

@@ -1,9 +1,12 @@
 package org.apfloat;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 /**
  * Various mathematical functions for arbitrary precision rational numbers.
  *
- * @version 1.1
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -80,6 +83,7 @@ public class AprationalMath
      * @return <code>-x</code>.
      */
 
+    @Deprecated
     public static Aprational negate(Aprational x)
         throws ApfloatRuntimeException
     {
@@ -163,6 +167,95 @@ public class AprationalMath
         else
         {
             return new Aprational(x.numerator(), ApintMath.scale(x.denominator(), -scale));
+        }
+    }
+
+    /**
+     * Product of numbers.
+     * This method may perform significantly better
+     * than simply multiplying the numbers sequentially.
+     *
+     * @param x The argument(s).
+     *
+     * @return The product of the given numbers.
+     *
+     * @exception java.lang.IllegalArgumentException If there are no arguments.
+     *
+     * @since 1.3
+     */
+
+    public static Aprational product(Aprational... x)
+        throws IllegalArgumentException, ApfloatRuntimeException
+    {
+        if (x.length == 0)
+        {
+            throw new IllegalArgumentException("No arguments given");
+        }
+
+        Apint[] n = new Apint[x.length],
+                m = new Apint[x.length];
+        for (int i = 0; i < x.length; i++)
+        {
+            if (x[i].signum() == 0)
+            {
+                return Aprational.ZERO;
+            }
+            n[i] = x[i].numerator();
+            m[i] = x[i].denominator();
+        }
+        return new Aprational(ApintMath.product(n), ApintMath.product(m));
+    }
+
+    /**
+     * Sum of numbers.
+     * This method may perform significantly better
+     * than simply adding the numbers sequentially.
+     *
+     * @param x The argument(s).
+     *
+     * @return The sum of the given numbers.
+     *
+     * @exception java.lang.IllegalArgumentException If there are no arguments.
+     *
+     * @since 1.3
+     */
+
+    public static Aprational sum(Aprational... x)
+        throws IllegalArgumentException, ApfloatRuntimeException
+    {
+        if (x.length == 0)
+        {
+            throw new IllegalArgumentException("No arguments given");
+        }
+
+        // Sort by size
+        x = x.clone();
+
+        Arrays.sort(x, new Comparator<Aprational>()
+        {
+            public int compare(Aprational x, Aprational y)
+            {
+                long xSize = ApfloatHelper.size(x),
+                     ySize = ApfloatHelper.size(y);
+                return (xSize < ySize ? -1 : (xSize > ySize ? 1 : 0));
+            }
+        });
+
+        // Recursively add
+        return recursiveSum(x, 0, x.length - 1);
+    }
+
+    private static Aprational recursiveSum(Aprational[] x, int n, int m)
+        throws ApfloatRuntimeException
+    {
+        if (n == m)
+        {
+            return x[n];
+        }
+        else
+        {
+            int k = (n + m) >>> 1;
+            return recursiveSum(x, n, k).add(recursiveSum(x, k + 1, m));
         }
     }
 }

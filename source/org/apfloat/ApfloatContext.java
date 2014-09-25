@@ -150,7 +150,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.2.1
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -1027,6 +1027,33 @@ public class ApfloatContext
     }
 
     /**
+     * Returns a new instance of a default ExecutorService.
+     *
+     * @return A new instance of a default ExecutorService.
+     *
+     * @since 1.3
+     */
+
+    public static ExecutorService getDefaultExecutorService()
+    {
+        // Executor service with all daemon threads, to avoid clean-up
+        ThreadFactory threadFactory = new ThreadFactory()
+        {
+            public Thread newThread(Runnable runnable)
+            {
+                Thread thread = this.defaultThreadFactory.newThread(runnable);
+                thread.setDaemon(true);
+
+                return thread;
+            }
+
+            private ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
+        };
+
+        return Executors.newCachedThreadPool(threadFactory);
+    }
+
+    /**
      * Set the values of all properties as strings.
      * The names of the properties can be all of the constants defined above.
      *
@@ -1073,7 +1100,7 @@ public class ApfloatContext
         catch (CloneNotSupportedException cnse)
         {
             // Should not occur
-	    throw new InternalError();
+            throw new InternalError();
         }
     }
 
@@ -1123,20 +1150,7 @@ public class ApfloatContext
         ApfloatContext.defaultProperties.setProperty(FILE_SUFFIX, ".ap");
         ApfloatContext.defaultProperties.setProperty(CLEANUP_AT_EXIT, "true");
 
-        // Default executor service with all daemon threads, to avoid clean-up
-        ThreadFactory threadFactory = new ThreadFactory()
-        {
-            public Thread newThread(Runnable runnable)
-            {
-                Thread thread = this.defaultThreadFactory.newThread(runnable);
-                thread.setDaemon(true);
-
-                return thread;
-            }
-
-            private ThreadFactory defaultThreadFactory = Executors.defaultThreadFactory();
-        };
-        ApfloatContext.defaultExecutorService = Executors.newCachedThreadPool(threadFactory);
+        ApfloatContext.defaultExecutorService = getDefaultExecutorService();
 
         // Set combination of default properties and properties specified in the resource bundle
         ApfloatContext.globalContext = new ApfloatContext(loadProperties());

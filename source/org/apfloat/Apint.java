@@ -4,6 +4,10 @@ import java.math.BigInteger;
 import java.io.PushbackReader;
 import java.io.Writer;
 import java.io.IOException;
+import java.util.Formatter;
+import static java.util.FormattableFlags.*;
+import java.util.FormatFlagsConversionMismatchException ;
+import java.util.IllegalFormatPrecisionException;
 
 import org.apfloat.spi.ApfloatImpl;
 
@@ -15,7 +19,7 @@ import org.apfloat.spi.ApfloatImpl;
  * numbers to an integer value: {@link Apfloat#floor() }, {@link Apfloat#ceil() },
  * and {@link Apfloat#truncate() }.
  *
- * @version 1.2
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -543,6 +547,19 @@ public class Apint
         throws IOException, ApfloatRuntimeException
     {
         this.value.writeTo(out, pretty);
+    }
+
+    public void formatTo(Formatter formatter, int flags, int width, int precision)
+    {
+        if ((flags & ALTERNATE) == ALTERNATE)
+        {
+            throw new FormatFlagsConversionMismatchException("#", 's');
+        }
+        if (precision != -1)
+        {
+            throw new IllegalFormatPrecisionException(precision);
+        }
+        this.value.formatTo(formatter, flags | ALTERNATE, width, precision);
     }
 
     /**

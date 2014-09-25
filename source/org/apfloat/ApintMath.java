@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision integers.
  *
- * @version 1.2
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -233,6 +233,7 @@ public class ApintMath
      * @return <code>-x</code>.
      */
 
+    @Deprecated
     public static Apint negate(Apint x)
         throws ApfloatRuntimeException
     {
@@ -551,7 +552,7 @@ public class ApintMath
      */
 
     public static Apint factorial(long n)
-        throws ArithmeticException, NumberFormatException, ApfloatRuntimeException               
+        throws ArithmeticException, NumberFormatException, ApfloatRuntimeException
     {
         ApfloatContext ctx = ApfloatContext.getContext();
         int radix = ctx.getDefaultRadix();
@@ -574,31 +575,96 @@ public class ApintMath
      */
 
     public static Apint factorial(long n, int radix)
-        throws ArithmeticException, NumberFormatException, ApfloatRuntimeException               
+        throws ArithmeticException, NumberFormatException, ApfloatRuntimeException
     {
         if (n < 0)
         {
             throw new ArithmeticException("Factorial of negative number");
         }
-        else if (n == 0)
+        else if (n < 2)
         {
             return new Apint(1, radix);
         }
 
-        return factorial(1, n, radix);
+        // Thanks to Peter Luschny for the improved algorithm.
+        // The idea is to split the factorial to two parts:
+        // a product of odd numbers, and a power of two.
+        // This saves some operations, as squaring is more
+        // efficient than multiplication, in the power of two.
+        // For any n, factorial(n) = oddProduct(n) * factorial(m) * 2^m,
+        // where m = n >>> 1, which gives the following algorithm.
+        Apint oddProduct = new Apint(1, radix),
+              factorialProduct = oddProduct;
+        long exponentOfTwo = 0;
+
+        for (int i = 62 - Long.numberOfLeadingZeros(n); i >= 0; i--)
+        {
+            long m = n >>> i,
+                 k = m >>> 1;
+            exponentOfTwo += k;
+            oddProduct = oddProduct.multiply(oddProduct(k + 1, m, radix));
+            factorialProduct = factorialProduct.multiply(oddProduct);
+        }
+
+        return factorialProduct.multiply(pow(new Apint(2, radix), exponentOfTwo));
     }
 
-    private static Apint factorial(long n, long m, int radix)
+    private static Apint oddProduct(long n, long m, int radix)
         throws ApfloatRuntimeException
     {
-        if (n == m)
+        n = n | 1;       // Round n up to the next odd number
+        m = (m - 1) | 1; // Round m down to the next odd number
+
+        if (n > m)
+        {
+            return new Apint(1, radix);
+        }
+        else if (n == m)
         {
             return new Apint(n, radix);
         }
         else
         {
             long k = (n + m) >>> 1;
-            return factorial(n, k, radix).multiply(factorial(k + 1, m, radix));
+            return oddProduct(n, k, radix).multiply(oddProduct(k + 1, m, radix));
         }
+    }
+
+    /**
+     * Product of numbers.
+     * This method may perform significantly better
+     * than simply multiplying the numbers sequentially.
+     *
+     * @param x The argument(s).
+     *
+     * @return The product of the given numbers.
+     *
+     * @exception java.lang.IllegalArgumentException If there are no arguments.
+     *
+     * @since 1.3
+     */
+
+    public static Apint product(Apint... x)
+        throws IllegalArgumentException, ApfloatRuntimeException
+    {
+        return new Apint(ApfloatMath.product(x));
+    }
+
+    /**
+     * Sum of numbers.
+     *
+     * @param x The argument(s).
+     *
+     * @return The sum of the given numbers.
+     *
+     * @exception java.lang.IllegalArgumentException If there are no arguments.
+     *
+     * @since 1.3
+     */
+
+    public static Apint sum(Apint... x)
+        throws IllegalArgumentException, ApfloatRuntimeException
+    {
+        return new Apint(ApfloatMath.sum(x));
     }
 }

@@ -203,7 +203,7 @@ public interface ApfloatImpl
      *
      * @return The number of equal digits in this <code>ApfloatImpl</code> and <code>x</code>.
      *
-     * @see org.apfloat.Apfloat#equalDigits(Apfloat)
+     * @see org.apfloat.Apfloat#equalDigits(org.apfloat.Apfloat)
      */
 
     public long equalDigits(ApfloatImpl x)
@@ -216,7 +216,7 @@ public interface ApfloatImpl
      *
      * @return Zero, less than zero or greater than zero depending on the result of the comparison.
      *
-     * @see org.apfloat.Apfloat#compareTo(Apfloat)
+     * @see org.apfloat.Apfloat#compareTo(org.apfloat.Apfloat)
      */
 
     public int compareTo(ApfloatImpl x)

@@ -225,7 +225,7 @@ public class CalculatorParser implements CalculatorParserConstants {
 
   final public Number function() throws ParseException {
     String v;
-    List l;
+    List<Number> l;
     Number a;
     v = identifier();
     jj_consume_token(18);
@@ -235,8 +235,8 @@ public class CalculatorParser implements CalculatorParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final public List argumentList() throws ParseException {
-    List list = new ArrayList();
+  final public List<Number> argumentList() throws ParseException {
+    List<Number> list = new ArrayList<Number>();
     Number a;
     if (jj_2_24(2)) {
       a = expression();
@@ -435,6 +435,11 @@ public class CalculatorParser implements CalculatorParserConstants {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_26(); }
     catch(LookaheadSuccess ls) { return true; }
+  }
+
+  final private boolean jj_3_4() {
+    if (jj_scan_token(EOL)) return true;
+    return false;
   }
 
   final private boolean jj_3R_13() {
@@ -690,11 +695,6 @@ public class CalculatorParser implements CalculatorParserConstants {
     return false;
   }
 
-  final private boolean jj_3_4() {
-    if (jj_scan_token(EOL)) return true;
-    return false;
-  }
-
   public CalculatorParserTokenManager token_source;
   SimpleCharStream jj_input_stream;
   public Token token, jj_nt;
@@ -705,14 +705,20 @@ public class CalculatorParser implements CalculatorParserConstants {
   private boolean jj_semLA;
 
   public CalculatorParser(java.io.InputStream stream) {
-    jj_input_stream = new SimpleCharStream(stream, 1, 1);
+     this(stream, null);
+  }
+  public CalculatorParser(java.io.InputStream stream, String encoding) {
+    try { jj_input_stream = new SimpleCharStream(stream, encoding, 1, 1); } catch(java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
     token_source = new CalculatorParserTokenManager(jj_input_stream);
     token = new Token();
     jj_ntk = -1;
   }
 
   public void ReInit(java.io.InputStream stream) {
-    jj_input_stream.ReInit(stream, 1, 1);
+     ReInit(stream);
+  }
+  public void ReInit(java.io.InputStream stream, String encoding) {
+    try { jj_input_stream.ReInit(stream, encoding, 1, 1); } catch(java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
     token_source.ReInit(jj_input_stream);
     token = new Token();
     jj_ntk = -1;

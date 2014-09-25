@@ -21,7 +21,7 @@ public class FloatScramble
      *
      * @param data The array to permute.
      * @param offset The offset within the array to permute.
-     * @param permutationTable Table of indexes indicating which elements in the <code>data</code> are to be swapped.
+     * @param permutationTable Table of indexes indicating, which elements in the <code>data</code> are to be swapped.
      */
 
     public static void scramble(float[] data, int offset, int[] permutationTable)

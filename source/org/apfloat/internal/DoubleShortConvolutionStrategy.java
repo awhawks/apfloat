@@ -6,7 +6,6 @@ import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
 import org.apfloat.spi.ArrayAccess;
-import static org.apfloat.internal.DoubleRadixConstants.*;
 
 /**
  * Short convolution strategy.

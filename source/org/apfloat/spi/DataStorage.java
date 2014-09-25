@@ -744,6 +744,8 @@ public abstract class DataStorage
      * @param offset Starting position of the array access in the data storage.
      * @param length Number of accessible elements in the array access.
      *
+     * @return The array access.
+     *
      * @exception IllegalArgumentException If the offset or length are out of bounds of the data storage.
      * @exception IllegalStateException If write access is requested for a read-only data storage.
      */
@@ -773,6 +775,8 @@ public abstract class DataStorage
      * @param mode Access mode for the array access: {@link #READ}, {@link #WRITE} or both.
      * @param offset Starting position of the array access in the data storage.
      * @param length Number of accessible elements in the array access.
+     *
+     * @return The array access.
      */
 
     protected abstract ArrayAccess implGetArray(int mode, long offset, int length)
@@ -970,6 +974,8 @@ public abstract class DataStorage
      * @param mode Access mode for iterator: {@link #READ}, {@link #WRITE} or both.
      * @param startPosition Starting position of iterator in the data set. For reverse access, the first element in the iterator is <code>startPosition - 1</code>.
      * @param endPosition End position of iterator in the data set. For forward access, the last accessible element in the iterator is <code>endPosition - 1</code>.
+     *
+     * @return An iterator.
      *
      * @exception IllegalArgumentException If the requested area is out of bounds of the data storage.
      * @exception IllegalStateException If write access is requested for a read-only data storage.

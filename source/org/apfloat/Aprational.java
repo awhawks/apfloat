@@ -4,6 +4,8 @@ import java.math.BigInteger;
 import java.io.PushbackReader;
 import java.io.Writer;
 import java.io.IOException;
+import java.util.Formatter;
+import static java.util.FormattableFlags.*;
 
 import org.apfloat.spi.ApfloatImpl;
 
@@ -13,7 +15,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see Apint
  *
- * @version 1.2
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -671,6 +673,51 @@ public class Aprational
     }
 
     /**
+     * Formats the object using the provided formatter.
+     *
+     * @param formatter The formatter.
+     * @param flags The flags to modify the output format.
+     * @param width The minimum number of characters to be written to the output, or <code>-1</code> for no minimum.
+     * @param precision The maximum number of characters to be written to the output, or <code>-1</code> for no maximum.
+     *
+     * @since 1.3
+     */
+
+    public void formatTo(Formatter formatter, int flags, int width, int precision)
+    {
+        if (denominator().equals(ONE))
+        {
+            numerator().formatTo(formatter, flags, width, precision);
+        }
+        else
+        {
+            if (width == -1)
+            {
+                numerator().formatTo(formatter, flags, width, precision);
+                formatter.format("/");
+                denominator().formatTo(formatter, flags, width, precision);
+            }
+            else
+            {
+                try
+                {
+                    Writer out = FormattingHelper.wrapAppendableWriter(formatter.out());
+                    out = FormattingHelper.wrapPadWriter(out, (flags & LEFT_JUSTIFY) == LEFT_JUSTIFY);
+                    formatter = new Formatter(out, formatter.locale());
+                    numerator().formatTo(formatter, flags, -1, precision);
+                    formatter.format("/");
+                    denominator().formatTo(formatter, flags, -1, precision);
+                    FormattingHelper.finishPad(out, width);
+                }
+                catch (IOException ioe)
+                {
+                    // Ignore as we can't propagate it; unfortunately we can't set it to the formattable either
+                }
+            }
+        }
+    }
+
+    /**
      * Returns an <code>ApfloatImpl</code> representing the approximation of this
      * aprational up to the requested precision.<p>
      *
@@ -724,7 +771,7 @@ public class Aprational
 
             this.denominator = ApintMath.abs(this.denominator);
 
-            if (sign != numerator.signum())
+            if (sign != this.numerator.signum())
             {
                 this.numerator = this.numerator.negate();
             }

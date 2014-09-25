@@ -55,7 +55,7 @@ public class Scramble
      *
      * @param length The FFT transform length for which the scrambling table is created.
      *
-     * @return An array of pairs of indexes that indicate which array elements should be swapped to scramble the array.
+     * @return An array of pairs of indexes that indicate, which array elements should be swapped to scramble the array.
      */
 
     public static int[] createScrambleTable(int length)

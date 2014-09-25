@@ -68,9 +68,9 @@ public final class LongDiskDataStorage
                         LongBuffer src = buffer.asLongBuffer();
                         int readLength = src.remaining();
 
-                        src.get(array, readPosition, readLength);
+                        src.get(array, this.readPosition, readLength);
 
-                        readPosition += readLength;
+                        this.readPosition += readLength;
                         buffer.position(readLength * 8);
 
                         return readLength * 8;
@@ -99,9 +99,9 @@ public final class LongDiskDataStorage
                         LongBuffer dst = buffer.asLongBuffer();
                         int writeLength = dst.remaining();
 
-                        dst.put(array, writePosition, writeLength);
+                        dst.put(array, this.writePosition, writeLength);
 
-                        writePosition += writeLength;
+                        this.writePosition += writeLength;
                         buffer.position(writeLength * 8);
 
                         return writeLength * 8;

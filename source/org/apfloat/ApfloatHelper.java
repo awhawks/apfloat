@@ -13,7 +13,7 @@ import static org.apfloat.spi.RadixConstants.*;
 /**
  * Various utility methods related to apfloats.
  *
- * @version 1.2
+ * @version 1.3
  * @author Mikko Tommila
  */
 
@@ -470,6 +470,24 @@ class ApfloatHelper
     {
         return new Apcomplex(z.real().precision(extendPrecision(z.real().precision(), extraPrecision)),
                              z.imag().precision(extendPrecision(z.imag().precision(), extraPrecision)));
+    }
+
+    public static long size(Apfloat x)
+        throws ApfloatRuntimeException
+    {
+        return (x.signum() == 0 ? 0 : x.getImpl(x.precision()).size());
+    }
+
+    public static long size(Apcomplex z)
+        throws ApfloatRuntimeException
+    {
+        return Math.max(size(z.real()), size(z.imag()));
+    }
+
+    public static long size(Aprational x)
+        throws ApfloatRuntimeException
+    {
+        return Math.max(size((Apfloat) x.numerator()), size((Apfloat) x.denominator()));
     }
 
     private static int getDefaultRadix()

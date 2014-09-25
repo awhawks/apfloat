@@ -5,7 +5,6 @@ import org.apfloat.ApfloatRuntimeException;
 import org.apfloat.spi.ConvolutionStrategy;
 import org.apfloat.spi.DataStorageBuilder;
 import org.apfloat.spi.DataStorage;
-import static org.apfloat.internal.IntRadixConstants.*;
 
 /**
  * Medium-length convolution strategy.
@@ -68,18 +67,18 @@ public class IntMediumConvolutionStrategy
                              {
                                  public void next()
                                  {
-                                     position++;
-                                     position = (position == bufferSize ? 0 : position);
+                                     this.position++;
+                                     this.position = (this.position == bufferSize ? 0 : this.position);
                                  }
 
                                  public int getInt()
                                  {
-                                     return buffer[position];
+                                     return this.buffer[this.position];
                                  }
 
                                  public void setInt(int value)
                                  {
-                                     buffer[position] = value;
+                                     this.buffer[this.position] = value;
                                  }
 
                                  private int[] buffer = new int[bufferSize];
