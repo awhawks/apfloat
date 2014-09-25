@@ -74,7 +74,7 @@ import org.apfloat.ApfloatRuntimeException;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.1
+ * @version 1.2.1
  * @author Mikko Tommila
  */
 
@@ -258,11 +258,11 @@ public class PiDistributed
             int averageWeight = (weightedNodes == 0 ? 1 : (int) (totalWeight / weightedNodes));
 
             // Loop through all nodes and set average weight for all nodes that don't have a weight specified
-            for (int i = 0; i < nodes.length; i++)
+            for (Node node : nodes)
             {
-                if (nodes[i].getWeight() == -1)
+                if (node.getWeight() == -1)
                 {
-                    nodes[i].setWeight(averageWeight);
+                    node.setWeight(averageWeight);
                 }
             }
 
@@ -270,9 +270,9 @@ public class PiDistributed
             Arrays.sort(nodes);
 
             // Get the available number of threads for each node
-            for (int i = 0; i < nodes.length; i++)
+            for (Node node : nodes)
             {
-                Integer numberOfProcessors = nodes[i].execute(new Operation<Integer>()
+                Integer numberOfProcessors = node.execute(new Operation<Integer>()
                 {
                     public Integer execute()
                     {
@@ -280,7 +280,7 @@ public class PiDistributed
                     }
                 });
 
-                nodes[i].setNumberOfProcessors(numberOfProcessors);
+                node.setNumberOfProcessors(numberOfProcessors);
             }
 
             if (DEBUG) Pi.err.println("PiDistributed.getNodes " + formatArray(nodes));
@@ -312,9 +312,9 @@ public class PiDistributed
 
                 SortedSet<Node> allNodes = new TreeSet<Node>(),
                                 splittableNodes = new TreeSet<Node>();
-                for (int i = 0; i < nodes.length; i++)
+                for (OperationExecutor operationExecutor : nodes)
                 {
-                    Node node = (Node) nodes[i];
+                    Node node = (Node) operationExecutor;
                     (node.getNumberOfProcessors() > 1 ? splittableNodes : allNodes).add(node);
                 }
 

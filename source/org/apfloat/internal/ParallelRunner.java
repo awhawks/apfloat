@@ -12,7 +12,7 @@ import org.apfloat.ApfloatRuntimeException;
  * multiple threads.
  *
  * @since 1.1
- * @version 1.1
+ * @version 1.2.1
  * @author Mikko Tommila
  */
 
@@ -64,9 +64,9 @@ public class ParallelRunner
         // Wait for all execution threads to complete (if any)
         try
         {
-            for (int i = 0; i < futures.length; i++)
+            for (Future future : futures)
             {
-                futures[i].get();
+                future.get();
             }
         }
         catch (InterruptedException ie)

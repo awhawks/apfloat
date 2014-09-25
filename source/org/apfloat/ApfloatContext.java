@@ -150,7 +150,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.1
+ * @version 1.2.1
  * @author Mikko Tommila
  */
 
@@ -839,7 +839,7 @@ public class ApfloatContext
             }
             else if (propertyName.equals(CLEANUP_AT_EXIT))
             {
-                setCleanupAtExit(Boolean.valueOf(propertyValue).booleanValue());
+                setCleanupAtExit(Boolean.parseBoolean(propertyValue));
             }
             else
             {

@@ -29,7 +29,7 @@ import org.apfloat.spi.BuilderFactory;
 /**
  * Graphical AWT elements for calculating pi using three different algorithms.
  *
- * @version 1.1
+ * @version 1.2.1
  * @author Mikko Tommila
  */
 
@@ -79,7 +79,7 @@ public class PiAWT
         this.precisionLabel = new Label("Precision:");
         add(this.precisionLabel, constraints);
 
-        this.precisionField = new TextField("133000", 15);
+        this.precisionField = new TextField("133000", 12);
         add(this.precisionField, constraints);
 
         this.radixLabel = new Label("Radix:");
@@ -128,15 +128,18 @@ public class PiAWT
         this.statusLabel = new Label("Status:");
         add(this.statusLabel, constraints);
 
-        this.statusArea = new TextArea(null, 5, 80, TextArea.SCROLLBARS_VERTICAL_ONLY);
+        this.statusArea = new TextArea(null, 5, 60, TextArea.SCROLLBARS_VERTICAL_ONLY);
         this.statusArea.setEditable(false);
+        constraints.fill = GridBagConstraints.HORIZONTAL;
         add(this.statusArea, constraints);
 
         this.resultLabel = new Label("Result:");
+        constraints.fill = GridBagConstraints.NONE;
         add(this.resultLabel, constraints);
 
-        this.resultArea = new TextArea(null, 5, 80, TextArea.SCROLLBARS_VERTICAL_ONLY);
+        this.resultArea = new TextArea(null, 5, 60, TextArea.SCROLLBARS_VERTICAL_ONLY);
         this.resultArea.setEditable(false);
+        constraints.fill = GridBagConstraints.HORIZONTAL;
         add(this.resultArea, constraints);
 
         this.goButton.addActionListener(new ActionListener()
