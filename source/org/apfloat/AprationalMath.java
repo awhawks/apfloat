@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision rational numbers.
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -42,9 +42,12 @@ public class AprationalMath
             n = -n;
         }
 
+        // Algorithm improvements by Bernd Kellner
+        int b2pow = 0;
+
         while ((n & 1) == 0)
         {
-            x = x.multiply(x);
+            b2pow++;
             n >>>= 1;
         }
 
@@ -57,6 +60,11 @@ public class AprationalMath
             {
                 r = r.multiply(x);
             }
+        }
+
+        while (b2pow-- > 0)
+        {
+            r = r.multiply(r);
         }
 
         return r;
@@ -100,14 +108,14 @@ public class AprationalMath
     /**
      * Multiply by a power of the radix.
      * Note that this method is prone to intermediate overflow errors.
-     * Also scaling by a very large negative number won't result in an
+     * Also, scaling by a very large negative number won't result in an
      * underflow and a zero result, but an overflow of the denominator
      * and an exception thrown.
      *
      * @param x The argument.
      * @param scale The scaling factor.
      *
-     * @return <code>x*x.radix()<sup>scale</sup></code>.
+     * @return <code>x * x.radix()<sup>scale</sup></code>.
      */
 
     public static Aprational scale(Aprational x, long scale)

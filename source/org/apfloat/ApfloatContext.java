@@ -57,7 +57,7 @@ import org.apfloat.spi.Util;
  *   <li><code>filePath</code>, set as in {@link #setProperty(String,String)} with property name {@link #FILE_PATH}</li>
  *   <li><code>fileInitialValue</code>, set as in {@link #setProperty(String,String)} with property name {@link #FILE_INITIAL_VALUE}</li>
  *   <li><code>fileSuffix</code>, set as in {@link #setProperty(String,String)} with property name {@link #FILE_SUFFIX}</li>
- *   <li><code>cleanupAtExit</code>, set as in {@link #setCleanupAtExit(boolean)} with property name {@link #CLEANUP_AT_EXIT}</li>
+ *   <li><code>cleanupAtExit</code>, set as in {@link #setCleanupAtExit(boolean)}</li>
  * </ul>
  *
  * An example <code>apfloat.properties</code> file could contain the following:<p>
@@ -107,7 +107,7 @@ import org.apfloat.spi.Util;
  *       thread to use exactly one processor, and create as many threads as
  *       there are processors.</li>
  *   <li>{@link #setMaxMemoryBlockSize(long)}: The physical memory is global
- *       and it's amount is fixed as well. Since all threads share the global
+ *       and its amount is fixed as well. Since all threads share the global
  *       memory, you may want to limit the maximum amount of memory each thread
  *       can use. If you do this, you will probably just split the amount of
  *       memory between the threads, e.g. by dividing it equally. In this case
@@ -123,7 +123,7 @@ import org.apfloat.spi.Util;
  *       available. The drawback is that the threads will synchronize on the
  *       same memory block, so only one thread can use it at a time. This can
  *       obviously have a huge effect on performance, since you can end up in a
- *       situation where all but one thread is idle most of the time. Note that
+ *       situation where all but one thread are idle most of the time. Note that
  *       the shared memory will be used for all data blocks larger than the
  *       memory treshold (see {@link #getMemoryTreshold()}). </li>
  *   <li>{@link #setFilenameGenerator(FilenameGenerator)}: When you clone an
@@ -278,7 +278,7 @@ public class ApfloatContext
 
     public static ApfloatContext getContext()
     {
-        if (threadContexts.size() == 0)
+        if (ApfloatContext.threadContexts.size() == 0)
         {
             return getGlobalContext();
         }
@@ -419,7 +419,7 @@ public class ApfloatContext
     /**
      * Set the FilenameGenerator.
      *
-     * @param builderFactory The FilenameGenerator for this ApfloatContext.
+     * @param filenameGenerator The FilenameGenerator for this ApfloatContext.
      */
 
     public void setFilenameGenerator(FilenameGenerator filenameGenerator)
@@ -516,7 +516,7 @@ public class ApfloatContext
      * intensive operations. Unless you really want to tweak the performance,
      * it's better to not touch this setting.<p>
      *
-     * The default value for this setting is 8192.
+     * The default value for this setting is 8kB.
      *
      * @param cacheL1Size The level 1 cache size in bytes.
      */
@@ -577,7 +577,7 @@ public class ApfloatContext
      * Set the L1 cache burst block size in bytes.
      * This value is also known as "L1 cache line size".<p>
      *
-     * Some common values are:<p>
+     * Some common values are:
      * <ul>
      *   <li>16 for 486 processors</li>
      *   <li>32 for Pentium MMX/II/III/Celeron series and Itanium processors</li>
@@ -887,7 +887,7 @@ public class ApfloatContext
      * would typically call this method e.g. as
      * <code>ctx.setSharedMemoryLock(new Object())</code>.
      *
-     * @param The object on which large memory block allocation and access should be synchronized.
+     * @param lock The object on which large memory block allocation and access should be synchronized.
      */
 
     public void setSharedMemoryLock(Object lock)

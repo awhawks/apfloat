@@ -42,9 +42,9 @@ public class Apfloat
 
     /**
      * Constructs an apfloat that is backed by the specified
-     * ApfloatImpl object.
+     * <code>ApfloatImpl</code> object.
      *
-     * @param impl The ApfloatImpl object backing this apfloat.
+     * @param impl The <code>ApfloatImpl</code> object backing this apfloat.
      */
 
     protected Apfloat(ApfloatImpl impl)
@@ -96,7 +96,7 @@ public class Apfloat
      * Constructs an apfloat from the specified string, precision and radix.<p>
      *
      * Note that it's impossible to construct apfloats with a specified exponent
-     * and with radix >= 14, since the character 'e' and 'E' will be treated as
+     * and with radix >= 14, since the characters 'e' and 'E' will be treated as
      * digits of the mantissa.<p>
      *
      * For example, in radix 10, "1e5" means the decimal number 100000. But in
@@ -377,6 +377,7 @@ public class Apfloat
      *
      * @param value The value of the number.
      * @param precision The precision of the number.
+     * @param radix The radix of the number.
      *
      * @exception java.lang.NumberFormatException If the radix is not valid.
      * @exception java.lang.IllegalArgumentException In case the precision is invalid.
@@ -389,7 +390,7 @@ public class Apfloat
     }
 
     /**
-     * Creates and apfloat from a <code>BigDecimal</code>. An apfloat created this
+     * Creates an apfloat from a <code>BigDecimal</code>. An apfloat created this
      * way will always have radix 10 regardless of the current default radix.
      *
      * @param value The value to use.
@@ -402,7 +403,7 @@ public class Apfloat
     }
 
     /**
-     * Creates and apfloat from a <code>BigDecimal</code>. An apfloat created this
+     * Creates an apfloat from a <code>BigDecimal</code>. An apfloat created this
      * way will always have radix 10 regardless of the current default radix.
      *
      * @param value The value to use.
@@ -502,7 +503,7 @@ public class Apfloat
      * <code>apfloat = mantissa * radix<sup>scale</sup></code><p>
      *
      * where 1/radix <= mantissa < 1. In other words,
-     * <code>scale&nbsp;=&nbsp;floor(log<sub>radix</sub>(apfloat)&nbsp;+&nbsp;1</code>.<p>
+     * <code>scale&nbsp;=&nbsp;floor(log<sub>radix</sub>(apfloat))&nbsp;+&nbsp;1</code>.<p>
      *
      * For example, 1 has a scale of 1, and 100 has a scale of 3 (in radix 10).
      * For integers, scale is equal to the number of digits in the apfloat.<p>
@@ -1021,9 +1022,9 @@ public class Apfloat
     }
 
     /**
-     * Write a string representation of this apfloat to a Writer.
+     * Write a string representation of this apfloat to a <code>Writer</code>.
      *
-     * @param out The output Writer.
+     * @param out The output <code>Writer</code>.
      * @param pretty <code>true</code> to use a fixed-point notation, <code>false</code> to use an exponential notation.
      *
      * @exception java.io.IOException In case of I/O error writing to the stream.

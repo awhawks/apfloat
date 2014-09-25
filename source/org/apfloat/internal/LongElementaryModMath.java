@@ -44,9 +44,10 @@ package org.apfloat.internal;
  * should be within +1 or -1 of the correct result. Then calculate
  * <code>a * b - approximateDivision * modulus</code> to get the remainder.
  * This calculation must use the lowest 64 bits and is done using <code>long</code>s.
- * Since the approximate division is done using a <code>double</code>, it must be
- * done twice to reduce the remainder to the correct result &#177;modulus.
- * As the modulus is less than 2<sup>62</sup> it is easy to detect the case
+ * It is enough to use a <code>double</code> to do the approximate division, as it eliminates
+ * at least 51 bits from the top of the 114-bit multiplication result, leaving at
+ * most 63 bits in the remainder, and reducing it thus to the correct result &#177;modulus.
+ * As the modulus is just less than 2<sup>62</sup> it is easy to detect the case
  * when the approximate division was off by one (and the remainder is <code>&#177;modulus</code>
  * off) as the final step of the algorithm.
  *

@@ -15,7 +15,7 @@ import org.apfloat.spi.ArrayAccess;
  * execute just one thread and divide its time to multiple
  * simulated threads.
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -45,11 +45,11 @@ public abstract class DoubleParallelFNTStrategy
 
                 if (this.isInverse)
                 {
-                    inverseTableFNT(arrayAccess, wTable, permutationTable);
+                    inverseTableFNT(arrayAccess, this.wTable, this.permutationTable);
                 }
                 else
                 {
-                    tableFNT(arrayAccess, wTable, permutationTable);
+                    tableFNT(arrayAccess, this.wTable, this.permutationTable);
                 }
             }
         }
@@ -136,7 +136,7 @@ public abstract class DoubleParallelFNTStrategy
     /**
      * Transform the rows of the data matrix.
      * If only one processor is available, it runs all transforms in the current
-     * thread. If more than one processors are available, it dispatches the calculations
+     * thread. If more than one processor are available, it dispatches the calculations
      * to multiple threads to parallelize the calculation. The number of processors is
      * determined using {@link ApfloatContext#getNumberOfProcessors()}.
      *

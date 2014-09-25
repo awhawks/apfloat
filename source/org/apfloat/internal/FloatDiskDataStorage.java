@@ -14,7 +14,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>float</code> element type.
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -68,8 +68,7 @@ public final class FloatDiskDataStorage
                     public int write(ByteBuffer buffer)
                     {
                         FloatBuffer src = buffer.asFloatBuffer();
-                        //int readLength = src.remaining();
-                        int readLength = Math.min(src.remaining(), array.length - readPosition);
+                        int readLength = src.remaining();
 
                         src.get(array, readPosition, readLength);
 
@@ -100,8 +99,7 @@ public final class FloatDiskDataStorage
                     public int read(ByteBuffer buffer)
                     {
                         FloatBuffer dst = buffer.asFloatBuffer();
-                        //int writeLength = dst.remaining();
-                        int writeLength = Math.min(dst.remaining(), array.length - writePosition);
+                        int writeLength = dst.remaining();
 
                         dst.put(array, writePosition, writeLength);
 

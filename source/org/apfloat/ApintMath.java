@@ -3,7 +3,7 @@ package org.apfloat;
 /**
  * Various mathematical functions for arbitrary precision integers.
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -41,9 +41,12 @@ public class ApintMath
             return Apint.ZERO;
         }
 
+        // Algorithm improvements by Bernd Kellner
+        int b2pow = 0;
+
         while ((n & 1) == 0)
         {
-            x = x.multiply(x);
+            b2pow++;
             n >>= 1;
         }
 
@@ -56,6 +59,11 @@ public class ApintMath
             {
                 r = r.multiply(x);
             }
+        }
+
+        while (b2pow-- > 0)
+        {
+            r = r.multiply(r);
         }
 
         return r;
@@ -266,7 +274,7 @@ public class ApintMath
      * @param x The argument.
      * @param scale The scaling factor.
      *
-     * @return <code>x*x.radix()<sup>scale</sup></code>.
+     * @return <code>x * x.radix()<sup>scale</sup></code>.
      */
 
     public static Apint scale(Apint x, long scale)

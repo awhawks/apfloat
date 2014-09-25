@@ -13,7 +13,7 @@ import org.apfloat.spi.ApfloatImpl;
  *
  * @see Apint
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -62,7 +62,7 @@ public class Aprational
     }
 
     /**
-     * Constructs an aprational from a string.<p>
+     * Constructs an aprational from a string. The default radix is used.<p>
      *
      * The input must be of one of the formats<p>
      *
@@ -116,9 +116,9 @@ public class Aprational
     }
 
     /**
-     * Reads an aprational from a reader. The constructor stops reading
-     * at the first character it doesn't understand. The reader must thus
-     * be a <code>PushbackReader</code> so that the invalid character can be
+     * Reads an aprational from a reader. The default radix is used. The constructor
+     * stops reading at the first character it doesn't understand. The reader must
+     * thus be a <code>PushbackReader</code> so that the invalid character can be
      * returned back to the stream.<p>
      *
      * The input must be of one of the formats<p>
@@ -204,7 +204,7 @@ public class Aprational
     /**
      * Numerator of this aprational.
      *
-     * @return <code>n</code> where <code>aprational = n / m</code>.
+     * @return <code>n</code> where <code>this = n / m</code>.
      */
 
     public Apint numerator()
@@ -215,7 +215,7 @@ public class Aprational
     /**
      * Denominator of this aprational.
      *
-     * @return <code>m</code> where <code>aprational = n / m</code>.
+     * @return <code>m</code> where <code>this = n / m</code>.
      */
 
     public Apint denominator()
@@ -348,8 +348,18 @@ public class Aprational
     public Aprational multiply(Aprational x)
         throws ApfloatRuntimeException
     {
-        return new Aprational(numerator().multiply(x.numerator()),
-                              denominator().multiply(x.denominator())).reduce();
+        Aprational result = new Aprational(numerator().multiply(x.numerator()),
+                                           denominator().multiply(x.denominator()));
+
+        if (this == x)
+        {
+            // When squaring we know that no reduction is needed
+            return result;
+        }
+        else
+        {
+            return result.reduce();
+        }
     }
 
     /**

@@ -29,7 +29,7 @@ import org.apfloat.spi.BuilderFactory;
 /**
  * Applet for calculating pi using three different algorithms.
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -49,6 +49,26 @@ public class PiApplet
      */
 
     public void init()
+    {
+        if (System.getProperty("java.version").compareTo("1.4") < 0)
+        {
+            add(new Label("This applet requires Java 1.4 or later. Download it from http://www.java.com"));
+        }
+        else
+        {
+            // Incredible hack to prevent the VM from prematurely trying to load other apfloat classes
+            new Runnable()
+            {
+                public void run()
+                {
+                    initGUI();
+                }
+            }.run();
+        }
+    }
+
+    // Actual initialization of the applet
+    private void initGUI()
     {
         ApfloatContext ctx = ApfloatContext.getContext();
 
@@ -230,7 +250,7 @@ public class PiApplet
                 implementationPackage = builderFactory.getClass().getPackage();
 
         return "Pi calculation applet\n" +
-               "Written by Mikko Tommila 2002\n" +
+               "Written by Mikko Tommila 2002 - 2003\n" +
                "Specification-Title: "    + specificationPackage.getSpecificationTitle() + "\n" +
                "Specification-Version: "  + specificationPackage.getSpecificationVersion() + "\n" +
                "Specification-Vendor: "   + specificationPackage.getSpecificationVendor() + "\n" +

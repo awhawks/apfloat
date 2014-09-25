@@ -38,7 +38,7 @@ public class ApfloatHolder
     /**
      * Return the apfloat contained in this bean.
      *
-     * @param apfloat The apfloat.
+     * @return The apfloat contained in this bean.
      */
 
     public Apfloat getApfloat()

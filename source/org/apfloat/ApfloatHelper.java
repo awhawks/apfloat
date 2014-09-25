@@ -13,7 +13,7 @@ import org.apfloat.spi.Util;
 /**
  * Various utility methods related to apfloats.
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -177,14 +177,14 @@ class ApfloatHelper
     }
 
     public static ApfloatImpl createApfloat(BigInteger value, long precision)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws NumberFormatException, IllegalArgumentException, ApfloatRuntimeException
     {
         int radix = getDefaultRadix();
         return createApfloat(value, precision, radix);
     }
 
     public static ApfloatImpl createApfloat(BigInteger value, long precision, int radix)
-        throws IllegalArgumentException, ApfloatRuntimeException
+        throws NumberFormatException, IllegalArgumentException, ApfloatRuntimeException
     {
         checkRadix(radix);
         precision = (precision == Apfloat.DEFAULT ? Apfloat.INFINITE : precision);

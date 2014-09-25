@@ -5,7 +5,7 @@ import org.apfloat.spi.Util;
 /**
  * Various mathematical functions for arbitrary precision complex numbers.
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -84,7 +84,7 @@ public class ApcomplexMath
      * @param z The argument.
      * @param scale The scaling factor.
      *
-     * @return <code>z*z.radix()<sup>scale</sup></code>.
+     * @return <code>z * z.radix()<sup>scale</sup></code>.
      */
 
     public static Apcomplex scale(Apcomplex z, long scale)
@@ -123,9 +123,12 @@ public class ApcomplexMath
             n = -n;
         }
 
+        // Algorithm improvements by Bernd Kellner
+        int b2pow = 0;
+
         while ((n & 1) == 0)
         {
-            z = z.multiply(z);
+            b2pow++;
             n >>>= 1;
         }
 
@@ -138,6 +141,11 @@ public class ApcomplexMath
             {
                 r = r.multiply(z);
             }
+        }
+
+        while (b2pow-- > 0)
+        {
+            r = r.multiply(r);
         }
 
         return r;
@@ -231,7 +239,7 @@ public class ApcomplexMath
      *
      * @return Inverse <code>n</code>:th root of <code>z</code>, that is <code>z<sup>-1/n</sup></code>.
      *
-     * @exception java.lang.ArithmeticException If <code>x</code> or <code>n</code> is zero.
+     * @exception java.lang.ArithmeticException If <code>z</code> or <code>n</code> is zero.
      */
 
     public static Apcomplex inverseRoot(Apcomplex z, long n)

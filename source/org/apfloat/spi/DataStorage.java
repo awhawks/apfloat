@@ -254,7 +254,7 @@ public abstract class DataStorage
         extends Iterator
     {
         /**
-         * Constructor a new iterator. Elements can be iterated either
+         * Construct a new iterator. Elements can be iterated either
          * in forward or in reverse order, depending on if <code>startPosition</code>
          * is less than or greater than <code>endPosition</code>, correspondingly.
          *
@@ -407,7 +407,7 @@ public abstract class DataStorage
         }
 
         /**
-         * Checks if any of the <code>set</code> methods can be called.
+         * Checks if any of the <code>set()</code> methods can be called.
          * This checks both that the iterator is not at the end yet, and
          * that the iterator was opened in a writable mode.
          *

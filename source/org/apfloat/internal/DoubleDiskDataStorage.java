@@ -14,7 +14,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>double</code> element type.
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -68,8 +68,7 @@ public final class DoubleDiskDataStorage
                     public int write(ByteBuffer buffer)
                     {
                         DoubleBuffer src = buffer.asDoubleBuffer();
-                        //int readLength = src.remaining();
-                        int readLength = Math.min(src.remaining(), array.length - readPosition);
+                        int readLength = src.remaining();
 
                         src.get(array, readPosition, readLength);
 
@@ -100,8 +99,7 @@ public final class DoubleDiskDataStorage
                     public int read(ByteBuffer buffer)
                     {
                         DoubleBuffer dst = buffer.asDoubleBuffer();
-                        //int writeLength = dst.remaining();
-                        int writeLength = Math.min(dst.remaining(), array.length - writePosition);
+                        int writeLength = dst.remaining();
 
                         dst.put(array, writePosition, writeLength);
 

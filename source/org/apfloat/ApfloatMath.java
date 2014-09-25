@@ -12,7 +12,7 @@ import org.apfloat.spi.Util;
  * Due to different types of round-off errors that can occur in the implementation,
  * no guarantees about e.g. monotonicity are given for any of the methods.
  *
- * @version 1.0
+ * @version 1.0.1
  * @author Mikko Tommila
  */
 
@@ -51,9 +51,12 @@ public class ApfloatMath
             n = -n;
         }
 
+        // Algorithm improvements by Bernd Kellner
+        int b2pow = 0;
+
         while ((n & 1) == 0)
         {
-            x = x.multiply(x);
+            b2pow++;
             n >>>= 1;
         }
 
@@ -66,6 +69,11 @@ public class ApfloatMath
             {
                 r = r.multiply(x);
             }
+        }
+
+        while (b2pow-- > 0)
+        {
+            r = r.multiply(r);
         }
 
         return r;
@@ -418,7 +426,7 @@ public class ApfloatMath
      * @param x The argument.
      * @param scale The scaling factor.
      *
-     * @return <code>x*x.radix()<sup>scale</sup></code>.
+     * @return <code>x * x.radix()<sup>scale</sup></code>.
      */
 
     public static Apfloat scale(Apfloat x, long scale)
@@ -1213,7 +1221,7 @@ public class ApfloatMath
         {
             // Taylor series: exp(x) = 1 + x + x^2/2 + ...
 
-            return new Apfloat(1, Apfloat.INFINITE, radix).add(x);
+            return new Apfloat(1, Apfloat.INFINITE, radix).add(x).precision(Apfloat.INFINITE);
         }
 
         Apfloat result;

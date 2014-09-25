@@ -35,8 +35,7 @@ public interface ApfloatImpl
     /**
      * Multiply this object by an <code>ApfloatImpl</code>.
      *
-     * @param x The number to be added or subtracted to this <code>ApfloatImpl</code>.
-     * @param subtract <code>true</code> if the numbers are to be subtracted, <code>false</code> if added.
+     * @param x The number to be multiplied by this <code>ApfloatImpl</code>.
      *
      * @return <code>this * x</code>.
      */

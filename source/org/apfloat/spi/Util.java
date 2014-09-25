@@ -443,7 +443,7 @@ public class Util
      * return value is thus always positive.
      *
      * @param x The argument that is tested to be <code>Apfloat.INFINITE</code>.
-     * @param y The argument that returned if <code>x</code> is not <code>Apfloat.INFINITE</code>.
+     * @param y The argument that is returned if <code>x</code> is not <code>Apfloat.INFINITE</code>.
      *
      * @return <code>(x == Apfloat.INFINITE || y <= 0 ? Apfloat.INFINITE : y)</code>
      */

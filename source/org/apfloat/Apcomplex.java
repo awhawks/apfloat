@@ -126,7 +126,7 @@ public class Apcomplex
      * <code>"(" [whitespace] realPart [whitespace] ")"</code><br>
      * <code>"(" [whitespace] realPart [whitespace] "," [whitespace] imaginaryPart [whitespace] ")"</code><br>
      *
-     * @param in The input string.
+     * @param value The input string.
      *
      * @exception java.lang.NumberFormatException If the number is invalid.
      */
@@ -623,6 +623,8 @@ public class Apcomplex
      * Write a string representation of this apcomplex to a <code>Writer</code>.
      *
      * @param out The output <code>Writer</code>.
+     *
+     * @exception java.io.IOException In case of I/O error writing to the stream.
      */
 
     public void writeTo(Writer out)

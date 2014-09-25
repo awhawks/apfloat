@@ -512,7 +512,7 @@ public class Apint
     /**
      * Returns a string representation of this aprational.
      *
-     * @param pretty <code>true</code> if the printout should be more pleasing to the human eye, <code>false</code> if it should be more efficient for the program to read subsequently.
+     * @param pretty <code>true</code> to use a fixed-point notation, <code>false</code> to use an exponential notation.
      *
      * @return A string representing this object.
      */
@@ -524,10 +524,10 @@ public class Apint
     }
 
     /**
-     * Write a string representation of this aprational to a Writer.
+     * Write a string representation of this aprational to a <code>Writer</code>.
      *
-     * @param out The output Writer.
-     * @param pretty <code>true</code> if the output should be more pleasing to the human eye, <code>false</code> if it should be more efficient for the program to read subsequently.
+     * @param out The output <code>Writer</code>.
+     * @param pretty <code>true</code> to use a fixed-point notation, <code>false</code> to use an exponential notation.
      *
      * @exception java.io.IOException In case of I/O error writing to the stream.
      */
