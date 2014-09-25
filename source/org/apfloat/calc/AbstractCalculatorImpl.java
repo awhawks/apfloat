@@ -1,5 +1,7 @@
 package org.apfloat.calc;
 
+import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,12 +12,12 @@ import java.util.Map;
  * Provides a storage for variables, and maps
  * the elementary operators to function calls.
  *
- * @version 1.2
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
 public abstract class AbstractCalculatorImpl
-    implements CalculatorImpl
+    implements CalculatorImpl, Serializable
 {
     /**
      * Default constructor.

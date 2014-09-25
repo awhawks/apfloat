@@ -6,7 +6,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Array access class based on a <code>long[]</code>.
  *
- * @version 1.0
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
@@ -47,6 +47,8 @@ public class LongMemoryArrayAccess
     {
         this.data = null;       // Might have an impact on garbage collection
     }
+
+    private static final long serialVersionUID = 844248131988537796L;
 
     private long[] data;
 }

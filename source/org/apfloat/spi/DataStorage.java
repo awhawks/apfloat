@@ -20,7 +20,7 @@ import org.apfloat.ApfloatRuntimeException;
  * iterators over non-overlapping parts is permitted. Invoking
  * other methods must generally be externally synchronized.
  *
- * @version 1.6.1
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
@@ -486,8 +486,8 @@ public abstract class DataStorage
             return this.increment;
         }
 
-        private final int mode,
-                          increment;
+        private int mode,
+                    increment;
         private long position,
                      length;
     }

@@ -33,11 +33,11 @@ import static org.apfloat.internal.FloatRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.6.2
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
-public final class FloatApfloatImpl
+public class FloatApfloatImpl
     extends FloatBaseMath
     implements ApfloatImpl
 {

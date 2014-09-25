@@ -1,5 +1,7 @@
 package org.apfloat.spi;
 
+import java.io.Serializable;
+
 import org.apfloat.ApfloatRuntimeException;
 
 /**
@@ -18,11 +20,12 @@ import org.apfloat.ApfloatRuntimeException;
  * of course the mandatory bounds check of Java, which can throw an
  * <code>ArrayIndexOutOfBoundsException</code>.
  *
- * @version 1.0
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
 public abstract class ArrayAccess
+    implements Serializable
 {
     /**
      * Create an array access.<p>
@@ -159,6 +162,8 @@ public abstract class ArrayAccess
 
     public abstract void close()
         throws ApfloatRuntimeException;
+
+    private static final long serialVersionUID = -7899494275459577958L;
 
     private int offset;
     private int length;

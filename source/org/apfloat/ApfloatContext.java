@@ -154,7 +154,7 @@ import org.apfloat.spi.Util;
  * If these features are added to the Java platform in the future, they
  * may be added to the <code>ApfloatContext</code> API as well.
  *
- * @version 1.6.2
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
@@ -1201,9 +1201,19 @@ public class ApfloatContext
         ApfloatContext.defaultProperties = new Properties();
 
         // Try to use up to 80% of total memory and all processors
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        MemoryUsage memoryUsage = memoryBean.getHeapMemoryUsage();
-        long totalMemory = Math.max(memoryUsage.getCommitted(), memoryUsage.getMax());
+        long totalMemory;
+        try
+        {
+            MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
+            MemoryUsage memoryUsage = memoryBean.getHeapMemoryUsage();
+            totalMemory = Math.max(memoryUsage.getCommitted(), memoryUsage.getMax());
+        }
+        catch (NoClassDefFoundError ncdfe)
+        {
+            // The ManagementFactory class might be unavailable
+            totalMemory = Runtime.getRuntime().maxMemory();
+        }
+
         long maxMemoryBlockSize = Util.round23down(totalMemory / 5 * 4);
         int numberOfProcessors = Runtime.getRuntime().availableProcessors();
 

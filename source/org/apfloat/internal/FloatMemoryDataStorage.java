@@ -11,11 +11,11 @@ import org.apfloat.spi.ArrayAccess;
  * Memory based data storage implementation for the <code>float</code>
  * element type.
  *
- * @version 1.6
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
-public final class FloatMemoryDataStorage
+public class FloatMemoryDataStorage
     extends DataStorage
     implements RandomAccess
 {

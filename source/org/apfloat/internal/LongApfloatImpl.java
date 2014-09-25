@@ -33,11 +33,11 @@ import static org.apfloat.internal.LongRadixConstants.*;
  * This implementation doesn't necessarily store any extra digits for added
  * precision, so the last digit of any operation may be inaccurate.
  *
- * @version 1.6.2
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
-public final class LongApfloatImpl
+public class LongApfloatImpl
     extends LongBaseMath
     implements ApfloatImpl
 {

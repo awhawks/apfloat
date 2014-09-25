@@ -12,11 +12,11 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Disk-based data storage for the <code>double</code> element type.
  *
- * @version 1.5
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
-public final class DoubleDiskDataStorage
+public class DoubleDiskDataStorage
     extends DiskDataStorage
 {
     /**
@@ -119,6 +119,8 @@ public final class DoubleDiskDataStorage
             super.close();
         }
 
+        private static final long serialVersionUID = -7097317279839657081L;
+
         private int mode;
         private long fileOffset;
     }
@@ -151,6 +153,8 @@ public final class DoubleDiskDataStorage
             super.close();
         }
 
+        private static final long serialVersionUID = -3746109883682965310L;
+
         private int mode,
                     startColumn,
                     columns,
@@ -168,30 +172,59 @@ public final class DoubleDiskDataStorage
         }
 
         int blockSize = columns * rows,
-            b = columns;
+            b = Math.min(columns, rows);
         ArrayAccess arrayAccess = new TransposedMemoryArrayAccess(mode, new double[blockSize], startColumn, columns, rows);
 
         if ((mode & READ) != 0)
         {
             // Read the data from the input file in b x b blocks
 
-            long readPosition = startColumn;
-            for (int i = 0; i < rows; i += b)
+            if (columns < rows)
             {
-                int writePosition = i;
-
-                for (int j = 0; j < b; j++)
+                // Taller than wide section
+                long readPosition = startColumn;
+                for (int i = 0; i < rows; i += b)
                 {
-                    readToArray(readPosition, arrayAccess, writePosition, b);
+                    int writePosition = i;
 
-                    readPosition += width;
-                    writePosition += rows;
+                    for (int j = 0; j < b; j++)
+                    {
+                        readToArray(readPosition, arrayAccess, writePosition, b);
+
+                        readPosition += width;
+                        writePosition += rows;
+                    }
+
+                    // Transpose the b x b block
+
+                    ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
+                    DoubleMatrix.transposeSquare(subArrayAccess, b, rows);
+                }
+            }
+            else
+            {
+                // Wider than tall section
+                for (int i = 0; i < b; i++)
+                {
+                    long readPosition = startColumn + i * width;
+                    int writePosition = i * b;
+
+                    for (int j = 0; j < columns; j += b)
+                    {
+                        readToArray(readPosition, arrayAccess, writePosition, b);
+
+                        readPosition += b;
+                        writePosition += b * b;
+                    }
                 }
 
-                // Transpose the b x b block
+                for (int i = 0; i < blockSize; i += b * b)
+                {
+                    // Transpose the b x b block
 
-                ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
-                DoubleMatrix.transposeSquare(subArrayAccess, b, rows);
+                    ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
+                    DoubleMatrix.transposeSquare(subArrayAccess, b, b);
+                }
             }
         }
 
@@ -205,24 +238,53 @@ public final class DoubleDiskDataStorage
         int width = (int) (getSize() / rows);
 
         int blockSize = arrayAccess.getLength(),
-            b = columns;
+            b = Math.min(columns, rows);
 
-        long writePosition = startColumn;
-        for (int i = 0; i < rows; i += b)
+        if (columns < rows)
         {
-            int readPosition = i;
-
-            // Transpose the b x b block
-
-            ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
-            DoubleMatrix.transposeSquare(subArrayAccess, b, rows);
-
-            for (int j = 0; j < b; j++)
+            // Taller than wide section
+            long writePosition = startColumn;
+            for (int i = 0; i < rows; i += b)
             {
-                writeFromArray(arrayAccess, readPosition, writePosition, b);
+                int readPosition = i;
 
-                readPosition += rows;
-                writePosition += width;
+                // Transpose the b x b block
+
+                ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
+                DoubleMatrix.transposeSquare(subArrayAccess, b, rows);
+
+                for (int j = 0; j < b; j++)
+                {
+                    writeFromArray(arrayAccess, readPosition, writePosition, b);
+
+                    readPosition += rows;
+                    writePosition += width;
+                }
+            }
+        }
+        else
+        {
+            // Wider than tall section
+            for (int i = 0; i < blockSize; i += b * b)
+            {
+                // Transpose the b x b block
+
+                ArrayAccess subArrayAccess = arrayAccess.subsequence(i, blockSize - i);
+                DoubleMatrix.transposeSquare(subArrayAccess, b, b);
+            }
+
+            for (int i = 0; i < b; i++)
+            {
+                long writePosition = startColumn + i * width;
+                int readPosition = i * b;
+
+                for (int j = 0; j < columns; j += b)
+                {
+                    writeFromArray(arrayAccess, readPosition, writePosition, b);
+
+                    readPosition += b * b;
+                    writePosition += b;
+                }
             }
         }
     }

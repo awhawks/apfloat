@@ -1,5 +1,7 @@
 package org.apfloat.calc;
 
+import java.io.Serializable;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,7 +10,7 @@ import java.util.Map;
  * Calculator implementation with function support.
  * Provides a mapping mechanism for functions.
  *
- * @version 1.6
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
@@ -20,6 +22,7 @@ public abstract class FunctionCalculatorImpl
      */
 
     protected static interface Function
+        extends Serializable
     {
         /**
          * Call the function.

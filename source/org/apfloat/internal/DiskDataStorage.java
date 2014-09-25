@@ -1,9 +1,11 @@
 package org.apfloat.internal;
 
-import java.io.Serializable;
 import java.io.File;
-import java.io.RandomAccessFile;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
@@ -12,8 +14,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.apfloat.ApfloatContext;
 import org.apfloat.ApfloatRuntimeException;
@@ -202,7 +204,7 @@ public abstract class DiskDataStorage
         }
 
         // Writes the file contents to the serialization stream
-        private void writeObject(java.io.ObjectOutputStream out)
+        private void writeObject(ObjectOutputStream out)
             throws IOException
         {
             long size = getFileChannel().size();
@@ -214,7 +216,7 @@ public abstract class DiskDataStorage
         }
 
         // Reads file contents from the serialization stream
-        private void readObject(java.io.ObjectInputStream in)
+        private void readObject(ObjectInputStream in)
             throws IOException, ClassNotFoundException
         {
             init();

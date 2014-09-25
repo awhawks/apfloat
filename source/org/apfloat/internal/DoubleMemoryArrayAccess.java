@@ -6,7 +6,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Array access class based on a <code>double[]</code>.
  *
- * @version 1.0
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
@@ -47,6 +47,8 @@ public class DoubleMemoryArrayAccess
     {
         this.data = null;       // Might have an impact on garbage collection
     }
+
+    private static final long serialVersionUID = -8917010087742357783L;
 
     private double[] data;
 }

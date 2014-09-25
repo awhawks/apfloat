@@ -6,7 +6,7 @@ import org.apfloat.spi.ArrayAccess;
 /**
  * Array access class based on a <code>float[]</code>.
  *
- * @version 1.0
+ * @version 1.6.3
  * @author Mikko Tommila
  */
 
@@ -47,6 +47,8 @@ public class FloatMemoryArrayAccess
     {
         this.data = null;       // Might have an impact on garbage collection
     }
+
+    private static final long serialVersionUID = 7704133670961317045L;
 
     private float[] data;
 }
